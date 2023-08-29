@@ -339,7 +339,10 @@ def fill_template(template, data_strings=None, data_names=None, hidden=None, rea
                 x_offset = int(0.5 * ((xtwo - xone) * dpp - width))
                 y_offset = 0
             new_im = Image.new('RGBA', (int((xtwo - xone) * dpp), int((ytwo - yone) * dpp)), (255, 0, 0, 0))
-            new_im.paste(im, (x_offset, y_offset))
+            if daconfig.get('left align signature for pdf fill', False):
+                new_im.paste(im, (0, y_offset))
+            else:
+                new_im.paste(im, (x_offset, y_offset))
             overlay_pdf_file = tempfile.NamedTemporaryFile(prefix="datemp", mode="wb", suffix=".pdf", delete=False)
             with BytesIO() as output:
                 new_im.save(output, 'PNG')
