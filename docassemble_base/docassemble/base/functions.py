@@ -1,3 +1,4 @@
+import sys
 import re
 import types
 import os
@@ -4296,7 +4297,7 @@ def components_of(full_variable):
 
 
 def get_user_dict():
-    frame = inspect.stack()[1][0]
+    frame = sys._getframe(1)
     the_user_dict = frame.f_locals
     while '_internal' not in the_user_dict:
         frame = frame.f_back
@@ -4334,7 +4335,7 @@ def undefine(*pargs, invalidate=False):  # pylint: disable=redefined-outer-name
             raise DAError("undefine: variable " + repr(var) + " is not a valid variable name")
     if len(vars_to_delete) == 0:
         return
-    frame = inspect.stack()[1][0]
+    frame = sys._getframe(1)
     the_user_dict = frame.f_locals
     while '_internal' not in the_user_dict:
         frame = frame.f_back
@@ -4443,7 +4444,8 @@ def _defined_internal(var, caller: DefCaller, alt=None, prior=False):
       user all of the questions necessary to answer it
     * SHOWIFDEF, then the value if returned, but only if no questions have to be asked
     """
-    frame = inspect.stack()[1][0]
+    #frame = inspect.stack()[1][0]
+    frame = sys._getframe(1)
     components = components_of(var)
     if len(components) == 0 or len(components[0]) < 2:
         raise DAError("defined: variable " + repr(var) + " is not a valid variable name")
