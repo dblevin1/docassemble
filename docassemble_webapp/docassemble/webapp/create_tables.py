@@ -178,15 +178,15 @@ def populate_tables(start_time=None):
     package_info_changed = False
     for package in git_packages:
         if package.name in ['docassemble', 'docassemble.base', 'docassemble.webapp', 'docassemble.demo']:
-            if package.giturl:
-                package.giturl = None
-                package_info_changed = True
-            if package.gitsubdir:
-                package.gitsubdir = None
-                package_info_changed = True
-            if package.type != 'pip':
-                package.type = 'pip'
-                package_info_changed = True
+            # if package.giturl:
+            #     package.giturl = None
+            #     package_info_changed = True
+            # if package.gitsubdir:
+            #     package.gitsubdir = None
+            #     package_info_changed = True
+            # if package.type != 'pip':
+            #     package.type = 'pip'
+            #     package_info_changed = True
             if daconfig.get('stable version', False):
                 if package.limitation != '<1.1.0':
                     package.limitation = '<1.1.0'
