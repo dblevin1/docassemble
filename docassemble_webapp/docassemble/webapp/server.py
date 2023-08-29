@@ -3578,7 +3578,15 @@ def get_package_info():
             if package.name == 'docassemble.webapp':
                 can_uninstall = False
                 can_update = is_admin
-            package_list.append(Object(package=package, can_update=can_update, can_uninstall=can_uninstall))
+            available_package_version = ''
+            if can_update and 'docassemble' in package.name:
+                dw_status = pypi_status(package.name)
+                if not dw_status['error'] and 'info' in dw_status and 'info' in dw_status['info'] and 'version' in dw_status['info']['info']:
+                    if dw_status['info']['info']['version'] != str(package.packageversion):
+                        available_package_version = ' <span class="badge bg-success">' + dw_status['info']['info']['version'] + '</span> ' + word("Available")
+                #else:
+                #    available_package_version = '<span class="badge bg-warning">failed</span>'
+            package_list.append(Object(package=package, can_update=can_update, can_uninstall=can_uninstall, available_package_version=Markup(available_package_version)))
     return package_list, package_auth
 
 
@@ -30524,7 +30532,42 @@ def da_send_fax(fax_number, the_file, config, country=None):
     )
     return fax.sid
 
-
+def write_pip_conf():
+    pipconf_file = '/var/www/.pip/pip.conf'
+    pip_urls = list(daconfig.get('pip urls', ['https://pypi.org/simple']))
+    index_url_str = f"index-url = { pip_urls[0] }"
+    trusted_host_str = f"trusted-host = "
+    extra_index_url_str = f"extra-index-url = "
+    extra_urls = set()
+    trusted_hosts = set()
+    for idx, pip_url in enumerate(pip_urls):
+        if idx == 0:
+            index_url_str = f"index-url = { pip_url }"
+        else:
+            extra_urls.add(pip_url)
+        url_hostname = urlparse(pip_url).netloc
+        if '@' in url_hostname:
+            url_hostname = url_hostname.split('@')[1]
+        trusted_hosts.add(url_hostname)
+    
+    trusted_host_str += "\n               ".join(trusted_hosts)
+    if len(extra_urls) > 0:
+        extra_index_url_str += "\n                  ".join(extra_urls)
+    else:
+        extra_index_url_str = ''
+    
+    content = """\
+[global]
+""" + index_url_str + """
+""" + trusted_host_str + """
+""" + extra_index_url_str + """
+"""
+    with open(pipconf_file, 'w', encoding='utf-8') as fp:
+        #logmessage(f"Writing new contents: {content}")
+        fp.write(content)
+    os.chmod(pipconf_file, stat.S_IRUSR | stat.S_IWUSR)
+        
+    
 def write_pypirc():
     pypirc_file = daconfig.get('pypirc path', '/var/www/.pypirc')
     # pypi_username = daconfig.get('pypi username', None)
@@ -31508,6 +31551,7 @@ def initialize():
                     logmessage("There was an error copying the playground modules: " + err.__class__.__name__)
                 write_pypirc()
                 release_lock('init' + hostname, 'init')
+            write_pip_conf()
             try:
                 macro_path = daconfig.get('libreoffice macro file', '/var/www/.config/libreoffice/4/user/basic/Standard/Module1.xba')
                 if os.path.isfile(macro_path) and os.path.getsize(macro_path) != 7167:
@@ -31519,6 +31563,8 @@ def initialize():
                 logmessage("Error was " + err.__class__.__name__ + ' ' + str(err))
             fix_api_keys()
             import_necessary(url, url_root)
+    logmessage('Server Initialized')
+    print('Server Initialized')
 
 initialize()
 

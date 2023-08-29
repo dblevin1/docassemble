@@ -1052,7 +1052,7 @@ def background_action(yaml_filename, user_info, session_code, secret, url, url_r
         url_root = daconfig.get('url root', 'http://localhost') + daconfig.get('root', '/')
     if url is None:
         url = url_root + 'interview'
-    time.sleep(1.0)
+    #time.sleep(1.0)
     worker_controller.initialize()
     worker_controller.functions.reset_local_variables()
     worker_controller.functions.set_uid(session_code)
