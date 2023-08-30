@@ -6,6 +6,7 @@ NC='\033[0m' # No Color
 commit_changes() {
     echo -e "Will commit with message ${RED}'Bump Version: $VERSION → $NEWVERSION'${NC}"
     read -p "Press enter to continue"
+    git add *
     git commit -m "Bump Version: $VERSION → $NEWVERSION"
     git push
     git tag "$NEWVERSION"

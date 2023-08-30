@@ -1,6 +1,24 @@
 # Change Log
 
 <!-- insertion marker -->
+## [1.4.72.1](https://github.com/dblevin1/docassemble/releases/tag/1.4.72.1) - 2023-08-29
+
+<small>[Compare with 1.4.72](https://github.com/dblevin1/docassemble/compare/1.4.72...1.4.72.1)</small>
+
+### Added
+
+- add support for 4th version number ([2e90a74](https://github.com/dblevin1/docassemble/commit/2e90a7494e45923f363e8664b16e04a3fa4e6710) by Daniel Blevins).
+- Add config option to align signatures in pdfs to the left ([8cf9137](https://github.com/dblevin1/docassemble/commit/8cf91374b4dfe7b3033db4277426dd809b966eea) by Daniel Blevins).
+- Add changes to pip to allow the docassemble package to be installed by any repo ([c7bf03c](https://github.com/dblevin1/docassemble/commit/c7bf03c7f943d09730206bcd485ac7a37184508f) by Daniel Blevins).
+
+### Fixed
+
+- fix dafile user_access and privilege_access list ([5a64818](https://github.com/dblevin1/docassemble/commit/5a64818eda67b832b0288403c24ae7de96b01af6) by Daniel Blevins).
+
+### Changed
+
+- Change inspect.stack to the underlying sys._getframe ([cec4eef](https://github.com/dblevin1/docassemble/commit/cec4eef4249f7be4c31fa6c19be1c3ff7e9b56fb) by Daniel Blevins).
+
 ## [1.4.72] - 2023-08-23
 
 ### Changed
