@@ -69,10 +69,10 @@ echo "New Version:$NEWVERSION"
 
 if [[ -f "./CHANGELOG.md" ]]; then
     echo "Adding info to changelog"
-    git-changelog -i -o CHANGELOG.md -lv "v$NEWVERSION"
+    git-changelog -i -o CHANGELOG.md --bump "$NEWVERSION"
 else
     echo "Creating changelog"
-    git-changelog -o CHANGELOG.md -lv "v$NEWVERSION"
+    git-changelog -o CHANGELOG.md --bump "$NEWVERSION"
 fi
 ret=$?
 if [ $ret -ne 0 ]; then
