@@ -1,6 +1,22 @@
 # Change Log
 
 <!-- insertion marker -->
+## [1.4.75.1](https://github.com/dblevin1/docassemble/releases/tag/1.4.75.1) - 2023-09-06
+
+<small>[Compare with 1.4.72.1](https://github.com/dblevin1/docassemble/compare/1.4.72.1...1.4.75.1)</small>
+
+### Fixed
+
+- fix pull_upstream_changes tag getter ([22e3688](https://github.com/dblevin1/docassemble/commit/22e3688698363a515d24754c4e1e71ff25760e71) by Daniel Blevins).
+
+### Changed
+
+- change merge_upstream_changes to prefer our CHANGELOG ([81617a3](https://github.com/dblevin1/docassemble/commit/81617a327a9dae4e9dc4792d69317187af119a18) by Daniel Blevins).
+
+### Merged
+
+- Merge branch 'upstream-latest' ([1b34be4](https://github.com/dblevin1/docassemble/commit/1b34be4d5b890b8827488900abe047c550fed385) by Daniel Blevins).
+
 ## [1.4.72.1](https://github.com/dblevin1/docassemble/releases/tag/1.4.72.1) - 2023-08-29
 
 <small>[Compare with 1.4.72](https://github.com/dblevin1/docassemble/compare/1.4.72...1.4.72.1)</small>
