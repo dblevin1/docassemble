@@ -21,9 +21,17 @@ fi
 current_branch=$(git branch --show-current)
 git fetch origin
 git fetch upstream
-git checkout --detach upstream/master
-doc_version=$(git describe --tags --abbrev=0)
-echo "Using version $doc_version"
-git checkout tags/$doc_version -B upstream-latest
+doc_version_hash=$(git -c 'versionsort.suffix=-' ls-remote --tags --sort='v:refname' upstream | tail --lines=1 | sed -E "s/\s+.*//")
+doc_version=$(git -c 'versionsort.suffix=-' ls-remote --tags --sort='v:refname' upstream | tail --lines=1 | sed -E "s/.*\s*.*v//" | sed "s/\^{}//")
+echo "Using version $doc_version and hash $doc_version_hash"
+if [ -z "$doc_version" ]; then
+    echo "----EXITING, unable to get docassemble tag version-----"
+    exit
+fi
+if [ -z "$doc_version_hash" ]; then
+    echo "----EXITING, unable to get docassemble commit hash-----"
+    exit
+fi
+git checkout $doc_version_hash -B upstream-latest
 git checkout $current_branch
 echo "Branch 'upstream-latest' is now up to date"
