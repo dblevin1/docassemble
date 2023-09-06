@@ -1078,7 +1078,10 @@ def logout():
         if current_user.social_id.startswith('keycloak$') and 'oauth' in daconfig and 'keycloak' in daconfig['oauth'] and 'domain' in daconfig['oauth']['keycloak']:
             if next_url.startswith('/'):
                 next_url = get_base_url() + next_url
-            next_url = ('https://' + daconfig['oauth']['keycloak']['domain'] + '/realms/' + daconfig['oauth']['keycloak']['realm'] + '/protocol/openid-connect/logout?' + urlencode({'post_logout_redirect_uri': next_url}))
+            protocol = daconfig['oauth']['keycloak'].get('protocol', 'https://')
+            if not protocol.endswith('://'):
+                protocol = protocol + '://'
+            next_url = protocol + daconfig['oauth']['keycloak']['domain'] + '/realms/' + daconfig['oauth']['keycloak']['realm'] + '/protocol/openid-connect/logout?' + urlencode({'post_logout_redirect_uri': next_url, 'client_id': daconfig['oauth']['keycloak']['id']})
     docassemble_flask_user.signals.user_logged_out.send(current_app._get_current_object(), user=current_user)
     logout_user()
     delete_session_info()
@@ -1275,6 +1278,9 @@ def add_log_handler():
             time.sleep(1)
             continue
         sys_logger.addHandler(docassemble_log_handler)
+        if os.environ.get('SUPERVISORLOGLEVEL', 'info') == 'debug':
+            stderr_log_handler = logging.StreamHandler(stream=sys.stderr)
+            sys_logger.addHandler(stderr_log_handler)
         break
 
 add_log_handler()
@@ -4832,13 +4838,16 @@ class KeycloakSignIn(OAuthSignIn):
             realm = daconfig['oauth']['keycloak']['realm']
         except:
             realm = None
+        protocol = daconfig['oauth']['keycloak'].get('protocol', 'https://')
+        if not protocol.endswith('://'):
+            protocol = protocol + '://'
         self.service = OAuth2Service(
             name='keycloak',
             client_id=self.consumer_id,
             client_secret=self.consumer_secret,
-            authorize_url='https://' + str(self.consumer_domain) + '/realms/' + str(realm) + '/protocol/openid-connect/auth',
-            access_token_url='https://' + str(self.consumer_domain) + '/realms/' + str(realm) + '/protocol/openid-connect/token',
-            base_url='https://' + str(self.consumer_domain)
+            authorize_url=protocol + str(self.consumer_domain) + '/realms/' + str(realm) + '/protocol/openid-connect/auth',
+            access_token_url=protocol + str(self.consumer_domain) + '/realms/' + str(realm) + '/protocol/openid-connect/token',
+            base_url=protocol + str(self.consumer_domain)
         )
 
     def authorize(self):
@@ -4865,9 +4874,16 @@ class KeycloakSignIn(OAuthSignIn):
         social_id = 'keycloak$' + str(user_id)
         username = me.get('preferred_username')
         email = me.get('email')
+        if email is None and '@' in username:
+            email = username
         if user_id is None or username is None or email is None:
             raise DAException("Error: could not get necessary information from keycloak")
-        return social_id, username, email, {'name': me.get('name', None)}
+        info_dict = {'name': me.get('name', None)}
+        if 'given_name' in me:
+            info_dict['first_name'] = me.get('given_name')
+        if 'family_name' in me:
+            info_dict['last_name'] = me.get('family_name')
+        return social_id, username, email, info_dict
 
 
 class TwitterSignIn(OAuthSignIn):
@@ -7584,7 +7600,7 @@ def index(action_argument=None, refer=None):
             elif known_datatypes[orig_key] in ('object', 'object_radio'):
                 if raw_data == '' or set_to_empty:
                     continue
-                if data == 'None':
+                if raw_data == 'None':
                     data = 'None'
                 else:
                     data = "_internal['objselections'][" + repr(key) + "][" + repr(raw_data) + "]"
@@ -30972,7 +30988,7 @@ def applock(action, application, maxtime=4):
 
 @app.errorhandler(CSRFError)
 def handle_csrf_error(the_error):
-    if request.method == 'POST':
+    if request.method == 'POST' and '/checkout' not in request.url:
         setup_translation()
         if 'ajax' in request.form and int(request.form['ajax']):
             flash(word("Input not processed because the page expired."), "success")

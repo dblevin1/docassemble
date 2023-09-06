@@ -13,6 +13,21 @@ Feature: Example interviews
   #   And I wait 2 seconds
   #   Then I should see the phrase "Here is the file you uploaded"
 
+  Scenario: Test the interview "Displaying progress"
+    Given I start the interview "docassemble.demo:data/questions/examples/background-tail.yml"
+    Then I should see the phrase "How much shall I add to 553?"
+    And I set "Number" to "2"
+    And I click the button "Continue"
+    And I wait 7 seconds
+    Then I should see the phrase "Waking up"
+    And I wait 12 seconds
+    Then I should see the phrase "Ok, I am awake now."
+    And I wait 18 seconds
+    Then I should see the phrase "I did the hard work."
+    And I wait 18 seconds
+    Then I should see the phrase "Ok, I am done"
+    And I should see the phrase "The answer is 555."
+
   Scenario: Test the interview "Preview"
     Given I start the interview "docassemble.demo:data/questions/examples/preview.yml"
     Then I should see the phrase "The food section"
@@ -7471,7 +7486,7 @@ Feature: Example interviews
     Then I should see the phrase "Sorry, we have encountered an error."
 
   Scenario: Test the interview "Error help" 1
-    Given I start the interview "docassemble.base:data/questions/examples/error-help-language.yml"
+    Given I start the possibly error-producing interview "docassemble.base:data/questions/examples/error-help-language.yml"
     Then I should explicitly see the phrase "We are sorry. An error has occurred."
 
   Scenario: Test the interview "Object radio buttons" 1
@@ -7986,21 +8001,6 @@ Feature: Example interviews
     And I click the button "Continue"
     Then I should see the phrase "I will send your bill to 211 S 11th St, Philadelphia, PA 19107."
     And I should see the phrase "I will ship your order to 222 S 13th St, Philadelphia, PA 19107."
-
-  Scenario: Test the interview "Displaying progress"
-    Given I start the interview "docassemble.demo:data/questions/examples/background-tail.yml"
-    Then I should see the phrase "How much shall I add to 553?"
-    And I set "Number" to "2"
-    And I click the button "Continue"
-    And I wait 7 seconds
-    Then I should see the phrase "Waking up"
-    And I wait 12 seconds
-    Then I should see the phrase "Ok, I am awake now."
-    And I wait 18 seconds
-    Then I should see the phrase "I did the hard work."
-    And I wait 18 seconds
-    Then I should see the phrase "Ok, I am done"
-    And I should see the phrase "The answer is 555."
 
   Scenario: Test the interview "DOCX properties"
     Given I start the interview "docassemble.demo:data/questions/examples/docxproperties.yml"
@@ -9132,8 +9132,9 @@ Feature: Example interviews
     Then I should see the phrase "number_of_fruit in the other session is now 2."
     And I click the link "Visit other session"
     And I switch to the new tab
-    Then I should see the phrase "There are 2 fruit."
-    And I should see the phrase "Your favorite fruit is apple."
+    Then I should explicitly see the phrase "There are 2 fruit."
+    And I should explicitly see the phrase "Your favorite fruit is apple."
+    And I close the tab
 
   Scenario: Test the interview "Ajax Combobox"
     Given I start the interview "docassemble.base:data/questions/examples/fields-ajax-2.yml"
