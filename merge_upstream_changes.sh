@@ -48,6 +48,8 @@ git-resolve-conflict --theirs docassemble_webapp/docassemble/webapp/__init__.py
 git-resolve-conflict --theirs docassemble_webapp/docassemble/webapp/setup.py
 git-resolve-conflict --theirs Docker/VERSION
 git-resolve-conflict --theirs docassemble_webapp/docassemble/webapp/data/VERSION.txt
+git-resolve-conflict --ours CHANGELOG.md
+#sed -i '1s;^;Merge ;' .git/SQUASH_MSG
 echo "-----Status Remaining------"
 git status -s
 echo "----------Done-------------"
