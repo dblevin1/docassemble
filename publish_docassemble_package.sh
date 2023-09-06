@@ -1,12 +1,35 @@
 #!/usr/bin/bash
 
+function stopfunc {
+	cd $SCRIPT_DIR
+	#find . -name "dist" -type d -exec rm -r "{}" \;
+	find . -name "*egg-info" -type d -exec rm -r "{}" \;
+    exit 0
+}
+
+trap stopfunc SIGINT SIGTERM
+
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
-install_upload() {
-    echo "Installing and Uploading ${pwd}"
+install() {
+    echo 
+    echo "------Installing $(pwd)--------"
     pip install --editable .
-    python setup.py sdist
+    ret=$?
+    if [ $ret -ne 0 ]; then
+        echo -e "${RED}Exiting pip install failed${NC}"
+        exit $ret
+    fi
+    python setup.py sdist 1>/dev/null
+    ret=$?
+    if [ $ret -ne 0 ]; then
+        echo -e "${RED}Exiting python setup failed${NC}"
+        exit $ret
+    fi
+}
+upload() {
+    echo "------Uploading $(pwd)--------"
     twine upload --config-file "$config_file_loc" --non-interactive dist/*
     ret=$?
     if [ $ret -ne 0 ]; then
@@ -14,6 +37,7 @@ install_upload() {
         exit $ret
     fi
     rm -r dist *egg-info .eggs 2>/dev/null
+
 }
 
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
@@ -31,18 +55,29 @@ if [[ ! -f $config_file_loc ]]; then
     exit
 fi
 
-if [ ! -z "$(git status -s)" ]; then
-    echo "----EXITING, uncommitted changes found-----"
-    exit
-fi
-
+pip --version
+pip install ./docassemble
 cd docassemble
-install_upload
+python setup.py sdist 1>/dev/null
+
 cd ../docassemble_base
-install_upload
+install
 cd ../docassemble_demo
-install_upload
+install
 cd ../docassemble_webapp
-install_upload
+install
+
+echo
+echo
+echo "----------Done installing starting upload------------"
+read -p "Press enter to continue"
+cd ../docassemble
+upload
+cd ../docassemble_base
+upload
+cd ../docassemble_demo
+upload
+cd ../docassemble_webapp
+upload
 
 exit 0
