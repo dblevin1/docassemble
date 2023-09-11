@@ -256,7 +256,8 @@ do
 	 "$file" = "wc_side_of_bed" -o \
 	 "$file" = "with-mandatory" -o \
 	 "$file" = "with-mandatory-tweak-a" -o \
-	 "$file" = "with-mandatory-tweak-b" ]
+	 "$file" = "with-mandatory-tweak-b" -o \
+         "$file" = "upload-handler" ]
     then
 	continue
     fi
@@ -299,6 +300,9 @@ do
     elif [ "$file" = "review-1" -o "$file" = "review-2" -o "$file" = "review-3" -o "$file" = "resume-button-label" -o "$file" = "review-5" -o "$file" = "review-6" ]
     then
 	echo -e -n "\n    And I set the text box to \"apple\"\n    And I click the button \"Continue\"\n    And I set the text box to \"turnip\"\n    And I click the button \"Continue\"\n    And I select \"Review Answers\" from the menu\n    And I save a screenshot to \"$tempfile\"" >> $featurefile
+    elif [ "$file" = "review-tabular" -o "$file" = "review-tabular-class" ]
+    then
+	echo -e -n "\n    And I set the text box to \"apple\"\n    And I click the button \"Continue\"\n    And I set the text box to \"turnip\"\n    And I click the button \"Continue\"\n    And I set the text box to \"button mushrooms\"\n    And I click the button \"Continue\"\n    And I select \"Review Answers\" from the menu\n    And I save a screenshot to \"$tempfile\"" >> $featurefile
     elif [ "$file" = "review-4" ]
     then
 	echo -e -n "\n    And I set the text box to \"apple\"\n    And I click the button \"Continue\"\n    And I select \"Review Answers\" from the menu\n    And I save a screenshot to \"$tempfile\"" >> $featurefile

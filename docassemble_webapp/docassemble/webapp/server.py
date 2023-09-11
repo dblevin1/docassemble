@@ -49,7 +49,7 @@ import docassemble.webapp.setup
 from docassemble.webapp.setup import da_version
 import docassemble.base.astparser
 from docassemble.webapp.api_key import encrypt_api_key
-from docassemble.base.error import DAError, DAErrorNoEndpoint, DAErrorMissingVariable, DAErrorCompileError, DAValidationError, DAException
+from docassemble.base.error import DAError, DAErrorNoEndpoint, DAErrorMissingVariable, DAErrorCompileError, DAValidationError, DAException, DANotFoundError
 import docassemble.base.functions
 from docassemble.base.functions import get_default_timezone, ReturnValue, word
 import docassemble.base.DA
@@ -4838,7 +4838,10 @@ class KeycloakSignIn(OAuthSignIn):
             realm = daconfig['oauth']['keycloak']['realm']
         except:
             realm = None
-        protocol = daconfig['oauth']['keycloak'].get('protocol', 'https://')
+        try:
+            protocol = daconfig['oauth']['keycloak']['protocol']
+        except KeyError:
+            protocol = 'https://'
         if not protocol.endswith('://'):
             protocol = protocol + '://'
         self.service = OAuth2Service(
@@ -7017,7 +7020,6 @@ def index(action_argument=None, refer=None):
             exec(list_collect_list + '._allow_appending()', user_dict)
         for checkbox_field, checkbox_value in field_info['checkboxes'].items():
             if checkbox_field in visible_fields and checkbox_field not in post_data and not (checkbox_field in numbered_fields and numbered_fields[checkbox_field] in post_data):
-                checkbox_field_to_use = checkbox_field
                 for k, v in known_varnames_visible.items():
                     if v == checkbox_field:
                         checkbox_field = k
@@ -7434,7 +7436,7 @@ def index(action_argument=None, refer=None):
                 data = "int(" + repr(raw_data) + ")"
             elif known_datatypes[real_key] in ('ml', 'mlarea'):
                 is_ml = True
-                data = raw_data
+                data = "None"
             elif known_datatypes[real_key] in ('number', 'float', 'currency', 'range'):
                 raw_data = raw_data.replace('%', '')
                 raw_data = raw_data.replace(',', '')
@@ -7589,7 +7591,7 @@ def index(action_argument=None, refer=None):
                 data = "int(" + repr(raw_data) + ")"
             elif known_datatypes[orig_key] in ('ml', 'mlarea'):
                 is_ml = True
-                data = raw_data
+                data = "None"
             elif known_datatypes[orig_key] in ('number', 'float', 'currency', 'range'):
                 raw_data = raw_data.replace(',', '')
                 raw_data = raw_data.replace('%', '')
@@ -7672,9 +7674,9 @@ def index(action_argument=None, refer=None):
             else:
                 use_for_training = 'True'
             if orig_key in ml_info and 'group_id' in ml_info[orig_key]:
-                data = 'docassemble.base.util.DAModel(' + repr(key_tr) + ', group_id=' + repr(ml_info[orig_key]['group_id']) + ', text=' + repr(data) + ', store=' + repr(interview.get_ml_store()) + ', use_for_training=' + use_for_training + ')'
+                data = 'docassemble.base.util.DAModel(' + repr(key_tr) + ', group_id=' + repr(ml_info[orig_key]['group_id']) + ', text=' + repr(raw_data) + ', store=' + repr(interview.get_ml_store()) + ', use_for_training=' + use_for_training + ')'
             else:
-                data = 'docassemble.base.util.DAModel(' + repr(key_tr) + ', text=' + repr(data) + ', store=' + repr(interview.get_ml_store()) + ', use_for_training=' + use_for_training + ')'
+                data = 'docassemble.base.util.DAModel(' + repr(key_tr) + ', text=' + repr(raw_data) + ', store=' + repr(interview.get_ml_store()) + ', use_for_training=' + use_for_training + ')'
         if set_to_empty:
             if set_to_empty in ('multiselect', 'checkboxes'):
                 try:
@@ -7760,9 +7762,15 @@ def index(action_argument=None, refer=None):
             for tableName, changes in orderChanges.items():
                 tableName = myb64unquote(tableName)
                 # if STRICT_MODE and tableName not in authorized_fields:
-                #    raise DAError("The variable " + repr(tableName) + " was not in the allowed fields, which were " + repr(authorized_fields))
+                #     raise DAError("The variable " + repr(tableName) + " was not in the allowed fields, which were " + repr(authorized_fields))
                 if illegal_variable_name(tableName):
                     error_messages.append(("error", "Error: Invalid character in table reorder: " + str(tableName)))
+                    continue
+                try:
+                    the_table_list = eval(tableName, user_dict)
+                    assert isinstance(the_table_list, DAList)
+                except:
+                    error_messages.append(("error", "Error: Invalid table: " + str(tableName)))
                     continue
                 for item in changes:
                     if not (isinstance(item, list) and len(item) == 2 and isinstance(item[0], int) and isinstance(item[1], int)):
@@ -8110,14 +8118,10 @@ def index(action_argument=None, refer=None):
                 if not isinstance(item, int):
                     is_ok = False
             if is_ok:
-                if not illegal_variable_name(list_collect_list):
-                    exec(list_collect_list + ' ._remove_items_by_number(' + ', '.join(map(str, to_delete)) + ')', user_dict)
-                    changed = True
+                exec(list_collect_list + ' ._remove_items_by_number(' + ', '.join(map(str, to_delete)) + ')', user_dict)
+                changed = True
         if '_collect' in post_data and list_collect_list is not None:
             collect = json.loads(myb64unquote(post_data['_collect']))
-            # if STRICT_MODE and collect['list'] not in authorized_fields:
-            #     raise DAError("The variable " + repr(collect['list']) + " was not in the allowed fields, which were " + repr(authorized_fields))
-            # if not illegal_variable_name(collect['list']):
             if collect['function'] == 'add':
                 add_action_to_stack(interview_status, user_dict, '_da_list_add', {'list': list_collect_list, 'complete': False})
         if list_collect_list is not None:
@@ -19014,6 +19018,9 @@ def config_page():
         if form.submit.data and form.config_content.data:
             try:
                 standardyaml.load(form.config_content.data, Loader=standardyaml.FullLoader)
+                yml = ruamel.yaml.YAML()
+                yml.allow_duplicate_keys = False
+                yml.load(form.config_content.data)
             except Exception as errMess:
                 ok = False
                 content = form.config_content.data
@@ -22757,7 +22764,7 @@ def server_error(the_error):
     else:
         the_history = None
     the_vars = None
-    if isinstance(the_error, DAError):
+    if isinstance(the_error, (DAError, DANotFoundError)):
         errmess = str(the_error)
         the_trace = None
         logmessage(errmess)
@@ -22791,6 +22798,8 @@ def server_error(the_error):
         logmessage(the_trace)
     if isinstance(the_error, DAError):
         error_code = the_error.error_code
+    if isinstance(the_error, DANotFoundError):
+        error_code = 404
     elif isinstance(the_error, werkzeug.exceptions.HTTPException):
         error_code = the_error.code
     else:
