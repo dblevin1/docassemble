@@ -1,6 +1,16 @@
 # Change Log
 
 <!-- insertion marker -->
+## [1.4.77.1](https://github.com/dblevin1/docassemble/releases/tag/1.4.77.1) - 2023-09-11
+
+<small>[Compare with 1.4.75.1](https://github.com/dblevin1/docassemble/compare/1.4.75.1...1.4.77.1)</small>
+
+### Merged
+
+- Merge branch 'upstream-latest' ([7e730c5](https://github.com/dblevin1/docassemble/commit/7e730c5689fa6e1de9514599d543c47ae22370ff) by Daniel Blevins).
+- Merge pull request #680 from BryceStevenWilley/watchdog_main ([a14dd6d](https://github.com/dblevin1/docassemble/commit/a14dd6dead09c5be68be1d1c2d0f8e7f0a26d8ff) by Jonathan Pyle).
+- Merge pull request #682 from dblevin1/fix-file-access-list ([bb8dc94](https://github.com/dblevin1/docassemble/commit/bb8dc9443884b55042b72e3b7ab51401a6806a6c) by Jonathan Pyle).
+
 ## [1.4.75.1](https://github.com/dblevin1/docassemble/releases/tag/1.4.75.1) - 2023-09-06
 
 <small>[Compare with 1.4.72.1](https://github.com/dblevin1/docassemble/compare/1.4.72.1...1.4.75.1)</small>
