@@ -1,6 +1,14 @@
 # Change Log
 
 <!-- insertion marker -->
+## [1.4.77.2](https://github.com/dblevin1/docassemble/releases/tag/1.4.77.2) - 2023-09-18
+
+<small>[Compare with 1.4.77.1](https://github.com/dblevin1/docassemble/compare/1.4.77.1...1.4.77.2)</small>
+
+### Fixed
+
+- fix restart session error when session doesn't exist anymore ([fd989bf](https://github.com/dblevin1/docassemble/commit/fd989bff91a988b1cd5aea3a0e260bfc8114fb99) by Daniel Blevins).
+
 ## [1.4.77.1](https://github.com/dblevin1/docassemble/releases/tag/1.4.77.1) - 2023-09-11
 
 <small>[Compare with 1.4.75.1](https://github.com/dblevin1/docassemble/compare/1.4.75.1...1.4.77.1)</small>
