@@ -5819,7 +5819,10 @@ def restart_session():
         steps, user_dict, is_encrypted = fetch_user_dict(session_id, yaml_filename, secret=secret)  # pylint: disable=unused-variable
     except:
         return redirect(url_for('index', i=yaml_filename))
-    url_args = user_dict['url_args']
+    if user_dict and 'url_args' in user_dict:
+        url_args = user_dict['url_args']
+    else:
+        url_args = {}
     url_args['reset'] = '1'
     url_args['i'] = yaml_filename
     return redirect(url_for('index', **url_args))
