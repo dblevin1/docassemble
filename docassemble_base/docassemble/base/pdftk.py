@@ -208,6 +208,9 @@ def fill_template(template, data_strings=None, data_names=None, hidden=None, rea
     data_dict = {}
     for key, val in data_strings:
         data_dict[key] = val
+        m = re.search(r'\[FILEPATH ([^\]]+)\]', val)
+        if m:
+            images.append((key, {'fullpath': m.group(1)}))
     pdf_file = tempfile.NamedTemporaryFile(prefix="datemp", mode="wb", suffix=".pdf", delete=False)
     if pdfa or not editable:
         fdf = Xfdf(pdf_url, data_dict)
