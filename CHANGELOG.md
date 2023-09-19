@@ -1,6 +1,14 @@
 # Change Log
 
 <!-- insertion marker -->
+## [1.4.77.3](https://github.com/dblevin1/docassemble/releases/tag/1.4.77.3) - 2023-09-19
+
+<small>[Compare with 1.4.77.2](https://github.com/dblevin1/docassemble/compare/1.4.77.2...1.4.77.3)</small>
+
+### Added
+
+- add support for a custom filepath to use in pdf signatures ([3963c48](https://github.com/dblevin1/docassemble/commit/3963c487ea6d409ae76373931a4d2281c9487890) by Daniel Blevins).
+
 ## [1.4.77.2](https://github.com/dblevin1/docassemble/releases/tag/1.4.77.2) - 2023-09-18
 
 <small>[Compare with 1.4.77.1](https://github.com/dblevin1/docassemble/compare/1.4.77.1...1.4.77.2)</small>
