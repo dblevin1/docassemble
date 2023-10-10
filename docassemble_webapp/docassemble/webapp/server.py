@@ -3224,48 +3224,48 @@ def make_navbar(status, steps, show_login, chat_info, debug_mode, index_params, 
         navbar += '<li hidden class="nav-item dainvisible" role="presentation"><button class="btn btn-link nav-link dahelptrigger da-no-outline" id="dahelptoggle" data-bs-target="#dahelp" data-bs-toggle="tab" role="tab">' + word('Help') + '</button></li>'
     navbar += '<li hidden class="nav-item dainvisible" id="daPhoneAvailable"><button data-bs-target="#dahelp" data-bs-toggle="tab" role="tab" title=' + json.dumps(phone_message) + ' class="btn btn-link nav-link dapointer dahelptrigger da-no-outline"><i class="fas fa-phone da-chat-active"></i><span class="visually-hidden">' + phone_sr + '</span></button></li>' + \
               '<li class="nav-item dainvisible" id="daChatAvailable"><button data-bs-target="#dahelp" data-bs-toggle="tab" class="btn btn-link nav-link dapointer dahelptrigger da-no-outline"><i class="fas fa-comment-alt"></i><span class="visually-hidden">' + chat_sr + '</span></button></li></ul>'
-    navbar += """
+    if not status.question.interview.options.get('hide corner interface', False):
+        navbar += """
           <button id="damobile-toggler" type="button" class="navbar-toggler ms-auto" data-bs-toggle="collapse" data-bs-target="#danavbar-collapse">
             <span class="navbar-toggler-icon"></span><span class="visually-hidden">""" + word("Display the menu") + """</span>
           </button>
           <div class="collapse navbar-collapse" id="danavbar-collapse">
             <ul class="navbar-nav ms-auto">
 """
-    navbar += status.nav_item
-    if 'menu_items' in status.extras:
-        if not isinstance(status.extras['menu_items'], list):
-            custom_menu = '<a tabindex="-1" class="dropdown-item">' + word("Error: menu_items is not a Python list") + '</a>'
-        elif len(status.extras['menu_items']) > 0:
-            custom_menu = ""
-            for menu_item in status.extras['menu_items']:
-                if not (isinstance(menu_item, dict) and 'url' in menu_item and 'label' in menu_item):
-                    custom_menu += '<a tabindex="-1" class="dropdown-item">' + word("Error: menu item is not a Python dict with keys of url and label") + '</li>'
-                else:
-                    screen_size = menu_item.get('screen_size', '')
-                    if screen_size == 'small':
-                        menu_item_classes = ' d-block d-md-none'
-                    elif screen_size == 'large':
-                        menu_item_classes = ' d-none d-md-block'
+        navbar += status.nav_item
+        if 'menu_items' in status.extras:
+            if not isinstance(status.extras['menu_items'], list):
+                custom_menu = '<a tabindex="-1" class="dropdown-item">' + word("Error: menu_items is not a Python list") + '</a>'
+            elif len(status.extras['menu_items']) > 0:
+                custom_menu = ""
+                for menu_item in status.extras['menu_items']:
+                    if not (isinstance(menu_item, dict) and 'url' in menu_item and 'label' in menu_item):
+                        custom_menu += '<a tabindex="-1" class="dropdown-item">' + word("Error: menu item is not a Python dict with keys of url and label") + '</li>'
                     else:
-                        menu_item_classes = ''
-                    match_action = re.search(r'^\?action=([^\&]+)', menu_item['url'])
-                    if match_action:
-                        custom_menu += '<a class="dropdown-item' + menu_item_classes + '" data-embaction="' + match_action.group(1) + '" href="' + menu_item['url'] + '">' + menu_item['label'] + '</a>'
-                    else:
-                        custom_menu += '<a class="dropdown-item' + menu_item_classes + '" href="' + menu_item['url'] + '">' + menu_item['label'] + '</a>'
+                        screen_size = menu_item.get('screen_size', '')
+                        if screen_size == 'small':
+                            menu_item_classes = ' d-block d-md-none'
+                        elif screen_size == 'large':
+                            menu_item_classes = ' d-none d-md-block'
+                        else:
+                            menu_item_classes = ''
+                        match_action = re.search(r'^\?action=([^\&]+)', menu_item['url'])
+                        if match_action:
+                            custom_menu += '<a class="dropdown-item' + menu_item_classes + '" data-embaction="' + match_action.group(1) + '" href="' + menu_item['url'] + '">' + menu_item['label'] + '</a>'
+                        else:
+                            custom_menu += '<a class="dropdown-item' + menu_item_classes + '" href="' + menu_item['url'] + '">' + menu_item['label'] + '</a>'
+            else:
+                custom_menu = ""
         else:
             custom_menu = ""
-    else:
-        custom_menu = ""
-    if ALLOW_REGISTRATION:
-        sign_in_text = word('Sign in or sign up to save answers')
-    else:
-        sign_in_text = word('Sign in to save answers')
-    if daconfig.get('resume interview after login', False):
-        login_url = url_for('user.login', next=url_for('index', **index_params))
-    else:
-        login_url = url_for('user.login')
-    if not status.question.interview.options.get('hide corner interface', False):
+        if ALLOW_REGISTRATION:
+            sign_in_text = word('Sign in or sign up to save answers')
+        else:
+            sign_in_text = word('Sign in to save answers')
+        if daconfig.get('resume interview after login', False):
+            login_url = url_for('user.login', next=url_for('index', **index_params))
+        else:
+            login_url = url_for('user.login')
         admin_menu = ''
         if not status.question.interview.options.get('hide standard menu', False):
             for item in app.config['ADMIN_INTERVIEWS']:
@@ -3338,8 +3338,9 @@ def make_navbar(status, steps, show_login, chat_info, debug_mode, index_params, 
             </ul>"""
         if daconfig.get('login link style', 'normal') == 'button' and show_login and current_user.is_anonymous and not custom_menu:
             navbar += '\n            <a class="btn btn-' + BUTTON_COLOR_NAV_LOGIN + ' btn-sm mb-0 ms-3 d-none d-md-block" href="' + login_url + '">' + word('Sign in') + '</a>'
+        navbar += """
+          </div>"""
     navbar += """
-          </div>
         </div>
       </div>
     </div>
@@ -11787,6 +11788,7 @@ def index(action_argument=None, refer=None):
         }
         daShowIfInProcess = true;
         var daTriggerQueries = [];
+        var daInputsSeen = {};
         function daOnlyUnique(value, index, self){
           return self.indexOf(value) === index;
         }
@@ -11894,14 +11896,19 @@ def index(action_argument=None, refer=None):
                     });
                   }
                 }
-                var daThis = this;
+                var leader = false;
                 if (!daShowIfInProcess){
                   daShowIfInProcess = true;
-                  $(":input").not("[type='file']").each(function(){
-                    if (this != daThis){
-                      $(this).trigger('change');
-                    }
-                  });
+                  daInputsSeen = {};
+                  leader = true;
+                }
+                $(showIfDiv).find(":input").not("[type='file']").each(function(){
+                  if (!daInputsSeen.hasOwnProperty($(this).attr('id'))){
+                    $(this).trigger('change');
+                  }
+                  daInputsSeen[$(this).attr('id')] = true;
+                });
+                if (leader){
                   daShowIfInProcess = false;
                 }
               };
@@ -12006,7 +12013,7 @@ def index(action_argument=None, refer=None):
                   }
                 }
               }
-              //console.log("this is " + $(this).attr('id') + " and saveAs is " + atou(saveAs) + " and showIfVar is " + atou(showIfVar) + " and val is " + String(theVal) + " and showIfVal is " + String(showIfVal));
+              // console.log("There was a trigger on " + $(this).attr('id') + ". This handler was installed based on varName " + varName + ", showIfVar " + atou(showIfVar) + ". This handler was installed for the benefit of the .dashowif div encompassing the field for " + atou(saveAs) + ". The comparison value is " + String(showIfVal) + " and the current value of the element on the screen is " + String(theVal) + ".");
               if(daShowIfCompare(theVal, showIfVal)){
                 if (showIfSign){
                   if ($(showIfDiv).data('isVisible') != '1'){
@@ -12078,14 +12085,19 @@ def index(action_argument=None, refer=None):
                   }
                 }
               }
-              var daThis = this;
+              var leader = false;
               if (!daShowIfInProcess){
                 daShowIfInProcess = true;
-                $(":input").not("[type='file']").each(function(){
-                  if (this != daThis){
-                    $(this).trigger('change');
-                  }
-                });
+                daInputsSeen = {};
+                leader = true;
+              }
+              $(showIfDiv).find(":input").not("[type='file']").each(function(){
+                if (!daInputsSeen.hasOwnProperty($(this).attr('id'))){
+                  $(this).trigger('change');
+                }
+                daInputsSeen[$(this).attr('id')] = true;
+              });
+              if (leader){
                 daShowIfInProcess = false;
               }
             };
@@ -12629,7 +12641,11 @@ def index(action_argument=None, refer=None):
             populate_social(social, interview.consolidated_metadata['social'])
         standard_header_start = standard_html_start(interview_language=interview_language, debug=debug_mode, bootstrap_theme=bootstrap_theme, page_title=interview_status.title, social=social, yaml_filename=yaml_filename)
     if interview_status.question.question_type == "signature":
-        interview_status.extra_scripts.append('<script>$( document ).ready(function() {daInitializeSignature();});</script>')
+        if 'pen color' in interview_status.extras and 0 in interview_status.extras['pen color']:
+            pen_color = interview_status.extras['pen color'][0].strip()
+        else:
+            pen_color = '#000'
+        interview_status.extra_scripts.append('<script>$( document ).ready(function() {daInitializeSignature(' + json.dumps(pen_color) + ');});</script>')
         if interview.options.get('hide navbar', False):
             bodyclass = "dasignature navbarhidden"
         else:
@@ -14880,6 +14896,7 @@ def observer():
         });
         daShowIfInProcess = true;
         var daTriggerQueries = [];
+        var daInputsSeen = {};
         function daOnlyUnique(value, index, self){
           return self.indexOf(value) === index;
         }
@@ -14987,14 +15004,19 @@ def observer():
                     });
                   }
                 }
-                var daThis = this;
+                var leader = false;
                 if (!daShowIfInProcess){
                   daShowIfInProcess = true;
-                  $(":input").not("[type='file']").each(function(){
-                    if (this != daThis){
-                      $(this).trigger('change');
-                    }
-                  });
+                  daInputsSeen = {};
+                  leader = true;
+                }
+                $(showIfDiv).find(":input").not("[type='file']").each(function(){
+                  if (!daInputsSeen.hasOwnProperty($(this).attr('id'))){
+                    $(this).trigger('change');
+                  }
+                  daInputsSeen[$(this).attr('id')] = true;
+                });
+                if (leader){
                   daShowIfInProcess = false;
                 }
               };
@@ -15171,14 +15193,19 @@ def observer():
                   }
                 }
               }
-              var daThis = this;
+              var leader = false;
               if (!daShowIfInProcess){
                 daShowIfInProcess = true;
-                $(":input").not("[type='file']").each(function(){
-                  if (this != daThis){
-                    $(this).trigger('change');
-                  }
-                });
+                daInputsSeen = {};
+                leader = true;
+              }
+              $(showIfDiv).find(":input").not("[type='file']").each(function(){
+                if (!daInputsSeen.hasOwnProperty($(this).attr('id'))){
+                  $(this).trigger('change');
+                }
+                daInputsSeen[$(this).attr('id')] = true;
+              });
+              if (leader){
                 daShowIfInProcess = false;
               }
             };
@@ -22119,6 +22146,9 @@ def playground_page():
                     files = sorted([{'name': f, 'modtime': os.path.getmtime(os.path.join(the_directory, f))} for f in os.listdir(the_directory) if os.path.isfile(os.path.join(the_directory, f)) and re.search(r'^[A-Za-z0-9].*[A-Za-z]$', f)], key=lambda x: x['name'])
                     file_listing = [x['name'] for x in files]
                     assign_opacity(files)
+                if active_file == form.original_playground_name.data:
+                    active_file = the_file
+                    set_variable_file(current_project, active_file)
             the_time = formatted_current_time()
             should_save = True
             the_content = re.sub(r'\r\n', r'\n', form.playground_content.data)
@@ -29929,7 +29959,18 @@ def manage_api():
             if not success:
                 flash(word("Could not create new key"), 'error')
                 return render_template('pages/manage_api.html', **argu)
-            argu['description'] = Markup(word("Your new API key, known internally as <strong>%s</strong>, is:<br />%s<br />") % (form.name.data, "<code>" + api_key + "</code>") + word("<strong>This is the only time you will be able to see your API key</strong>, so make sure to make a note of it and keep it in a secure place."))
+            argu['description'] = Markup(
+                    """<div class="card text-bg-light mb-3">
+                      <div class="card-body">
+                        <p class="card-text">
+                        """ + (word("Your new API key, known internally as <strong>%s</strong>, is:<br />%s<br />") % (form.name.data, '<br /><span class="text-success"><i class="fa-solid fa-check"></i></span> <code id="daApiKey">' + api_key + '</code><wbr /><button aria-label=' + json.dumps(word("Copy API key")) + ' onclick="daCopyToClipboard()" class="btn btn-link ps-1 pt-1" type="button"><i class="fa-regular fa-copy"></i></button>')) + """
+                        </p>
+                        <p class="card-text">
+                      """ + word("<strong>This is the only time you will be able to see your API key</strong>, so make sure to make a note of it and keep it in a secure place.") + """
+                        </p>
+                      </div>
+                    </div>""")
+
         elif action == 'edit':
             argu['title'] = word("Edit API Key")
             argu['tab_title'] = argu['title']

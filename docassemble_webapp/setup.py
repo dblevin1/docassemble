@@ -10,9 +10,9 @@ setup_requires = [
     'enum34==1.1.10'
     ]
 install_requires = [
-    'docassemble==1.4.77.3',
-    'docassemble.base==1.4.77.3',
-    'docassemble.demo==1.4.77.3',
+    'docassemble==1.4.81',
+    'docassemble.base==1.4.81',
+    'docassemble.demo==1.4.81',
     "3to2==1.1.1",
     "aiohttp==3.8.5",
     "aiohttp-retry==2.8.3",
@@ -62,7 +62,7 @@ install_requires = [
     "configparser==6.0.0",
     "convertapi==1.7.0",
     "crayons==0.4.0",
-    "cryptography==41.0.3",
+    "cryptography==41.0.4",
     "cssselect2==0.7.0",
     "defusedxml==0.7.1",
     "Deprecated==1.2.14",
@@ -169,7 +169,7 @@ install_requires = [
     "pdfminer.six==20221105",
     "phonenumbers==8.13.17",
     "pikepdf==8.2.0",
-    "Pillow==10.0.0",
+    "Pillow==10.0.1",
     "pkginfo==1.9.6",
     "pluggy==1.2.0",
     "ply==3.11",
@@ -280,7 +280,7 @@ install_requires = [
 ]
 
 setup(name='docassemble.webapp',
-      version='1.4.77.3',
+      version='1.4.81',
       python_requires='>=3.9',
       description=('The web application components of the docassemble system.'),
       long_description=read("README.md"),
