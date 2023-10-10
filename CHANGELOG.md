@@ -1,6 +1,27 @@
 # Change Log
 
 <!-- insertion marker -->
+## [1.4.81.1](https://github.com/dblevin1/docassemble/releases/tag/1.4.81.1) - 2023-10-10
+
+<small>[Compare with 1.4.77.3](https://github.com/dblevin1/docassemble/compare/1.4.77.3...1.4.81.1)</small>
+
+### Added
+
+- added missing error message for datatype number pattern regex ([3f55ec9](https://github.com/dblevin1/docassemble/commit/3f55ec9aaff2dbc99df899319ba5046bd53b1915) by Jonathan Pyle).
+- Added correct line numbers in errors ([a305e8b](https://github.com/dblevin1/docassemble/commit/a305e8b8d6bc0d9ec39cc88fd46182ccd7dfd610) by Bryce Willey).
+
+### Merged
+
+- Merge branch 'upstream-latest' ([d12e785](https://github.com/dblevin1/docassemble/commit/d12e785f0cf8179816f364c1e80d7726cfaf572d) by Daniel Blevins).
+- Merge branch 'master' of github.com:jhpyle/docassemble ([efc8de7](https://github.com/dblevin1/docassemble/commit/efc8de704e3aae9e646b26c3e7e1c082773d5e97) by Jonathan Pyle).
+- Merge pull request #695 from nonprofittechy/api-key ([16e7ecf](https://github.com/dblevin1/docassemble/commit/16e7ecfcf6777a772521754cc409eae7b516184c) by Jonathan Pyle).
+- Merge pull request #697 from jhpyle/dependabot/pip/docassemble_base/pillow-10.0.1 ([642843d](https://github.com/dblevin1/docassemble/commit/642843d3d4c579188f49e61694a3b1359a61bad4) by Jonathan Pyle).
+- Merge pull request #696 from jhpyle/dependabot/pip/docassemble_webapp/pillow-10.0.1 ([29e8872](https://github.com/dblevin1/docassemble/commit/29e8872e1e8ca3ed634043a75b9d624920d3815e) by Jonathan Pyle).
+- Merge pull request #689 from BryceStevenWilley/user_dict_str ([6da574f](https://github.com/dblevin1/docassemble/commit/6da574f7f278f1ab6a70f511de431ba3aa8eed2c) by Jonathan Pyle).
+- Merge pull request #688 from BryceStevenWilley/line_numbers_in_errors ([31492e7](https://github.com/dblevin1/docassemble/commit/31492e71a6f1cfa22f55fa5e47b0837552d8f86f) by Jonathan Pyle).
+- Merge pull request #687 from jhpyle/dependabot/pip/docassemble_base/cryptography-41.0.4 ([7e34422](https://github.com/dblevin1/docassemble/commit/7e34422a9315d6216232353e6d9f5624e842d5c8) by Jonathan Pyle).
+- Merge pull request #686 from jhpyle/dependabot/pip/docassemble_webapp/cryptography-41.0.4 ([3ee763a](https://github.com/dblevin1/docassemble/commit/3ee763ad62512deae3753212f8f57a058f953a1c) by Jonathan Pyle).
+
 ## [1.4.77.3](https://github.com/dblevin1/docassemble/releases/tag/1.4.77.3) - 2023-09-19
 
 <small>[Compare with 1.4.77.2](https://github.com/dblevin1/docassemble/compare/1.4.77.2...1.4.77.3)</small>
