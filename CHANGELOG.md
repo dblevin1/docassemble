@@ -1,6 +1,14 @@
 # Change Log
 
 <!-- insertion marker -->
+## [1.4.81.2](https://github.com/dblevin1/docassemble/releases/tag/1.4.81.2) - 2023-10-10
+
+<small>[Compare with 1.4.81.1](https://github.com/dblevin1/docassemble/compare/1.4.81.1...1.4.81.2)</small>
+
+### Merged
+
+- Merge branch 'frame-search-optimization' ([8bb03c7](https://github.com/dblevin1/docassemble/commit/8bb03c7583cb884c7ce8904122ca4fa6f417eaa9) by Daniel Blevins).
+
 ## [1.4.81.1](https://github.com/dblevin1/docassemble/releases/tag/1.4.81.1) - 2023-10-10
 
 <small>[Compare with 1.4.77.3](https://github.com/dblevin1/docassemble/compare/1.4.77.3...1.4.81.1)</small>
