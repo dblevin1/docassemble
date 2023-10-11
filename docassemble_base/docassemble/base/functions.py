@@ -20,7 +20,7 @@ from enum import Enum
 from pathlib import Path
 import importlib.resources
 import astunparse
-# import sys
+import sys
 import tzlocal
 import us
 import pycountry
@@ -4493,7 +4493,6 @@ def _defined_internal(var, caller: DefCaller, alt=None, prior=False):
       user all of the questions necessary to answer it
     * SHOWIFDEF, then the value if returned, but only if no questions have to be asked
     """
-    #frame = inspect.stack()[1][0]
     frame = sys._getframe(1)
     components = components_of(var)
     if len(components) == 0 or len(components[0]) < 2:
