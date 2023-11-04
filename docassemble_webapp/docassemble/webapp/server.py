@@ -49,7 +49,7 @@ import docassemble.webapp.setup
 from docassemble.webapp.setup import da_version
 import docassemble.base.astparser
 from docassemble.webapp.api_key import encrypt_api_key
-from docassemble.base.error import DAError, DAErrorNoEndpoint, DAErrorMissingVariable, DAErrorCompileError, DAValidationError, DAException, DANotFoundError
+from docassemble.base.error import DAError, DAErrorNoEndpoint, DAErrorMissingVariable, DAErrorCompileError, DAValidationError, DAException, DANotFoundError, DAInvalidFilename
 import docassemble.base.functions
 from docassemble.base.functions import get_default_timezone, ReturnValue, word
 import docassemble.base.DA
@@ -1236,7 +1236,7 @@ app.jinja_env.globals.update(url_for=url_for, url_for_interview=url_for_intervie
 
 def syslog_message(message):
     message = re.sub(r'\n', ' ', message)
-    if current_user and current_user.is_authenticated and not current_user.is_anonymous:
+    if current_user and current_user.is_authenticated:
         the_user = current_user.email
     else:
         the_user = "anonymous"
@@ -2300,7 +2300,7 @@ def add_timestamps(the_dict, manual_user_id=None):
     nowtime = datetime.datetime.utcnow()
     the_dict['_internal']['starttime'] = nowtime
     the_dict['_internal']['modtime'] = nowtime
-    if manual_user_id is not None or (current_user and current_user.is_authenticated and not current_user.is_anonymous):
+    if manual_user_id is not None or (current_user and current_user.is_authenticated):
         if manual_user_id is not None:
             the_user_id = manual_user_id
         else:
@@ -2751,7 +2751,7 @@ def save_user_dict_key(session_id, filename, priors=False, user=None):
         user_id = user.id
         is_auth = True
     else:
-        if current_user.is_authenticated and not current_user.is_anonymous:
+        if current_user.is_authenticated:
             is_auth = True
             user_id = current_user.id
         else:
@@ -2799,7 +2799,7 @@ def save_user_dict(user_code, user_dict, filename, secret=None, changed=False, e
     if steps is not None:
         user_dict['_internal']['steps'] = steps
     user_dict['_internal']['modtime'] = nowtime
-    if manual_user_id is not None or (current_user and current_user.is_authenticated and not current_user.is_anonymous):
+    if manual_user_id is not None or (current_user and current_user.is_authenticated):
         if manual_user_id is not None:
             the_user_id = manual_user_id
         else:
@@ -3286,7 +3286,7 @@ def make_navbar(status, steps, show_login, chat_info, debug_mode, index_params, 
                             navbar += '              <li class="nav-item"><a class="nav-link d-block d-md-none" href="' + login_url + '">' + word('Sign in') + '</a>'
                     else:
                         navbar += '              <li class="nav-item"><a class="nav-link" href="' + login_url + '">' + sign_in_text + '</a></li>'
-            else:
+            elif current_user.is_authenticated:
                 if custom_menu == '' and status.question.interview.options.get('hide standard menu', False):
                     navbar += '              <li class="nav-item"><a class="nav-link" tabindex="-1">' + (current_user.email if current_user.email else re.sub(r'.*\$', '', current_user.social_id)) + '</a></li>'
                 else:
@@ -4485,7 +4485,7 @@ def get_requester_ip(req):
 
 def current_info(yaml=None, req=None, action=None, location=None, interface='web', session_info=None, secret=None, device_id=None, session_uid=None):  # pylint: disable=redefined-outer-name
     # logmessage("interface is " + str(interface))
-    if current_user.is_authenticated and not current_user.is_anonymous:
+    if current_user.is_authenticated:
         role_list = [str(role.name) for role in current_user.roles]
         if len(role_list) == 0:
             role_list = ['user']
@@ -4991,7 +4991,7 @@ def auto_login():
     except:
         abort(403)
     user = db.session.execute(select(UserModel).options(db.joinedload(UserModel.roles)).where(UserModel.id == info['user_id'])).scalar()
-    if (not user) or user.social_id.startswith('disabled$'):
+    if (not user) or user.social_id.startswith('disabled$') or not user.active:
         abort(403)
     login_user(user, remember=False)
     update_last_login(user)
@@ -5107,6 +5107,11 @@ def phone_login():
         else:
             ok = False
         if ok:
+            social_id = 'phone$' + str(phone_number)
+            user = db.session.execute(select(UserModel).options(db.joinedload(UserModel.roles)).filter_by(social_id=social_id)).scalar()
+            if user and user.active is False:
+                flash(word("Your account has been disabled."), 'error')
+                return redirect(url_for('phone_login'))
             verification_code = random_digits(daconfig['verification code digits'])
             message = word("Your verification code is") + " " + str(verification_code) + "."
             user_agent = request.headers.get('User-Agent', '')
@@ -5171,7 +5176,7 @@ def phone_login_verify():
             user = db.session.execute(select(UserModel).options(db.joinedload(UserModel.roles)).filter_by(social_id=social_id)).scalar()
             if user and user.active is False:
                 flash(word("Your account has been disabled."), 'error')
-                return redirect(url_for('user.login'))
+                return redirect(url_for('phone_login'))
             if not user:
                 user = UserModel(social_id=social_id, nickname=phone_number, active=True)
                 db.session.add(user)
@@ -5531,7 +5536,7 @@ def get_github_flow():
         client_secret=client_secret,
         scope='repo admin:public_key read:user user:email read:org',
         redirect_uri=url_for('github_oauth_callback', _external=True),
-        auth_uri='http://github.com/login/oauth/authorize',
+        auth_uri='https://github.com/login/oauth/authorize',
         token_uri='https://github.com/login/oauth/access_token',
         access_type='offline',
         prompt='consent')
@@ -5580,6 +5585,7 @@ def github_menu():
     form = GitHubForm(request.form)
     if request.method == 'POST':
         if form.configure.data:
+            r.delete('da:github:userid:' + str(current_user.id))
             return redirect(url_for('github_configure'))
         if form.unconfigure.data:
             return redirect(url_for('github_unconfigure'))
@@ -5626,24 +5632,37 @@ def github_configure():
         return redirect(uri)
     http = credentials.authorize(httplib2.Http())
     found = False
-    resp, content = http.request("https://api.github.com/user/emails", "GET")
-    if int(resp['status']) == 200:
-        user_info_list = json.loads(content.decode())
-        user_info = None
-        for item in user_info_list:
-            if item.get('email', None) and item.get('visibility', None) != 'private':
-                user_info = item
-        if user_info is None:
-            raise DAError("github_configure: could not get e-mail address")
-    else:
-        raise DAError("github_configure: could not get information about user")
-    resp, content = http.request("https://api.github.com/user/keys", "GET")
-    if int(resp['status']) == 200:
+    try:
+        resp, content = http.request("https://api.github.com/user/emails", "GET")
+        assert int(resp['status']) == 200
+    except:
+        r.delete('da:github:userid:' + str(current_user.id))
+        r.delete('da:using_github:userid:' + str(current_user.id))
+        flash(word("There was a problem connecting to GitHub. Please check your GitHub configuration and try again."), 'danger')
+        return redirect(url_for('github_menu'))
+    user_info_list = json.loads(content.decode())
+    user_info = None
+    for item in user_info_list:
+        if item.get('email', None) and item.get('visibility', None) != 'private':
+            user_info = item
+    if user_info is None:
+        logmessage("github_configure: could not get information about user")
+        r.delete('da:github:userid:' + str(current_user.id))
+        r.delete('da:using_github:userid:' + str(current_user.id))
+        flash(word("There was a problem connecting to GitHub. Please check your GitHub configuration and try again."), 'danger')
+        return redirect(url_for('github_menu'))
+    try:
+        resp, content = http.request("https://api.github.com/user/keys", "GET")
+        assert int(resp['status']) == 200
         for key in json.loads(content.decode()):
             if key['title'] == app.config['APP_NAME'] or key['title'] == app.config['APP_NAME'] + '_user_' + str(current_user.id):
                 found = True
-    else:
-        raise DAError("github_configure: could not get information about ssh keys")
+    except:
+        logmessage("github_configure: could not get information about ssh keys")
+        r.delete('da:github:userid:' + str(current_user.id))
+        r.delete('da:using_github:userid:' + str(current_user.id))
+        flash(word("There was a problem connecting to GitHub. Please check your GitHub configuration and try again."), 'danger')
+        return redirect(url_for('github_menu'))
     while found is False:
         next_link = get_next_link(resp)
         if next_link:
@@ -5653,11 +5672,14 @@ def github_configure():
                     if key['title'] == app.config['APP_NAME'] or key['title'] == app.config['APP_NAME'] + '_user_' + str(current_user.id):
                         found = True
             else:
-                raise DAError("github_configure: could not get additional information about ssh keys")
+                r.delete('da:github:userid:' + str(current_user.id))
+                r.delete('da:using_github:userid:' + str(current_user.id))
+                flash(word("There was a problem connecting to GitHub. Please check your GitHub configuration and try again."), 'danger')
+                return redirect(url_for('github_menu'))
         else:
             break
     if found:
-        flash(word("Your GitHub integration has already been configured."), 'info')
+        flash(word("An SSH key is already installed on your GitHub account. The existing SSH key will not be replaced. Note that if you are connecting to GitHub from multiple docassemble servers, each server needs to have a different appname in the Configuration. If you have problems using GitHub, disable the integration and configure it again."), 'info')
     if not found:
         (private_key_file, public_key_file) = get_ssh_keys(user_info['email'])  # pylint: disable=unused-variable
         with open(public_key_file, 'r', encoding='utf-8') as fp:
@@ -5668,7 +5690,11 @@ def github_configure():
         if int(resp['status']) == 201:
             flash(word("GitHub integration was successfully configured."), 'info')
         else:
-            raise DAError("github_configure: error setting public key")
+            logmessage("github_configure: error setting public key")
+            r.delete('da:github:userid:' + str(current_user.id))
+            r.delete('da:using_github:userid:' + str(current_user.id))
+            flash(word("There was a problem connecting to GitHub. Please check your GitHub configuration and try again."), 'danger')
+            return redirect(url_for('github_menu'))
     r.set('da:using_github:userid:' + str(current_user.id), json.dumps({'shared': True, 'orgs': True}))
     return redirect(url_for('github_menu'))
 
@@ -5733,6 +5759,7 @@ def github_oauth_callback():
         return ('File not found', 404)
     setup_translation()
     failed = False
+    do_redirect = False
     if not app.config['USE_GITHUB']:
         logmessage('github_oauth_callback: server does not use github')
         failed = True
@@ -5745,12 +5772,16 @@ def github_oauth_callback():
         if 'code' not in request.args or 'state' not in request.args:
             logmessage('github_oauth_callback: code and state not in args')
             failed = True
+            do_redirect = True
         elif request.args['state'] != github_next['state']:
             logmessage('github_oauth_callback: state did not match')
             failed = True
     if failed:
         r.delete('da:github:userid:' + str(current_user.id))
         r.delete('da:using_github:userid:' + str(current_user.id))
+        if do_redirect:
+            flash(word("There was a problem connecting to GitHub. Please check your GitHub configuration and try again."), 'danger')
+            return redirect(url_for('github_menu'))
         return ('File not found', 404)
     flow = get_github_flow()
     credentials = flow.step2_exchange(request.args['code'])
@@ -6023,10 +6054,12 @@ def checkin():
         the_user_id = 't' + str(session['tempuser'])
         auth_user_id = None
         temp_user_id = int(session['tempuser'])
-    else:
+    elif current_user.is_authenticated:
         auth_user_id = current_user.id
         the_user_id = current_user.id
         temp_user_id = None
+    else:
+        return jsonify_with_cache(success=True, action='reload')
     the_current_info = current_info(yaml=yaml_filename, req=request, action=None, session_info=session_info, secret=secret, device_id=request.cookies.get('ds', None))
     docassemble.base.functions.this_thread.current_info = the_current_info
     if request.form.get('action', None) == 'chat_log':
@@ -6583,9 +6616,15 @@ def index(action_argument=None, refer=None):
             db.session.add(new_temp_user)
             db.session.commit()
             session['tempuser'] = new_temp_user.id
-    else:
-        if 'user_id' not in session:
-            session['user_id'] = current_user.id
+    elif not current_user.is_authenticated:
+        response = do_redirect(url_for('user.login'), is_ajax, is_json, js_target)
+        response.set_cookie('remember_token', '', expires=0)
+        response.set_cookie('visitor_secret', '', expires=0)
+        response.set_cookie('secret', '', expires=0)
+        response.set_cookie('session', '', expires=0)
+        return response
+    elif 'user_id' not in session:
+        session['user_id'] = current_user.id
     expire_visitor_secret = False
     if 'visitor_secret' in request.cookies:
         if 'session' in request.args:
@@ -10205,13 +10244,7 @@ def index(action_argument=None, refer=None):
             window.scrollTo(0, 1);
           }
           $(daTargetDiv).html(data.body);
-          var bodyClasses = $(daTargetDiv).parent()[0].className.split(/\s+/);
-          var n = bodyClasses.length;
-          while (n--){
-            if (bodyClasses[n] == 'dabody' || bodyClasses[n] == 'dasignature' || bodyClasses[n].indexOf('question-') == 0){
-              $(daTargetDiv).parent().removeClass(bodyClasses[n]);
-            }
-          }
+          $(daTargetDiv).parent().removeClass();
           $(daTargetDiv).parent().addClass(data.bodyclass);
           $("meta[name=viewport]").attr('content', "width=device-width, initial-scale=1");
           daDoAction = data.do_action;
@@ -13344,6 +13377,13 @@ def interview_menu(absolute_urls=False, start_new=False, tag=None):
 def interview_start():
     if current_user.is_anonymous and not daconfig.get('allow anonymous access', True):
         return redirect(url_for('user.login', next=url_for('interview_start', **request.args)))
+    if not current_user.is_anonymous and not current_user.is_authenticated:
+        response = redirect(url_for('interview_start'))
+        response.set_cookie('remember_token', '', expires=0)
+        response.set_cookie('visitor_secret', '', expires=0)
+        response.set_cookie('secret', '', expires=0)
+        response.set_cookie('session', '', expires=0)
+        return response
     setup_translation()
     if len(daconfig['dispatch']) == 0:
         return redirect(url_for('index', i=final_default_yaml_filename))
@@ -17363,7 +17403,7 @@ def create_playground_package():
                         output += err.output.decode()
                         raise DAError("create_playground_package: error running git clone.  " + output)
                 if not os.path.isdir(packagedir):
-                    raise DAError("create_playground_package: package directory did not exist")
+                    raise DAError("create_playground_package: package directory did not exist.  " + output)
                 if pulled_already:
                     output += "Doing git checkout " + commit_code + "\n"
                     try:
@@ -17735,7 +17775,7 @@ class Fruit(DAObject):
         file_number = get_new_file_number(None, nice_name)
         file_set_attributes(file_number, private=False, persistent=True)
         saved_file = SavedFile(file_number, extension='zip', fix=True, should_not_exist=True)
-        zf = zipfile.ZipFile(saved_file.path, mode='w')
+        zf = zipfile.ZipFile(saved_file.path, compression=zipfile.ZIP_DEFLATED, mode='w')
         trimlength = len(directory) + 1
         if current_user.timezone:
             the_timezone = zoneinfo.ZoneInfo(current_user.timezone)
@@ -22463,12 +22503,12 @@ function daFetchVariableReportCallback(data){
       var accordionItemHeader = $('<h2>');
       accordionItemHeader.addClass("accordion-header");
       accordionItemHeader.attr("id", "accordionItemheader" + i);
-      accordionItemHeader.html('<button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse' + i + '" aria-expanded="false" aria-controls="collapse' + i + '">' + item.name + '</button>');
+      accordionItemHeader.html('<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse' + i + '" aria-expanded="false" aria-controls="collapse' + i + '">' + item.name + '</button>');
       accordionItem.append(accordionItemHeader);
       var collapse = $("<div>");
       collapse.attr("id", "collapse" + i);
       collapse.attr("aria-labelledby", "accordionItemheader" + i);
-      collapse.data("parent", "#varsreport");
+      collapse.data("bs-parent", "#varsreport");
       collapse.addClass("accordion-collapse");
       collapse.addClass("collapse");
       var accordionItemBody = $("<div>");
@@ -22797,7 +22837,7 @@ def server_error(the_error):
     else:
         the_history = None
     the_vars = None
-    if isinstance(the_error, (DAError, DANotFoundError)):
+    if isinstance(the_error, (DAError, DANotFoundError, DAInvalidFilename)):
         errmess = str(the_error)
         the_trace = None
         logmessage(errmess)
@@ -23050,7 +23090,7 @@ def server_error(the_error):
         if 'in error' not in session and docassemble.base.functions.this_thread.interview is not None and 'error action' in docassemble.base.functions.this_thread.interview.consolidated_metadata:
             session['in error'] = True
             return index(action_argument={'action': docassemble.base.functions.this_thread.interview.consolidated_metadata['error action'], 'arguments': {'error_message': orig_errmess, 'error_history': the_history, 'error_trace': the_trace}}, refer=['error'])
-    show_debug = not bool((not DEBUG) and isinstance(the_error, DAError))
+    show_debug = not bool((not DEBUG) and isinstance(the_error, (DAError, DAInvalidFilename)))
     if int(int(error_code)/100) == 4:
         show_debug = False
     if error_code == 404:
@@ -23204,7 +23244,7 @@ def logs():
     if LOGSERVER is None and use_zip:
         timezone = get_default_timezone()
         zip_archive = tempfile.NamedTemporaryFile(mode="wb", prefix="datemp", suffix=".zip", delete=False)
-        zf = zipfile.ZipFile(zip_archive, mode='w')
+        zf = zipfile.ZipFile(zip_archive, compression=zipfile.ZIP_DEFLATED, mode='w')
         for f in os.listdir(LOG_DIRECTORY):
             zip_path = os.path.join(LOG_DIRECTORY, f)
             if f.startswith('.') or not os.path.isfile(zip_path):
@@ -26533,7 +26573,7 @@ def translation_file():
         else:
             zip_file = tempfile.NamedTemporaryFile(suffix='.zip', delete=False)
             zip_file_name = docassemble.base.functions.space_to_underscore(os.path.splitext(os.path.basename(re.sub(r'.*:', '', yaml_filename)))[0]) + "_" + tr_lang + ".zip"
-            with zipfile.ZipFile(zip_file, mode='w') as zf:
+            with zipfile.ZipFile(zip_file, compression=zipfile.ZIP_DEFLATED, mode='w') as zf:
                 for item in xliff_files:
                     info = zipfile.ZipInfo(item[1])
                     with open(item[0].name, 'rb') as fp:
@@ -31060,7 +31100,7 @@ def error_notification(err, message=None, history=None, trace=None, referer=None
     recipient_email = daconfig.get('error notification email', None)
     if not recipient_email:
         return
-    if err.__class__.__name__ in ['CSRFError', 'ClientDisconnected', 'MethodNotAllowed', 'DANotFoundError'] + ERROR_TYPES_NO_EMAIL:
+    if err.__class__.__name__ in ['CSRFError', 'ClientDisconnected', 'MethodNotAllowed', 'DANotFoundError', 'DAInvalidFilename'] + ERROR_TYPES_NO_EMAIL:
         return
     email_recipients = []
     if isinstance(recipient_email, list):

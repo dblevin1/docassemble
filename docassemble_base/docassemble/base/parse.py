@@ -386,6 +386,8 @@ class InterviewSourceFile(InterviewSource):
         data['__parent_package__'] = kwargs.get('parent_source', self).package
         data['__interview_filename__'] = kwargs.get('interview_source', self).path
         data['__interview_package__'] = kwargs.get('interview_source', self).package
+        data['__hostname__'] = get_config('external hostname', None) or 'localhost'
+        data['__debug__'] = bool(get_config('debug', True))
         try:
             self.set_content(template.render(data))
         except Exception as err:
@@ -1904,6 +1906,11 @@ class FileInPackage:
         self.area = area
         self.package = package
 
+    def original_reference(self):
+        if self.is_code:
+            return 'indicated by ' + self.fileref['code'].strip()
+        return self.fileref
+
     def path(self, the_user_dict=None):
         if the_user_dict is None:
             the_user_dict = {}
@@ -2153,6 +2160,7 @@ class Question:
                 self.interview.use_tagged_pdf = data['features']['tagged pdf']
             if 'bootstrap theme' in data['features'] and data['features']['bootstrap theme']:
                 self.interview.bootstrap_theme = data['features']['bootstrap theme']
+                self.interview.bootstrap_theme_package = self.package
             if 'inverse navbar' in data['features']:
                 self.interview.options['inverse navbar'] = data['features']['inverse navbar']
             if 'popover trigger' in data['features']:
@@ -5121,6 +5129,8 @@ class Question:
                         field_mode = 'auto'
             else:
                 field_mode = 'manual'
+            if 'pdf template file' in target and 'fields' not in target:
+                target['fields'] = {}
             if 'fields' in target:
                 if 'pdf template file' not in target and 'docx template file' not in target:
                     raise DAError('Fields supplied to attachment but no pdf template file or docx template file supplied' + self.idebug(target))
@@ -5166,8 +5176,8 @@ class Question:
                     for template_file in options['docx_template_file']:
                         if not template_file.is_code:
                             the_docx_path = template_file.path()
-                            if not os.path.isfile(the_docx_path):
-                                raise DAError("Missing docx template file " + os.path.basename(the_docx_path))
+                            if the_docx_path is None or not os.path.isfile(the_docx_path):
+                                raise DAError("Missing docx template file " + template_file.original_reference())
                             template_files.append(the_docx_path)
                     if len(template_files) > 0:
                         if len(template_files) == 1:
@@ -6838,7 +6848,10 @@ class Question:
                             else:
                                 default_export_value = None
                             docassemble.base.functions.set_context('pdf')
-                            the_pdf_file = docassemble.base.pdftk.fill_template(attachment['options']['pdf_template_file'].path(the_user_dict=the_user_dict), data_strings=result['data_strings'], images=result['images'], editable=result['editable'], pdfa=result['convert_to_pdf_a'], password=result['password'], template_password=result['template_password'], default_export_value=default_export_value, replacement_font=result['rendering_font'])
+                            the_template_path = attachment['options']['pdf_template_file'].path(the_user_dict=the_user_dict)
+                            if the_template_path is None:
+                                raise DAError("pdf template file " + attachment['options']['pdf_template_file'].original_reference() +  " not found")
+                            the_pdf_file = docassemble.base.pdftk.fill_template(the_template_path, data_strings=result['data_strings'], images=result['images'], editable=result['editable'], pdfa=result['convert_to_pdf_a'], password=result['password'], template_password=result['template_password'], default_export_value=default_export_value, replacement_font=result['rendering_font'])
                             result['file'][doc_format], result['extension'][doc_format], result['mimetype'][doc_format] = docassemble.base.functions.server.save_numbered_file(result['filename'] + '.' + extension_of_doc_format[doc_format], the_pdf_file, yaml_file_name=self.interview.source.path)  # pylint: disable=assignment-from-none,unpacking-non-sequence
                             for key in ('images', 'data_strings', 'convert_to_pdf_a', 'convert_to_tagged_pdf', 'password', 'template_password', 'update_references', 'permissions', 'rendering_font'):
                                 if key in result:
@@ -7177,8 +7190,8 @@ class Question:
                             docx_paths = []
                             for docx_reference in attachment['options']['docx_template_file']:
                                 for docx_path in docx_reference.paths(the_user_dict=the_user_dict):
-                                    if not os.path.isfile(docx_path):
-                                        raise DAError("Missing docx template file " + os.path.basename(docx_path))
+                                    if docx_path is None or not os.path.isfile(docx_path):
+                                        raise DAError("Missing docx template file " + docx_reference.original_reference())
                                     docx_paths.append(docx_path)
                             if len(docx_paths) == 1:
                                 docx_path = docx_paths[0]
@@ -7917,7 +7930,10 @@ class Interview:
     def get_bootstrap_theme(self):
         if self.bootstrap_theme is None:
             return None
-        result = docassemble.base.functions.server.url_finder(self.bootstrap_theme, _package=self.source.package)
+        if not hasattr(self, 'bootstrap_theme_package'):
+            result = docassemble.base.functions.server.url_finder(self.bootstrap_theme, _package=self.source.package)
+        else:
+            result = docassemble.base.functions.server.url_finder(self.bootstrap_theme, _package=self.bootstrap_theme_package)
         return result
 
     def get_tags(self, the_user_dict):
@@ -9008,7 +9024,7 @@ class Interview:
                             gathered = question.gathered
                         else:
                             gathered = eval(question.gathered, user_dict)
-                        thename = from_safeid(question.fields[0].saveas)
+                        thename = substitute_vars(from_safeid(question.fields[0].saveas), is_generic, the_x, iterators)
                         if question.use_objects == 'objects':
                             user_dict['_DADATA'] = docassemble.base.util.objects_from_data(recursive_eval_dataobject(question.fields[0].data, user_dict), recursive=True, gathered=gathered, name=thename, package=question.package)
                         elif question.use_objects:
@@ -9029,7 +9045,7 @@ class Interview:
                             gathered = question.gathered
                         else:
                             gathered = eval(question.gathered, user_dict)
-                        thename = from_safeid(question.fields[0].saveas)
+                        thename = substitute_vars(from_safeid(question.fields[0].saveas), is_generic, the_x, iterators)
                         if question.use_objects == 'objects':
                             user_dict['_DADATAFROMCODE'] = docassemble.base.util.objects_from_data(recursive_eval_data_from_code(question.fields[0].data, user_dict), recursive=True, gathered=gathered, name=thename, package=question.package)
                         elif question.use_objects:
@@ -9053,9 +9069,10 @@ class Interview:
                         else:
                             use_objects = bool(eval(question.use_objects, user_dict))
                         for field in question.fields:
-                            variable = from_safeid(field.saveas)
-                            if not variables_equivalent(variable, missing_var):
+                            raw_variable = from_safeid(field.saveas)
+                            if not variables_equivalent(raw_variable, missing_var):
                                 continue
+                            variable = substitute_vars(raw_variable, is_generic, the_x, iterators)
                             the_file_name = field.extras['file_name'].text(user_dict).strip()
                             was_defined = False
                             try:
@@ -9091,9 +9108,10 @@ class Interview:
                         docassemble.base.functions.this_thread.current_question = question
                         for keyvalue in question.objects:
                             # logmessage("In a for loop for keyvalue")
-                            for variable, object_type_name in keyvalue.items():
-                                if not variables_equivalent(variable, missing_var):
+                            for raw_variable, object_type_name in keyvalue.items():
+                                if not variables_equivalent(raw_variable, missing_var):
                                     continue
+                                variable = substitute_vars(raw_variable, is_generic, the_x, iterators)
                                 was_defined = False
                                 try:
                                     exec("__oldvariable__ = " + str(missing_var), user_dict)

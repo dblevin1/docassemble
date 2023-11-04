@@ -118,6 +118,7 @@ class SavedFile:
                         shutil.rmtree(self.directory)
                     if not os.path.isdir(self.directory):
                         os.makedirs(self.directory, exist_ok=True)
+        return None
 
     def fix(self, must_exist=False):
         if self.fixed:
@@ -131,9 +132,7 @@ class SavedFile:
                 os.makedirs(self.directory, exist_ok=True)
             prefix = str(self.section) + '/' + str(self.file_number) + '/'
             # logmessage("fix: prefix is " + prefix)
-            found_any = False
             for key in cloud.list_keys(prefix):
-                found_any = True
                 filename = os.path.join(*key.name[len(prefix):].split('/'))
                 fullpath = os.path.join(self.directory, filename)
                 fulldir = os.path.dirname(fullpath)
@@ -514,7 +513,7 @@ def make_package_zip(pkgname, info, author_info, tz_name, current_project='defau
     trimlength = len(directory) + 1
     packagedir = os.path.join(directory, 'docassemble-' + str(pkgname))
     temp_zip = tempfile.NamedTemporaryFile(suffix=".zip")
-    zf = zipfile.ZipFile(temp_zip, mode='w')
+    zf = zipfile.ZipFile(temp_zip, compression=zipfile.ZIP_DEFLATED, mode='w')
     the_timezone = zoneinfo.ZoneInfo(tz_name)
     for root, dirs, files in os.walk(packagedir):  # pylint: disable=unused-variable
         for file in files:
