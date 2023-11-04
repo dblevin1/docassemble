@@ -31101,6 +31101,7 @@ def error_notification(err, message=None, history=None, trace=None, referer=None
         except:
             pass
     interview_path = docassemble.base.functions.interview_path()
+    session_uid = docassemble.base.functions.get_uid()
     try:
         the_key = 'da:errornotification:' + str(ipaddress)
         existing = r.get(the_key)
@@ -31128,6 +31129,9 @@ def error_notification(err, message=None, history=None, trace=None, referer=None
             elif interview_path is not None:
                 body += "\n\nThe interview was " + str(interview_path)
                 html += "<p>The interview was " + str(interview_path) + "</p>"
+            if session_uid is not None:
+                body += "\n\nThe session id was " + str(session_uid)
+                body += "<p>The session id was " + str(session_uid) + "</p>"
             if email_address is not None:
                 body += "\n\nThe user was " + str(email_address)
                 html += "<p>The user was " + str(email_address) + "</p>"
