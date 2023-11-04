@@ -1,6 +1,36 @@
 # Change Log
 
 <!-- insertion marker -->
+## [1.4.85.1](https://github.com/dblevin1/docassemble/releases/tag/1.4.85.1) - 2023-11-03
+
+<small>[Compare with 1.4.81.2](https://github.com/dblevin1/docassemble/compare/1.4.81.2...1.4.85.1)</small>
+
+### Added
+
+- add session id to error notification email ([b0fe61d](https://github.com/dblevin1/docassemble/commit/b0fe61d910e5a6a9cb456cdd16ef979c55eef8a4) by Daniel Blevins).
+- add default rendering font feature, reverting change in 1.4.79 that uses the msttcorefonts Arial by default; make additional variables available to the Jinja2 YAML preprocessor ([7b6aabb](https://github.com/dblevin1/docassemble/commit/7b6aabb48e6d52443fac9b94ce5162320d3a8a49) by Jonathan Pyle).
+- added additional testing scripts ([5c9223a](https://github.com/dblevin1/docassemble/commit/5c9223afd604b0ff341a110dbebbffd6d148571f) by Jonathan Pyle).
+
+### Fixed
+
+- fix issue with github integration attempts that have problems; use oauthlib for DAOAuth; run oauthlib on http Configuration directive ([3339bdd](https://github.com/dblevin1/docassemble/commit/3339bdd39a0f152fc9138d4e45473b95518f33c4) by Jonathan Pyle).
+
+### Changed
+
+- change path_and_mimetype() so that it returns a path even if the path does not exist; kick users off the system as soon as the administrator makes their account inactive ([52eabc3](https://github.com/dblevin1/docassemble/commit/52eabc3e4d8f18ead86d33a7ab3940824f199285) by Jonathan Pyle).
+
+### Merged
+
+- Merge branch 'upstream-latest' ([1c95cf9](https://github.com/dblevin1/docassemble/commit/1c95cf93f8b7ac8d3a81baa702946224d731b162) by Daniel Blevins).
+- Merge branch 'master' of github.com:jhpyle/docassemble ([0b8cec3](https://github.com/dblevin1/docassemble/commit/0b8cec32220266cf950251beff7b6168f9d9fe2a) by Jonathan Pyle).
+- Merge pull request #703 from jhpyle/dependabot/pip/docassemble_base/urllib3-2.0.7 ([ae45f0e](https://github.com/dblevin1/docassemble/commit/ae45f0e7d2efc67d454af1a557b89bbdbdc8c261) by Jonathan Pyle).
+- Merge pull request #702 from jhpyle/dependabot/pip/docassemble_webapp/urllib3-2.0.7 ([04180c9](https://github.com/dblevin1/docassemble/commit/04180c9805198571a6ffa52e8000cc58513fe826) by Jonathan Pyle).
+- Merge pull request #701 from BryceStevenWilley/bootstrap_package_tracking ([b410e81](https://github.com/dblevin1/docassemble/commit/b410e814c0d509252ea68e1a17d972267beca333) by Jonathan Pyle).
+- Merge pull request #693 from jhpyle/dependabot/pip/docassemble_base/urllib3-1.26.17 ([885dee3](https://github.com/dblevin1/docassemble/commit/885dee3df8f94ff94b926bc1dbf3403dc271b20b) by Jonathan Pyle).
+- Merge pull request #692 from jhpyle/dependabot/pip/docassemble_webapp/urllib3-1.26.17 ([8448801](https://github.com/dblevin1/docassemble/commit/84488010424fe13a745cfc24a1a224844cfd83d7) by Jonathan Pyle).
+- Merge branch 'dblevin1-frame-search-optimization' ([c875ff1](https://github.com/dblevin1/docassemble/commit/c875ff18afc8ddc39ec714f2586dc4280665515b) by Jonathan Pyle).
+- Merge branch 'frame-search-optimization' of https://github.com/dblevin1/docassemble into dblevin1-frame-search-optimization ([e77d530](https://github.com/dblevin1/docassemble/commit/e77d53082fdeef1cc4fb3436fd521c00392f771d) by Jonathan Pyle).
+
 ## [1.4.81.2](https://github.com/dblevin1/docassemble/releases/tag/1.4.81.2) - 2023-10-10
 
 <small>[Compare with 1.4.81.1](https://github.com/dblevin1/docassemble/compare/1.4.81.1...1.4.81.2)</small>
