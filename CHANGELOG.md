@@ -1,6 +1,38 @@
 # Change Log
 
 <!-- insertion marker -->
+## [1.4.88.1](https://github.com/dblevin1/docassemble/releases/tag/1.4.88.1) - 2023-12-13
+
+<small>[Compare with 1.4.85.1](https://github.com/dblevin1/docassemble/compare/1.4.85.1...1.4.88.1)</small>
+
+### Added
+
+- add install script numbers ([b735e3d](https://github.com/dblevin1/docassemble/commit/b735e3d7f3889e6a066d258f36567d59080784a5) by Daniel Blevins).
+- Address codeql DOM text issue ([dfdf7be](https://github.com/dblevin1/docassemble/commit/dfdf7be9ac88139045ec74fe90fdc2aaf0f6470e) by Bryce Willey).
+- Add support for datetime and datetime-local ([c0db7a5](https://github.com/dblevin1/docassemble/commit/c0db7a5477632737073d2838bc254ce0a6dcff7f) by Bryce Willey).
+
+### Fixed
+
+- fix merge conflicts ([eb2e699](https://github.com/dblevin1/docassemble/commit/eb2e6990e3843a3a48a06fd0a02b14d5ff2ea862) by Jonathan Pyle).
+
+### Changed
+
+- change method of limiting number of open files available to uswgi ([1e9dc66](https://github.com/dblevin1/docassemble/commit/1e9dc667d1a994e7051b0b1c91bb14a283b0792e) by Jonathan Pyle).
+
+### Merged
+
+- Merge branch 'upstream-latest' ([c4175eb](https://github.com/dblevin1/docassemble/commit/c4175eb573ffdfd2b17520a8224c8742f09c4c03) by Daniel Blevins).
+- Merge pull request #719 from jhpyle/revert-718-labelauty-dark-mode ([90f4b4e](https://github.com/dblevin1/docassemble/commit/90f4b4e4164fbf5eafe08881b57f3475a65fdb5e) by Jonathan Pyle).
+- Merge branch 'master' of github.com:jhpyle/docassemble ([9bce5da](https://github.com/dblevin1/docassemble/commit/9bce5dadfe5d1990275c6f6ccd3637d40f2ad15c) by Jonathan Pyle).
+- Merge pull request #718 from BryceStevenWilley/labelauty-dark-mode ([9c7cfa0](https://github.com/dblevin1/docassemble/commit/9c7cfa0fa2c0eeedba1ad6663352e4147f6f5715) by Jonathan Pyle).
+- Merge pull request #717 from BryceStevenWilley/error_star_color ([21a9ad0](https://github.com/dblevin1/docassemble/commit/21a9ad0b3132cfc90ae2f0c4122ac140de9ec06d) by Jonathan Pyle).
+- Merge pull request #716 from BryceStevenWilley/min_date ([cf15491](https://github.com/dblevin1/docassemble/commit/cf1549102f506a9165667cc6941fa3120de28fd2) by Jonathan Pyle).
+- Merge pull request #715 from jhpyle/dependabot/pip/docassemble_base/cryptography-41.0.6 ([dc5a4f2](https://github.com/dblevin1/docassemble/commit/dc5a4f2352347543221cf0d1d04e9dbc083f3243) by Jonathan Pyle).
+- Merge pull request #714 from jhpyle/dependabot/pip/docassemble_webapp/cryptography-41.0.6 ([b1b9ff3](https://github.com/dblevin1/docassemble/commit/b1b9ff34dd47fd607d1c941adc531c3c4371c016) by Jonathan Pyle).
+- Merge pull request #712 from jhpyle/dependabot/pip/docassemble_webapp/aiohttp-3.9.0 ([9b67b00](https://github.com/dblevin1/docassemble/commit/9b67b0035e6b27ea0f3c857e361c24356eedde92) by Jonathan Pyle).
+- Merge pull request #711 from jhpyle/dependabot/pip/docassemble_base/aiohttp-3.9.0 ([28c7874](https://github.com/dblevin1/docassemble/commit/28c78746a770072862f5de0547f3397739b87673) by Jonathan Pyle).
+- Merge branch 'BryceStevenWilley-prior_fix' ([9b13f84](https://github.com/dblevin1/docassemble/commit/9b13f84e0e005ee5227f052242d091e816dcbfbd) by Jonathan Pyle).
+
 ## [1.4.85.1](https://github.com/dblevin1/docassemble/releases/tag/1.4.85.1) - 2023-11-03
 
 <small>[Compare with 1.4.81.2](https://github.com/dblevin1/docassemble/compare/1.4.81.2...1.4.85.1)</small>
