@@ -1,9 +1,9 @@
 #!/usr/bin/bash
 
 function stopfunc {
-	cd $SCRIPT_DIR
-	#find . -name "dist" -type d -exec rm -r "{}" \;
-	find . -name "*egg-info" -type d -exec rm -r "{}" \;
+    cd $SCRIPT_DIR
+    #find . -name "dist" -type d -exec rm -r "{}" \;
+    find . -name "*egg-info" -type d -exec rm -r "{}" \;
     exit 0
 }
 
@@ -13,9 +13,9 @@ RED='\033[0;31m'
 NC='\033[0m' # No Color
 
 install() {
-    echo 
+    echo
     echo "------Installing $(pwd)--------"
-    pip install --editable .
+    pip install .
     ret=$?
     if [ $ret -ne 0 ]; then
         echo -e "${RED}Exiting pip install failed${NC}"
