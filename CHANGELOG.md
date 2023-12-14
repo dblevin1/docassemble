@@ -1,6 +1,15 @@
 # Change Log
 
 <!-- insertion marker -->
+## [1.4.85.2](https://github.com/dblevin1/docassemble/releases/tag/1.4.85.2) - 2023-12-13
+
+<small>[Compare with 1.4.85.1](https://github.com/dblevin1/docassemble/compare/1.4.85.1...1.4.85.2)</small>
+
+### Added
+
+- add numbers to install scripts ([0b8b468](https://github.com/dblevin1/docassemble/commit/0b8b4682259b858c35dd13f068125cf669b55c1b) by Daniel Blevins).
+- add package import timer ([4ede3c4](https://github.com/dblevin1/docassemble/commit/4ede3c4b7ec25456144dcf8e3e059133934213fd) by Daniel Blevins).
+
 ## [1.4.85.1](https://github.com/dblevin1/docassemble/releases/tag/1.4.85.1) - 2023-11-03
 
 <small>[Compare with 1.4.81.2](https://github.com/dblevin1/docassemble/compare/1.4.81.2...1.4.85.1)</small>
