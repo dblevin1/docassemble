@@ -1354,10 +1354,12 @@ def import_necessary(url, url_root):
         current_package = re.sub(r'\.[^\.]+$', '', module_name)
         docassemble.base.functions.this_thread.current_package = current_package
         docassemble.base.functions.this_thread.current_info.update({'yaml_filename': current_package + ':data/questions/test.yml'})
+        package_import_start = time.time()
         try:
             importlib.import_module(module_name)
         except Exception as err:
             logmessage("Import of " + module_name + " failed.  " + err.__class__.__name__ + ": " + str(err))
+        logmessage(f"Import of '{module_name}' Took: { time.time()-package_import_start }")
     current_app.login_manager._update_request_context_with_user()
 
 fax_provider = daconfig.get('fax provider', None) or 'clicksend'
