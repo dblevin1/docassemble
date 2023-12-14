@@ -4,7 +4,7 @@ import importlib
 from docassemble.webapp.app_object import app
 from docassemble.base.config import daconfig
 import docassemble.webapp.database
-da_version = '1.4.85.1'
+da_version = '1.4.88'
 app.config['DA_VERSION'] = da_version
 app.config['APP_NAME'] = daconfig.get('appname', 'docassemble')
 app.config['BRAND_NAME'] = daconfig.get('brandname', daconfig.get('appname', 'docassemble'))
@@ -114,6 +114,7 @@ app.config['ENABLE_MONITOR'] = daconfig.get('enable monitor', True)
 app.config['INVERSE_NAVBAR'] = bool(daconfig.get('inverse navbar', True))
 app.config['AUTO_COLOR_SCHEME'] = bool(daconfig.get('auto color scheme', True))
 app.config['ENABLE_PLAYGROUND'] = daconfig.get('enable playground', True)
+app.config['DEVELOPER_CAN_INSTALL'] = daconfig.get('developer can install', True)
 app.config['ENABLE_SHARING_PLAYGROUNDS'] = daconfig.get('enable sharing playgrounds', False)
 app.config['ALLOW_LOG_VIEWING'] = daconfig.get('allow log viewing', True)
 app.config['ALLOW_UPDATES'] = daconfig.get('allow updates', True)

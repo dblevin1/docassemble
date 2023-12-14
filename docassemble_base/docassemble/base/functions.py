@@ -802,6 +802,10 @@ def user_info():
         user.current_filename = this_thread.current_question.from_source.path
     except:
         user.current_filename = None
+    try:
+        user.current_section = this_thread.current_section or get_user_dict()['nav'].current
+    except:
+        user.current_section = None
     return user
 
 
@@ -3594,7 +3598,7 @@ def response(*pargs, **kwargs):
 
 def json_response(data, response_code=None):
     """Sends data in JSON format as an HTTP response."""
-    raise ResponseError(json.dumps(data, sort_keys=True, indent=2) + "\n", content_type="application/json", response_code=response_code)
+    raise ResponseError(binaryresponse=(json.dumps(data, sort_keys=True, indent=2) + "\n").encode('utf-8'), content_type="application/json", response_code=response_code)
 
 
 def variables_as_json(include_internal=False):
@@ -4503,7 +4507,7 @@ def _defined_internal(var, caller: DefCaller, alt=None, prior=False):
     the_user_dict = frame.f_locals
     failure_val = False if caller.is_predicate() else alt
     user_dict_name = 'old_user_dict' if prior else 'user_dict'
-    while variable not in the_user_dict:
+    while (variable not in the_user_dict) or prior:
         frame = frame.f_back
         if frame is None:
             if caller.is_pure():
