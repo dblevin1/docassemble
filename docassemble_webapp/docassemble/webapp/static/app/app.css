@@ -1540,7 +1540,6 @@ div.daconstraintlist div + div {
 	width: 100%;
 	overflow: hidden;
 	font-size: small;
-	background-color: #fff;
 	user-select: none;
 	padding-top: 40px;
 	-webkit-user-select: none;
@@ -1908,4 +1907,8 @@ div.da-grid-container > div.dafieldpart > fieldset.da-field-checkbox {
 
 div.da-grid-container > div.dafieldpart > fieldset.da-field-checkboxes {
     margin-bottom: -0.5rem;
+}
+
+[data-bs-theme=dark] #dasigcanvas {
+    background-color: #777;
 }

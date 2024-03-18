@@ -279,13 +279,16 @@ def as_sms(status, the_user_dict, links=None, menu_items=None):
             if hasattr(the_field, 'datatype'):
                 if the_field.datatype in ['script', 'css']:  # why did I ever comment this out?
                     continue
-                if the_field.datatype in ['html', 'note'] and field is not None:
+                if the_field.datatype in ['html', 'raw html', 'note'] and field is not None:
                     continue
                 if the_field.datatype == 'note':
                     info_message = to_text(markdown_to_html(status.extras['note'][the_field.number], status=status), terms, links)
                     continue
                 if the_field.datatype == 'html':
                     info_message = to_text(process_target(status.extras['html'][the_field.number].rstrip()), terms, links)
+                    continue
+                if the_field.datatype == 'raw html':
+                    info_message = to_text(process_target(status.extras['raw html'][the_field.number].rstrip()), terms, links)
                     continue
             # logmessage("field number is " + str(the_field.number))
             if not hasattr(the_field, 'saveas'):
@@ -328,7 +331,7 @@ def as_sms(status, the_user_dict, links=None, menu_items=None):
                 elif hasattr(immediate_next_field, 'datatype'):
                     if immediate_next_field.datatype in ['note']:
                         next_label = ' (' + word("Next will be") + ' ' + to_text(markdown_to_html(status.extras['note'][immediate_next_field.number], trim=False, status=status, strip_newlines=True), terms, links) + ')'
-                    elif immediate_next_field.datatype in ['html']:
+                    elif immediate_next_field.datatype in ['html', 'raw html']:
                         next_label = ' (' + word("Next will be") + ' ' + to_text(status.extras['html'][immediate_next_field.number].rstrip(), terms, links) + ')'
         if hasattr(field, 'label') and status.labels[field.number] != "no label":
             label = to_text(markdown_to_html(status.labels[field.number], trim=False, status=status, strip_newlines=True), terms, links)
@@ -1011,6 +1014,8 @@ def as_html(status, debug, root, validation_rules, field_error, the_progress_bar
         for field in status.get_field_list():
             if 'html' in status.extras and field.number in status.extras['html']:
                 side_note_content = status.extras['html'][field.number].rstrip()
+            elif 'raw html' in status.extras and field.number in status.extras['raw html']:
+                side_note_content = status.extras['raw html'][field.number].rstrip()
             elif 'note' in status.extras and field.number in status.extras['note']:
                 side_note_content = markdown_to_html(status.extras['note'][field.number], status=status, strip_newlines=True)
             else:
@@ -1043,6 +1048,9 @@ def as_html(status, debug, root, validation_rules, field_error, the_progress_bar
                             fieldlist.append('                <tr class="da-field-container da-field-container-note da-review"><td colspan="2">' + side_note_content + '</td></tr>\n')
                         else:
                             fieldlist.append('                <div class="da-form-group row da-field-container da-field-container-note da-review"><div class="col"><div>' + side_note_content + '</div></div></div>\n')
+                    continue
+                if field.datatype == 'raw html' and 'raw html' in status.extras and field.number in status.extras['raw html'] and side_note_content:
+                    fieldlist.append('                ' + side_note_content + '\n')
                     continue
                 if field.datatype == 'note' and 'note' in status.extras and field.number in status.extras['note']:
                     if field.number in status.helptexts:
@@ -1175,11 +1183,13 @@ def as_html(status, debug, root, validation_rules, field_error, the_progress_bar
         for field in field_list:
             if 'html' in status.extras and field.number in status.extras['html']:
                 note_fields[field.number] = process_target(status.extras['html'][field.number].rstrip())
+            elif 'raw html' in status.extras and field.number in status.extras['raw html']:
+                note_fields[field.number] = process_target(status.extras['raw html'][field.number].rstrip())
             elif 'note' in status.extras and field.number in status.extras['note']:
                 note_fields[field.number] = markdown_to_html(status.extras['note'][field.number], status=status, embedder=embed_input)
             if hasattr(field, 'saveas'):
                 varnames[safeid('_field_' + str(field.number))] = field.saveas
-                if (hasattr(field, 'extras') and (('show_if_var' in field.extras and 'show_if_val' in status.extras) or 'show_if_js' in field.extras)) or (hasattr(field, 'disableothers') and field.disableothers):
+                if (hasattr(field, 'extras') and (('show_if_var' in field.extras and 'show_if_val' in status.extras) or ('show_if_js' in field.extras and 'show_if_js' in status.extras and field.number in status.extras['show_if_js']))) or (hasattr(field, 'disableothers') and field.disableothers):
                     the_saveas = safeid('_field_' + str(field.number))
                 else:
                     the_saveas = field.saveas
@@ -1281,7 +1291,7 @@ def as_html(status, debug, root, validation_rules, field_error, the_progress_bar
                             fieldlist.append('                <div ' + display_style + 'class="dashowif" data-saveas="' + escape_id(field.saveas) + '" data-showif-sign="' + escape_id(field.extras['show_if_sign']) + '" data-showif-mode="' + str(field.extras['show_if_mode']) + '" data-showif-var="' + escape_id(field.extras['show_if_var']) + '" data-showif-val=' + noquote(str(status.extras['show_if_val'][field.number])) + '>\n')
                         else:
                             fieldlist.append('                <div ' + display_style + 'class="dashowif" data-showif-sign="' + escape_id(field.extras['show_if_sign']) + '" data-showif-mode="' + str(field.extras['show_if_mode']) + '" data-showif-var="' + escape_id(field.extras['show_if_var']) + '" data-showif-val=' + noquote(str(status.extras['show_if_val'][field.number])) + '>\n')
-                if 'show_if_js' in field.extras:
+                if 'show_if_js' in field.extras and 'show_if_js' in status.extras and field.number in status.extras['show_if_js']:
                     if status.extras['show_if_js'][field.number]['mode'] == 0:
                         display_style = 'style="display: none;" '
                     else:
@@ -1339,13 +1349,19 @@ def as_html(status, debug, root, validation_rules, field_error, the_progress_bar
                             fieldlist.append('                <div ' + style_def + data_def + 'class="da-form-group row' + class_def + '"><div class="col"><hr><span class="dacollectnum">' + list_message + '</span><span class="dacollectremoved text-danger dainvisible"> ' + word("(Deleted)") + '</span><button type="button" class="btn btn-sm ' + BUTTON_STYLE + BUTTON_COLOR_UNDELETE + ' float-end dainvisible dacollectunremove"><i class="fas fa-trash-restore"></i> ' + word("Undelete") + '</button>' + da_remove_existing + '</div></div>\n')
                     else:
                         if field.number in note_fields:
-                            if field.number in status.helptexts:
-                                fieldlist.append(field_item(field, grid_info, pre=style_def + data_def, classes='da-field-container da-field-container-note' + class_def + extra_container_class, content_classes='col', content=help_wrap(note_fields[field.number], status.helptexts[field.number], status), under_text=under_text))
-                                # fieldlist.append('                <div ' + style_def + data_def + 'class="da-form-group row da-field-container da-field-container-note' + class_def + extra_container_class + '"><div class="col">' + help_wrap(note_fields[field.number], status.helptexts[field.number], status) + '</div></div>\n')
+                            if field.datatype == 'raw html':
+                                fieldlist.append(note_fields[field.number])
                             else:
-                                fieldlist.append(field_item(field, grid_info, pre=style_def + data_def, classes='da-field-container da-field-container-note' + class_def + extra_container_class, content_classes='col', content='<div>' + note_fields[field.number] + '</div>', under_text=under_text))
-                                # fieldlist.append('                <div ' + style_def + data_def + 'class="da-form-group row da-field-container da-field-container-note' + class_def + extra_container_class + '"><div class="col"><div>' + note_fields[field.number] + '</div></div></div>\n')
+                                if field.number in status.helptexts:
+                                    fieldlist.append(field_item(field, grid_info, pre=style_def + data_def, classes='da-field-container da-field-container-note' + class_def + extra_container_class, content_classes='col', content=help_wrap(note_fields[field.number], status.helptexts[field.number], status), under_text=under_text))
+                                    # fieldlist.append('                <div ' + style_def + data_def + 'class="da-form-group row da-field-container da-field-container-note' + class_def + extra_container_class + '"><div class="col">' + help_wrap(note_fields[field.number], status.helptexts[field.number], status) + '</div></div>\n')
+                                else:
+                                    fieldlist.append(field_item(field, grid_info, pre=style_def + data_def, classes='da-field-container da-field-container-note' + class_def + extra_container_class, content_classes='col', content='<div>' + note_fields[field.number] + '</div>', under_text=under_text))
+                                    # fieldlist.append('                <div ' + style_def + data_def + 'class="da-form-group row da-field-container da-field-container-note' + class_def + extra_container_class + '"><div class="col"><div>' + note_fields[field.number] + '</div></div></div>\n')
                     # continue
+                elif field.datatype == 'raw html':
+                    if field.number in note_fields:
+                        fieldlist.append(note_fields[field.number])
                 elif field.datatype == 'note':
                     if field.number in note_fields:
                         if field.number in status.helptexts:
@@ -1402,7 +1418,7 @@ def as_html(status, debug, root, validation_rules, field_error, the_progress_bar
                 varnames[safeid('_field_' + str(field.number))] = field.saveas
                 # the_saveas = status.saveas_to_use[field.saveas]
                 the_saveas = status.saveas_by_number[field.number]
-                if (hasattr(field, 'extras') and (('show_if_var' in field.extras and 'show_if_val' in status.extras) or 'show_if_js' in field.extras)) or (hasattr(field, 'disableothers') and field.disableothers):
+                if (hasattr(field, 'extras') and (('show_if_var' in field.extras and 'show_if_val' in status.extras) or ('show_if_js' in field.extras and 'show_if_js' in status.extras and field.number in status.extras['show_if_js']))) or (hasattr(field, 'disableothers') and field.disableothers):
                     label_saveas = the_saveas
                 else:
                     label_saveas = field.saveas
@@ -1769,7 +1785,7 @@ def as_html(status, debug, root, validation_rules, field_error, the_progress_bar
                         # fieldlist.append('                <div ' + style_def + data_def + 'class="da-form-group row' + side_note_parent + req_tag + field_class + class_def + '"><label' + label_for + ' class="col-' + daconfig['grid classes']['label width'] + ' col-form-label da-form-label datext-right">' + markdown_to_html(status.labels[field.number], trim=True, status=status, strip_newlines=True) + helptext_start + helptext_end + '</label><div class="col-' + daconfig['grid classes']['field width'] + ' dafieldpart">' + input_for(status, field) + '</div>' + side_note + '</div>\n')
             if grid_info['_enabled'] and grid_info[field.number]['end']:
                 fieldlist.append('                </div>\n')
-            if hasattr(field, 'extras') and (('show_if_var' in field.extras and 'show_if_val' in status.extras) or 'show_if_js' in field.extras) and not (grid_info['_enabled'] and grid_info[field.number]['grid']):
+            if hasattr(field, 'extras') and (('show_if_var' in field.extras and 'show_if_val' in status.extras) or ('show_if_js' in field.extras and 'show_if_js' in status.extras and field.number in status.extras['show_if_js'])) and not (grid_info['_enabled'] and grid_info[field.number]['grid']):
                 fieldlist.append('                </div>\n')
         output += status.pre
         output += indent_by(audio_text, 12) + '            <form aria-labelledby="daMainQuestion" action="' + root + '" id="daform" class="form-horizontal daformfields" method="POST"' + enctype_string + autofill + '>\n'
@@ -2484,11 +2500,11 @@ def as_html(status, debug, root, validation_rules, field_error, the_progress_bar
             var the_element_id = id_list[i].replace(/(:|\.|\[|\]|,|=)/g, "\\\\$1");
             if (theVal == null || theVal == ""){
               daDisableIfNotHidden("#daform [name='" + the_element_id + "']:not([type=hidden])", false);
-              $("#daform [name='" + the_element_id + "']:not([type=hidden])").parents(".da-form-group").removeClass("dagreyedout");
+              daDisableIfNotHidden("#daform [id='" + the_element_id + "']:not([type=hidden])", false);
             }
             else{
               daDisableIfNotHidden("#daform [name='" + the_element_id + "']:not([type=hidden])", true);
-              $("#daform [name='" + the_element_id + "']:not([type=hidden])").parents(".da-form-group").addClass("dagreyedout");
+              daDisableIfNotHidden("#daform [id='" + the_element_id + "']:not([type=hidden])", true);
             }
           }
         }
@@ -2497,17 +2513,11 @@ def as_html(status, debug, root, validation_rules, field_error, the_progress_bar
             daDisableIfNotHidden("#daform input:not([name='""" + element_id + """']):not([id^='""" + element_id + """']):not([type=hidden])", false);
             daDisableIfNotHidden("#daform select:not([name='""" + element_id + """']):not([id^='""" + element_id + """']):not([type=hidden])", false);
             daDisableIfNotHidden("#daform textarea:not([name='""" + element_id + """']):not([type=hidden])", false);
-            $("#daform input:not([name='""" + element_id + """']):not([id^='""" + element_id + """']):not([type=hidden])").parents(".da-form-group").removeClass("dagreyedout");
-            $("#daform select:not([name='""" + element_id + """']):not([id^='""" + element_id + """']):not([type=hidden])").parents(".da-form-group").removeClass("dagreyedout");
-            $("#daform textarea:not([name='""" + element_id + """']):not([type=hidden])").parents(".da-form-group").removeClass("dagreyedout");
           }
           else{
-            $("#daform input:not([name='""" + element_id + """']):not([id^='""" + element_id + """']):not([type=hidden])").prop("disabled", true);
-            $("#daform select:not([name='""" + element_id + """']):not([id^='""" + element_id + """']):not([type=hidden])").prop("disabled", true);
-            $("#daform textarea:not([name='""" + element_id + """']):not([type=hidden])").prop("disabled", true);
-            $("#daform input:not([name='""" + element_id + """']):not([id^='""" + element_id + """']):not([type=hidden])").parents(".da-form-group").addClass("dagreyedout");
-            $("#daform select:not([name='""" + element_id + """']):not([id^='""" + element_id + """']):not([type=hidden])").parents(".da-form-group").addClass("dagreyedout");
-            $("#daform textarea:not([name='""" + element_id + """']):not([type=hidden])").parents(".da-form-group").addClass("dagreyedout");
+            daDisableIfNotHidden("#daform input:not([name='""" + element_id + """']):not([id^='""" + element_id + """']):not([type=hidden])", true);
+            daDisableIfNotHidden("#daform select:not([name='""" + element_id + """']):not([id^='""" + element_id + """']):not([type=hidden])", true);
+            daDisableIfNotHidden("#daform textarea:not([name='""" + element_id + """']):not([type=hidden])", true);
           }
         }
       });
@@ -2681,7 +2691,7 @@ def input_for(status, field, embedded=False, floating_label=None):
         item_grid = False
         item_grid_start = ''
         item_grid_end = ''
-    if (hasattr(field, 'extras') and (('show_if_var' in field.extras and 'show_if_val' in status.extras) or ('show_if_js' in field.extras)) and hasattr(field, 'saveas')) or (hasattr(field, 'disableothers') and field.disableothers):
+    if (hasattr(field, 'extras') and (('show_if_var' in field.extras and 'show_if_val' in status.extras) or ('show_if_js' in field.extras and 'show_if_js' in status.extras and field.number in status.extras['show_if_js'])) and hasattr(field, 'saveas')) or (hasattr(field, 'disableothers') and field.disableothers):
         saveas_string = safeid('_field_' + str(field.number))
     else:
         saveas_string = field.saveas

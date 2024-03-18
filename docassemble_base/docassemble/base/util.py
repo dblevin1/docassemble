@@ -43,7 +43,7 @@ from jinja2.exceptions import TemplateError
 from docassemble.base.error import DAError, DAValidationError, DAIndexError, DAWebError, LazyNameError, DAAttributeError, DAException
 from docassemble.base.file_docx import include_docx_template
 from docassemble.base.filter import markdown_to_html
-from docassemble.base.functions import alpha, roman, item_label, comma_and_list, get_language, set_language, get_dialect, get_voice, set_country, get_country, word, comma_list, ordinal, ordinal_number, need, nice_number, quantity_noun, possessify, verb_past, verb_present, noun_plural, noun_singular, space_to_underscore, force_ask, force_gather, period_list, name_suffix, currency_symbol, currency, indefinite_article, nodoublequote, capitalize, title_case, url_of, do_you, did_you, does_a_b, did_a_b, were_you, was_a_b, have_you, has_a_b, your, her, his, their, is_word, get_locale, set_locale, update_locale, process_action, url_action, get_info, set_info, get_config, prevent_going_back, qr_code, action_menu_item, from_b64_json, defined, define, value, message, response, json_response, command, single_paragraph, quote_paragraphs, location_returned, location_known, user_lat_lon, interview_url, interview_url_action, interview_url_as_qr, interview_url_action_as_qr, interview_email, get_emails, this_thread, static_image, action_arguments, action_argument, language_functions, language_function_constructor, get_default_timezone, user_logged_in, interface, user_privileges, user_has_privilege, user_info, background_action, background_response, background_response_action, background_error_action, us, set_live_help_status, chat_partners_available, phone_number_in_e164, phone_number_formatted, phone_number_is_valid, countries_list, country_name, write_record, read_records, delete_record, variables_as_json, all_variables, server, language_from_browser, device, plain, bold, italic, states_list, state_name, subdivision_type, indent, raw, fix_punctuation, set_progress, get_progress, referring_url, undefine, invalidate, dispatch, yesno, noyes, split, showif, showifdef, phone_number_part, set_parts, log, encode_name, decode_name, interview_list, interview_menu, server_capabilities, session_tags, get_chat_log, get_user_list, get_user_info, set_user_info, get_user_secret, create_user, create_session, get_session_variables, set_session_variables, get_question_data, go_back_in_session, manage_privileges, salutation, redact, ensure_definition, forget_result_of, re_run_logic, reconsider, set_title, set_save_status, single_to_double_newlines, CustomDataType, verbatim, add_separators, update_ordinal_numbers, update_ordinal_function, update_language_function, update_nice_numbers, update_word_collection, store_variables_snapshot, get_uid, update_terms, possessify_long, a_in_the_b, its, the, this, these, underscore_to_space, some, ReturnValue, set_variables, language_name, run_action_in_session  # noqa: F401 # pylint: disable=unused-import
+from docassemble.base.functions import alpha, roman, item_label, comma_and_list, get_language, set_language, get_dialect, get_voice, set_country, get_country, word, comma_list, ordinal, ordinal_number, need, nice_number, quantity_noun, possessify, verb_past, verb_present, noun_plural, noun_singular, space_to_underscore, force_ask, force_gather, period_list, name_suffix, currency_symbol, currency, indefinite_article, nodoublequote, capitalize, title_case, url_of, do_you, did_you, does_a_b, did_a_b, were_you, was_a_b, have_you, has_a_b, your, her, his, their, is_word, get_locale, set_locale, update_locale, process_action, url_action, get_info, set_info, get_config, prevent_going_back, qr_code, action_menu_item, from_b64_json, defined, define, value, message, response, json_response, command, single_paragraph, quote_paragraphs, location_returned, location_known, user_lat_lon, interview_url, interview_url_action, interview_url_as_qr, interview_url_action_as_qr, interview_email, get_emails, this_thread, static_image, action_arguments, action_argument, language_functions, language_function_constructor, get_default_timezone, user_logged_in, interface, user_privileges, user_has_privilege, user_info, current_context, background_action, background_response, background_response_action, background_error_action, us, set_live_help_status, chat_partners_available, phone_number_in_e164, phone_number_formatted, phone_number_is_valid, countries_list, country_name, write_record, read_records, delete_record, variables_as_json, all_variables, server, language_from_browser, device, plain, bold, italic, states_list, state_name, subdivision_type, indent, raw, fix_punctuation, set_progress, get_progress, referring_url, undefine, invalidate, dispatch, yesno, noyes, split, showif, showifdef, phone_number_part, set_parts, log, encode_name, decode_name, interview_list, interview_menu, server_capabilities, session_tags, get_chat_log, get_user_list, get_user_info, set_user_info, get_user_secret, create_user, invite_user, create_session, get_session_variables, set_session_variables, get_question_data, go_back_in_session, manage_privileges, salutation, redact, ensure_definition, forget_result_of, re_run_logic, reconsider, set_title, set_save_status, single_to_double_newlines, CustomDataType, verbatim, add_separators, update_ordinal_numbers, update_ordinal_function, update_language_function, update_nice_numbers, update_word_collection, store_variables_snapshot, get_uid, update_terms, possessify_long, a_in_the_b, its, the, this, these, underscore_to_space, some, ReturnValue, set_variables, language_name, run_action_in_session  # noqa: F401 # pylint: disable=unused-import
 from docassemble.base.generate_key import random_alphanumeric, random_string
 from docassemble.base.logger import logmessage
 from docassemble.base.pandoc import word_to_markdown, concatenate_files
@@ -210,6 +210,7 @@ __all__ = [
     'user_privileges',
     'user_has_privilege',
     'user_info',
+    'current_context',
     'task_performed',
     'task_not_yet_performed',
     'mark_task_as_performed',
@@ -288,6 +289,7 @@ __all__ = [
     'set_user_info',
     'get_user_secret',
     'create_user',
+    'invite_user',
     'create_session',
     'get_session_variables',
     'set_session_variables',
@@ -6335,8 +6337,8 @@ class DAWeb(DAObject):
             data = {}
         if isinstance(data, DADict):
             data = data.elements
-        if json_body is False and not isinstance(data, dict):
-            raise DAError("DAWeb.call: data must be a dictionary")
+        # if json_body is False and not isinstance(data, dict):
+        #     raise DAError("DAWeb.call: data must be a dictionary")
         if params is None:
             params = {}
         if isinstance(params, DADict):
@@ -6782,11 +6784,24 @@ class DateTimeDelta:
         output = []
         diff = dateutil.relativedelta.relativedelta(self.end, self.start)
         if diff.years != 0:
-            output.append((abs(diff.years), noun_plural(word('year'), abs(diff.years))))
+            output.append((abs(diff.years), noun_plural(word('year'), abs(diff.years), noun_is_singular=True)))
         if diff.months != 0 and specificity != 'year':
-            output.append((abs(diff.months), noun_plural(word('month'), abs(diff.months))))
+            output.append((abs(diff.months), noun_plural(word('month'), abs(diff.months), noun_is_singular=True)))
         if diff.days != 0 and specificity not in ('year', 'month'):
-            output.append((abs(diff.days), noun_plural(word('day'), abs(diff.days))))
+            output.append((abs(diff.days), noun_plural(word('day'), abs(diff.days), noun_is_singular=True)))
+        if len(output) == 0 or specificity in ('hour', 'minute', 'second'):
+            if diff.hours != 0 and specificity not in ('year', 'month', 'day'):
+                output.append((abs(diff.hours), noun_plural(word('hour'), abs(diff.hours), noun_is_singular=True)))
+            if (abs(diff.hours) < 2 or specificity in ('minute', 'second')) and diff.minutes != 0 and specificity not in ('year', 'month', 'day', 'hour'):
+                output.append((abs(diff.minutes), noun_plural(word('minute'), abs(diff.minutes), noun_is_singular=True)))
+        if len(output) == 0 or specificity == 'second':
+            if diff.seconds != 0 and specificity not in ('year', 'month', 'day', 'hour', 'minute'):
+                output.append((abs(diff.seconds), noun_plural(word('second'), abs(diff.seconds), noun_is_singular=True)))
+        if len(output) == 0:
+            if specificity is None:
+                output.append((0, noun_plural(word('second'), 0, noun_is_singular=True)))
+            else:
+                output.append((0, noun_plural(word(specificity), 0, noun_is_singular=True)))
         if kwargs.get('nice', True):
             return_value = comma_and_list(["%s %s" % (nice_number(y[0]), y[1]) for y in output])
             if kwargs.get('capitalize', False):

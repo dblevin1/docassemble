@@ -70,7 +70,7 @@ locale.setlocale(locale.LC_ALL, '')
 contains_volatile = re.compile(r'^(x\.|x\[|.*\[[ijklmn]\])')
 match_brackets_or_dot = re.compile(r'(\[.+?\]|\.[a-zA-Z_][a-zA-Z0-9_]*)')
 
-__all__ = ['alpha', 'roman', 'item_label', 'ordinal', 'ordinal_number', 'comma_list', 'word', 'get_language', 'set_language', 'get_dialect', 'set_country', 'get_country', 'get_locale', 'set_locale', 'comma_and_list', 'need', 'nice_number', 'quantity_noun', 'currency_symbol', 'verb_past', 'verb_present', 'noun_plural', 'noun_singular', 'indefinite_article', 'capitalize', 'space_to_underscore', 'force_ask', 'period_list', 'name_suffix', 'currency', 'static_image', 'title_case', 'url_of', 'process_action', 'url_action', 'get_info', 'set_info', 'get_config', 'prevent_going_back', 'qr_code', 'action_menu_item', 'from_b64_json', 'defined', 'value', 'message', 'response', 'json_response', 'command', 'background_response', 'background_response_action', 'single_paragraph', 'quote_paragraphs', 'location_returned', 'location_known', 'user_lat_lon', 'interview_url', 'interview_url_action', 'interview_url_as_qr', 'interview_url_action_as_qr', 'interview_email', 'get_emails', 'action_arguments', 'action_argument', 'get_default_timezone', 'user_logged_in', 'user_privileges', 'user_has_privilege', 'user_info', 'background_action', 'background_response', 'background_response_action', 'us', 'set_live_help_status', 'chat_partners_available', 'phone_number_in_e164', 'phone_number_formatted', 'phone_number_is_valid', 'countries_list', 'country_name', 'write_record', 'read_records', 'delete_record', 'variables_as_json', 'all_variables', 'language_from_browser', 'device', 'plain', 'bold', 'italic', 'subdivision_type', 'indent', 'raw', 'fix_punctuation', 'set_progress', 'get_progress', 'referring_url', 'undefine', 'invalidate', 'dispatch', 'yesno', 'noyes', 'phone_number_part', 'log', 'encode_name', 'decode_name', 'interview_list', 'interview_menu', 'server_capabilities', 'session_tags', 'get_chat_log', 'get_user_list', 'get_user_info', 'set_user_info', 'get_user_secret', 'create_user', 'create_session', 'get_session_variables', 'set_session_variables', 'go_back_in_session', 'manage_privileges', 'redact', 'forget_result_of', 're_run_logic', 'reconsider', 'get_question_data', 'set_save_status', 'single_to_double_newlines', 'verbatim', 'add_separators', 'store_variables_snapshot', 'update_terms', 'set_variables', 'language_name', 'run_action_in_session']
+__all__ = ['alpha', 'roman', 'item_label', 'ordinal', 'ordinal_number', 'comma_list', 'word', 'get_language', 'set_language', 'get_dialect', 'set_country', 'get_country', 'get_locale', 'set_locale', 'comma_and_list', 'need', 'nice_number', 'quantity_noun', 'currency_symbol', 'verb_past', 'verb_present', 'noun_plural', 'noun_singular', 'indefinite_article', 'capitalize', 'space_to_underscore', 'force_ask', 'period_list', 'name_suffix', 'currency', 'static_image', 'title_case', 'url_of', 'process_action', 'url_action', 'get_info', 'set_info', 'get_config', 'prevent_going_back', 'qr_code', 'action_menu_item', 'from_b64_json', 'defined', 'value', 'message', 'response', 'json_response', 'command', 'background_response', 'background_response_action', 'single_paragraph', 'quote_paragraphs', 'location_returned', 'location_known', 'user_lat_lon', 'interview_url', 'interview_url_action', 'interview_url_as_qr', 'interview_url_action_as_qr', 'interview_email', 'get_emails', 'action_arguments', 'action_argument', 'get_default_timezone', 'user_logged_in', 'user_privileges', 'user_has_privilege', 'user_info', 'current_context', 'background_action', 'background_response', 'background_response_action', 'us', 'set_live_help_status', 'chat_partners_available', 'phone_number_in_e164', 'phone_number_formatted', 'phone_number_is_valid', 'countries_list', 'country_name', 'write_record', 'read_records', 'delete_record', 'variables_as_json', 'all_variables', 'language_from_browser', 'device', 'plain', 'bold', 'italic', 'subdivision_type', 'indent', 'raw', 'fix_punctuation', 'set_progress', 'get_progress', 'referring_url', 'undefine', 'invalidate', 'dispatch', 'yesno', 'noyes', 'phone_number_part', 'log', 'encode_name', 'decode_name', 'interview_list', 'interview_menu', 'server_capabilities', 'session_tags', 'get_chat_log', 'get_user_list', 'get_user_info', 'set_user_info', 'get_user_secret', 'create_user', 'invite_user', 'create_session', 'get_session_variables', 'set_session_variables', 'go_back_in_session', 'manage_privileges', 'redact', 'forget_result_of', 're_run_logic', 'reconsider', 'get_question_data', 'set_save_status', 'single_to_double_newlines', 'verbatim', 'add_separators', 'store_variables_snapshot', 'update_terms', 'set_variables', 'language_name', 'run_action_in_session']
 
 # debug = False
 # default_dialect = 'us'
@@ -122,7 +122,7 @@ class ReturnValue:
 
 
 def filename_invalid(filename):
-    if '../' in filename:
+    if '../' in filename or filename.startswith('/'):
         return True
     if re.search(r'[^A-Za-z0-9\_\.\-\/ ]', filename):
         return True
@@ -747,6 +747,78 @@ def user_has_privilege(*pargs):
     return False
 
 
+class TheContext:
+
+    @property
+    def session(self):
+        return get_uid()
+
+    @property
+    def filename(self):
+        return this_thread.current_info.get('yaml_filename', None)
+
+    @property
+    def package(self):
+        filename = this_thread.current_info.get('yaml_filename', None)
+        if filename:
+            return re.sub(r':.*', '', filename)
+        return None
+
+    @property
+    def question_id(self):
+        try:
+            return this_thread.current_question.id
+        except:
+            return None
+
+    @property
+    def variable(self):
+        try:
+            return this_thread.current_variable[-1]
+        except:
+            return None
+
+    @property
+    def current_package(self):
+        try:
+            return this_thread.current_question.from_source.package
+        except:
+            return None
+
+    @property
+    def current_filename(self):
+        try:
+            return this_thread.current_question.from_source.path
+        except:
+            return None
+
+    @property
+    def current_section(self):
+        try:
+            return this_thread.current_section or get_user_dict()['nav'].current
+        except:
+            return None
+
+    @property
+    def inside_of(self):
+        try:
+            return this_thread.evaluation_context or 'standard'
+        except:
+            return 'standard'
+
+
+warnings_given = {}
+
+
+def warn_if_not_warned(the_function, the_attribute, alternate_function):
+    if the_function not in warnings_given:
+        warnings_given[the_function] = set()
+    if the_attribute in warnings_given[the_function]:
+        return
+    logmessage("DEPRECATION WARNING: in a future version, the " + the_function + "() function will not support the attribute " + the_attribute + ". Use " + alternate_function + "()." + the_attribute + " instead.")
+    warnings_given[the_function].add(the_attribute)
+
+
 class TheUser:
 
     def name(self):
@@ -758,55 +830,148 @@ class TheUser:
             return self.first_name
         return word("Unnamed User")
 
+    @property
+    def first_name(self):
+        if user_logged_in():
+            return this_thread.current_info['user']['firstname']
+        return word("Anonymous")
+
+    @property
+    def last_name(self):
+        if user_logged_in():
+            return this_thread.current_info['user']['lastname']
+        return word("User")
+
+    @property
+    def id(self):
+        if user_logged_in():
+            return this_thread.current_info['user']['theid']
+        return None
+
+    @property
+    def email(self):
+        if user_logged_in():
+            return this_thread.current_info['user']['email']
+        return None
+
+    @property
+    def country(self):
+        if user_logged_in():
+            return this_thread.current_info['user']['country']
+        return None
+
+    @property
+    def subdivision_first(self):
+        if user_logged_in():
+            return this_thread.current_info['user']['subdivisionfirst']
+        return None
+
+    @property
+    def subdivision_second(self):
+        if user_logged_in():
+            return this_thread.current_info['user']['subdivisionsecond']
+        return None
+
+    @property
+    def subdivision_third(self):
+        if user_logged_in():
+            return this_thread.current_info['user']['subdivisionthird']
+        return None
+
+    @property
+    def organization(self):
+        if user_logged_in():
+            return this_thread.current_info['user']['organization']
+        return None
+
+    @property
+    def language(self):
+        if user_logged_in():
+            return this_thread.current_info['user']['language']
+        return None
+
+    @property
+    def timezone(self):
+        if user_logged_in():
+            return this_thread.current_info['user']['timezone']
+        return None
+
+    @property
+    def session(self):
+        warn_if_not_warned('user_info', 'session', 'current_context')
+        return get_uid()
+
+    @property
+    def filename(self):
+        warn_if_not_warned('user_info', 'filename', 'current_context')
+        return this_thread.current_info.get('yaml_filename', None)
+
+    @property
+    def package(self):
+        warn_if_not_warned('user_info', 'package', 'current_context')
+        filename = this_thread.current_info.get('yaml_filename', None)
+        if filename:
+            return re.sub(r':.*', '', filename)
+        return None
+
+    @property
+    def question_id(self):
+        warn_if_not_warned('user_info', 'question_id', 'current_context')
+        try:
+            return this_thread.current_question.id
+        except:
+            return None
+
+    @property
+    def variable(self):
+        warn_if_not_warned('user_info', 'variable', 'current_context')
+        try:
+            return this_thread.current_variable[-1]
+        except:
+            return None
+
+    @property
+    def current_package(self):
+        warn_if_not_warned('user_info', 'current_package', 'current_context')
+        try:
+            return this_thread.current_question.from_source.package
+        except:
+            return None
+
+    @property
+    def current_filename(self):
+        warn_if_not_warned('user_info', 'current_filename', 'current_context')
+        try:
+            return this_thread.current_question.from_source.path
+        except:
+            return None
+
+    @property
+    def current_section(self):
+        warn_if_not_warned('user_info', 'current_section', 'current_context')
+        try:
+            return this_thread.current_section or get_user_dict()['nav'].current
+        except:
+            return None
+
     def __str__(self):
         return str(self.name())
 
 
+def current_context():
+    """Returns an object with information about the context in which
+    the Python code is currently operating."""
+    return TheContext()
+
+
 def user_info():
-    """Returns an object with information from the user profile.  Keys
-    include first_name, last_name, email, country, subdivision_first,
-    subdivision_second, subdivision_third, and organization."""
-    user = TheUser()
-    if user_logged_in():
-        user.first_name = this_thread.current_info['user']['firstname']
-        user.last_name = this_thread.current_info['user']['lastname']
-        user.id = this_thread.current_info['user']['theid']
-        user.email = this_thread.current_info['user']['email']
-        user.country = this_thread.current_info['user']['country']
-        user.subdivision_first = this_thread.current_info['user']['subdivisionfirst']
-        user.subdivision_second = this_thread.current_info['user']['subdivisionsecond']
-        user.subdivision_third = this_thread.current_info['user']['subdivisionthird']
-        user.organization = this_thread.current_info['user']['organization']
-    else:
-        user.first_name = word("Anonymous")
-        user.last_name = word("User")
-    user.session = get_uid()
-    user.filename = this_thread.current_info.get('yaml_filename', None)
-    if user.filename:
-        user.package = re.sub(r':.*', '', user.filename)
-    else:
-        user.package = None
-    try:
-        user.question_id = this_thread.current_question.id
-    except:
-        user.question_id = None
-    try:
-        user.variable = this_thread.current_variable[-1]
-    except:
-        user.variable = None
-    try:
-        user.current_package = this_thread.current_question.from_source.package
-    except:
-        user.current_package = None
-    try:
-        user.current_filename = this_thread.current_question.from_source.path
-    except:
-        user.current_filename = None
-    try:
-        user.current_section = this_thread.current_section or get_user_dict()['nav'].current
-    except:
-        user.current_section = None
-    return user
+    """Returns an object with information from the user profile. Keys
+    include first_name, last_name, id, email, country,
+    subdivision_first, subdivision_second, subdivision_third, and
+    organization.
+
+    """
+    return TheUser()
 
 
 def action_arguments():
@@ -1624,6 +1789,7 @@ server.button_class_prefix = 'btn-'
 server.chat_partners_available = null_func
 server.chord = null_func_func
 server.create_user = null_func
+server.invite_user = null_func
 server.daconfig = {}
 server.debug = False
 server.debug_status = False
@@ -2760,6 +2926,8 @@ def nice_number_default(the_number, **kwargs):
         language_to_use = '*'
     else:
         language_to_use = 'en'
+    if isinstance(the_number, float):
+        the_number = float(decimal.Context(prec=8).create_decimal_from_float(the_number))
     if int(float(the_number)) == float(the_number):
         the_number = int(float(the_number))
         is_integer = True
@@ -2983,7 +3151,10 @@ def number_or_length(target):
 
 def noun_plural_en(*pargs, **kwargs):
     ensure_definition(*pargs, **kwargs)
-    noun = noun_singular_en(pargs[0])
+    if kwargs.get('noun_is_singular', False):
+        noun = pargs[0]
+    else:
+        noun = noun_singular_en(pargs[0])
     if len(pargs) >= 2 and number_or_length(pargs[1]) == 1:
         return str(noun)
     output = docassemble_pattern.en.pluralize(str(noun))
@@ -3042,7 +3213,10 @@ def verb_past_es(*pargs, **kwargs):
 
 def noun_plural_es(*pargs, **kwargs):
     ensure_definition(*pargs, **kwargs)
-    noun = noun_singular_es(pargs[0])
+    if kwargs.get('noun_is_singular', False):
+        noun = pargs[0]
+    else:
+        noun = noun_singular_es(pargs[0])
     if len(pargs) >= 2 and number_or_length(pargs[1]) == 1:
         return str(noun)
     output = docassemble_pattern.es.pluralize(str(noun))
@@ -3101,7 +3275,10 @@ def verb_past_de(*pargs, **kwargs):
 
 def noun_plural_de(*pargs, **kwargs):
     ensure_definition(*pargs, **kwargs)
-    noun = noun_singular_de(pargs[0])
+    if kwargs.get('noun_is_singular', False):
+        noun = pargs[0]
+    else:
+        noun = noun_singular_de(pargs[0])
     if len(pargs) >= 2 and number_or_length(pargs[1]) == 1:
         return str(noun)
     output = docassemble_pattern.de.pluralize(str(noun))
@@ -3160,7 +3337,10 @@ def verb_past_fr(*pargs, **kwargs):
 
 def noun_plural_fr(*pargs, **kwargs):
     ensure_definition(*pargs, **kwargs)
-    noun = noun_singular_fr(pargs[0])
+    if kwargs.get('noun_is_singular', False):
+        noun = pargs[0]
+    else:
+        noun = noun_singular_fr(pargs[0])
     if len(pargs) >= 2 and number_or_length(pargs[1]) == 1:
         return str(noun)
     output = docassemble_pattern.fr.pluralize(str(noun))
@@ -3219,7 +3399,10 @@ def verb_past_it(*pargs, **kwargs):
 
 def noun_plural_it(*pargs, **kwargs):
     ensure_definition(*pargs, **kwargs)
-    noun = noun_singular_it(pargs[0])
+    if kwargs.get('noun_is_singular', False):
+        noun = pargs[0]
+    else:
+        noun = noun_singular_it(pargs[0])
     if len(pargs) >= 2 and number_or_length(pargs[1]) == 1:
         return str(noun)
     output = docassemble_pattern.it.pluralize(str(noun))
@@ -3278,7 +3461,10 @@ def verb_past_nl(*pargs, **kwargs):
 
 def noun_plural_nl(*pargs, **kwargs):
     ensure_definition(*pargs, **kwargs)
-    noun = noun_singular_nl(pargs[0])
+    if kwargs.get('noun_is_singular', False):
+        noun = pargs[0]
+    else:
+        noun = noun_singular_nl(pargs[0])
     if len(pargs) >= 2 and number_or_length(pargs[1]) == 1:
         return str(noun)
     output = docassemble_pattern.nl.pluralize(str(noun))
@@ -5205,6 +5391,18 @@ def set_user_info(**kwargs):
 def create_user(email, password, privileges=None, info=None):
     """Creates a user account with the given e-mail and password, returning the user ID of the new account."""
     return server.create_user(email, password, privileges=privileges, info=info)
+
+
+def invite_user(email_address, privilege=None, send=True):
+    """Creates an invitation for a user to create an account. If the
+    send parameter is true, which is the default, then an email
+    invitation is sent and the function returns None. If the send
+    parameter is false, then a URL is returned, which a user can visit
+    in order to create an account. The privilege parameter can be set
+    to a single privilege; if omitted, the new user has the privilege
+    of an ordinary user.
+    """
+    return server.invite_user(email_address, privilege=privilege, send=send)
 
 
 def get_user_secret(username, password):

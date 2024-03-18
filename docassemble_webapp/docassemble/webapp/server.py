@@ -49,7 +49,7 @@ import docassemble.webapp.setup
 from docassemble.webapp.setup import da_version
 import docassemble.base.astparser
 from docassemble.webapp.api_key import encrypt_api_key
-from docassemble.base.error import DAError, DAErrorNoEndpoint, DAErrorMissingVariable, DAErrorCompileError, DAValidationError, DAException, DANotFoundError, DAInvalidFilename
+from docassemble.base.error import DAError, DAErrorNoEndpoint, DAErrorMissingVariable, DAErrorCompileError, DAValidationError, DAException, DANotFoundError, DAInvalidFilename, DASourceError
 import docassemble.base.functions
 from docassemble.base.functions import get_default_timezone, ReturnValue, word
 import docassemble.base.DA
@@ -157,7 +157,6 @@ docassemble.base.util.set_knn_machine_learner(docassemble.webapp.machinelearning
 docassemble.base.util.set_machine_learning_entry(docassemble.webapp.machinelearning.MachineLearningEntry)
 docassemble.base.util.set_random_forest_machine_learner(docassemble.webapp.machinelearning.RandomForestMachineLearner)
 docassemble.base.util.set_svm_machine_learner(docassemble.webapp.machinelearning.SVMMachineLearner)
-
 
 
 min_system_version = '1.2.0'
@@ -636,6 +635,17 @@ mimetypes.add_type('application/x-yaml', '.yaml')
 if DEBUG_BOOT:
     boot_log("server: creating session store")
 
+safeyaml = ruamel.yaml.YAML(typ='safe')
+altyaml = ruamel.yaml.YAML(typ=['safe', 'bytes'])
+altyaml.default_flow_style = False
+altyaml.default_style = '"'
+altyaml.allow_unicode = True
+altyaml.width = 10000
+altyamlstring = ruamel.yaml.YAML(typ=['safe', 'string'])
+altyamlstring.default_flow_style = False
+altyamlstring.default_style = '"'
+altyamlstring.allow_unicode = True
+altyamlstring.width = 10000
 store = RedisStore(r_store)
 
 kv_session = KVSessionExtension(store, app)
@@ -1167,12 +1177,17 @@ def my_default_url(error, endpoint, values):  # pylint: disable=unused-argument
 
 
 def make_safe_url(url):
+    if url in ('help', 'login', 'signin', 'restart', 'new_session', 'exit', 'interview', 'logout', 'exit_logout', 'leave', 'register', 'profile', 'change_password', 'interviews', 'dispatch', 'manage', 'config', 'playground', 'playgroundtemplate', 'playgroundstatic', 'playgroundsources', 'playgroundmodules', 'playgroundpackages', 'configuration', 'root', 'temp_url', 'login_url', 'exit_endpoint', 'interview_start', 'interview_list', 'playgroundfiles', 'create_playground_package', 'run', 'run_interview_in_package', 'run_dispatch', 'run_new', 'run_new_dispatch'):
+        return url
     parts = urlsplit(url)
     safe_url = parts.path
     if parts.query != '':
         safe_url += '?' + parts.query
     if parts.fragment != '':
         safe_url += '#' + parts.fragment
+    if len(safe_url) > 0 and safe_url[0] not in ('?', '#', '/'):
+        safe_url = '/' + safe_url
+    safe_url = re.sub(r'^//+', '/', safe_url)
     return safe_url
 
 
@@ -1226,6 +1241,7 @@ lm.anonymous_user = AnonymousUserModel
 
 if DEBUG_BOOT:
     boot_log("server: finished setting up Flask")
+
 
 def url_for_interview(**args):
     for k, v in daconfig.get('dispatch').items():
@@ -1958,7 +1974,7 @@ def get_base_words():
         with open(documentation['fullpath'], 'r', encoding='utf-8') as fp:
             content = fp.read()
             content = fix_tabs.sub('  ', content)
-            return ruamel.yaml.safe_load(content)
+            return safeyaml.load(content)
     return None
 
 
@@ -1968,7 +1984,7 @@ def get_pg_code_cache():
         with open(documentation['fullpath'], 'r', encoding='utf-8') as fp:
             content = fp.read()
             content = fix_tabs.sub('  ', content)
-            return ruamel.yaml.safe_load(content)
+            return safeyaml.load(content)
     return None
 
 
@@ -1978,7 +1994,7 @@ def get_documentation_dict():
         with open(documentation['fullpath'], 'r', encoding='utf-8') as fp:
             content = fp.read()
             content = fix_tabs.sub('  ', content)
-            return ruamel.yaml.safe_load(content)
+            return safeyaml.load(content)
     return None
 
 
@@ -1988,7 +2004,7 @@ def get_name_info():
         with open(docstring['fullpath'], 'r', encoding='utf-8') as fp:
             content = fp.read()
             content = fix_tabs.sub('  ', content)
-            info = ruamel.yaml.safe_load(content)
+            info = safeyaml.load(content)
         for val in info:
             info[val]['name'] = val
             if 'insert' not in info[val]:
@@ -2007,7 +2023,7 @@ def get_title_documentation():
         with open(documentation['fullpath'], 'r', encoding='utf-8') as fp:
             content = fp.read()
             content = fix_tabs.sub('  ', content)
-            return ruamel.yaml.safe_load(content)
+            return safeyaml.load(content)
     return None
 
 
@@ -2252,7 +2268,7 @@ def proc_example_list(example_list, package, directory, examples):
                 for block in blocks:
                     if re.search(r'metadata:', block):
                         try:
-                            the_block = ruamel.yaml.safe_load(block)
+                            the_block = safeyaml.load(block)
                             if isinstance(the_block, dict) and 'metadata' in the_block:
                                 the_metadata = the_block['metadata']
                                 result['title'] = the_metadata.get('title', the_metadata.get('short title', word('Untitled')))
@@ -2316,7 +2332,7 @@ def get_examples():
                     with open(example_list_file['fullpath'], 'r', encoding='utf-8') as fp:
                         content = fp.read()
                         content = fix_tabs.sub('  ', content)
-                        proc_example_list(ruamel.yaml.safe_load(content), the_package, the_directory, examples)
+                        proc_example_list(safeyaml.load(content), the_package, the_directory, examples)
                 except Exception as the_err:
                     logmessage("There was an error loading the Playground examples:" + str(the_err))
     # logmessage("Examples: " + str(examples))
@@ -2492,6 +2508,7 @@ def additional_scripts(interview_status, yaml_filename, as_javascript=False):
           }
           gtag('set', 'page_path', """ + json.dumps(interview_package + "/" + interview_filename + "/") + """ + idToUse.replace(/[^A-Za-z0-9]+/g, '_'));
           gtag('event', 'page_view', {'page_path': """ + json.dumps(interview_package + "/" + interview_filename + "/") + """ + idToUse.replace(/[^A-Za-z0-9]+/g, '_')});
+          //gtag('event', 'page_view', {'page_title': document.title, 'page_location': location.protocol + "//" + location.host + """ + json.dumps("/" + interview_package + "/" + interview_filename + "/") + """ + idToUse.replace(/[^A-Za-z0-9]+/g, '_')});
         }
       }
 """
@@ -5837,7 +5854,7 @@ def github_oauth_callback():
         return ('File not found', 404)
     setup_translation()
     failed = False
-    do_redirect = False
+    do_a_redirect = False
     if not app.config['USE_GITHUB']:
         logmessage('github_oauth_callback: server does not use github')
         failed = True
@@ -5850,14 +5867,14 @@ def github_oauth_callback():
         if 'code' not in request.args or 'state' not in request.args:
             logmessage('github_oauth_callback: code and state not in args')
             failed = True
-            do_redirect = True
+            do_a_redirect = True
         elif request.args['state'] != github_next['state']:
             logmessage('github_oauth_callback: state did not match')
             failed = True
     if failed:
         r.delete('da:github:userid:' + str(current_user.id))
         r.delete('da:using_github:userid:' + str(current_user.id))
-        if do_redirect:
+        if do_a_redirect:
             flash(word("There was a problem connecting to GitHub. Please check your GitHub configuration and try again."), 'danger')
             return redirect(url_for('github_menu'))
         return ('File not found', 404)
@@ -8265,7 +8282,7 @@ def index(action_argument=None, refer=None):
                     the_field = validation_error.field
                     logmessage("field is " + the_field)
                     if the_field not in key_to_orig_key:
-                        for item in key_to_orig_key.keys():
+                        for item in key_to_orig_key:
                             if item.startswith(the_field + '['):
                                 the_field = item
                                 break
@@ -10913,9 +10930,9 @@ def index(action_argument=None, refer=None):
       }
       function daDisableIfNotHidden(query, value){
         $(query).each(function(){
-          var showIfParent = $(this).parents('.dashowif,.dajsshowif');
+          var showIfParent = $(this).parents('.dashowif, .dajsshowif');
           if (!(showIfParent.length && ($(showIfParent[0]).data('isVisible') == '0' || !$(showIfParent[0]).is(":visible")))){
-            if ($(this).hasClass('combobox')){
+            if ($(this).prop('tagName') == 'INPUT' && $(this).hasClass('combobox')){
               if (value){
                 daComboBoxes[$(this).attr('id')].disable();
               }
@@ -10942,6 +10959,12 @@ def index(action_argument=None, refer=None):
             else {
               $(this).prop("disabled", value);
             }
+            if (value){
+              $(this).parents(".da-form-group").addClass("dagreyedout");
+            }
+            else {
+              $(this).parents(".da-form-group").removeClass("dagreyedout");
+            }
           }
         });
       }
@@ -10959,7 +10982,7 @@ def index(action_argument=None, refer=None):
           showIfVal = parseInt(showIfVal);
         }
         if (typeof theVal == 'string' || typeof showIfVal == 'string'){
-          if (String(showIfVal) == 'None' && String(theVal) == ''){
+          if (String(showIfVal) == 'None' && (String(theVal) == '' || theVal === null)){
             return true;
           }
           return (String(theVal) == String(showIfVal));
@@ -11137,7 +11160,7 @@ def index(action_argument=None, refer=None):
         //   e.preventDefault();
         //   $(this).tab('show');
         // });
-        $("input.dafile").fileinput({theme: "fas", language: document.documentElement.lang});
+        $("input.dafile").fileinput({theme: "fas", language: document.documentElement.lang, allowedPreviewTypes: ['image']});
         $(".datableup,.databledown").click(function(e){
           e.preventDefault();
           $(this).blur();
@@ -14001,7 +14024,7 @@ def observer():
         $(query).each(function(){
           var showIfParent = $(this).parents('.dashowif, .dajsshowif');
           if (!(showIfParent.length && ($(showIfParent[0]).data('isVisible') == '0' || !$(showIfParent[0]).is(":visible")))){
-            if ($(this).hasClass('combobox')){
+            if ($(this).prop('tagName') == 'INPUT' && $(this).hasClass('combobox')){
               if (value){
                 daComboBoxes[$(this).attr('id')].disable();
               }
@@ -14028,6 +14051,12 @@ def observer():
             else {
               $(this).prop("disabled", value);
             }
+            if (value){
+              $(this).parents(".da-form-group").addClass("dagreyedout");
+            }
+            else {
+              $(this).parents(".da-form-group").removeClass("dagreyedout");
+            }
           }
         });
       }
@@ -14045,7 +14074,7 @@ def observer():
           showIfVal = parseInt(showIfVal);
         }
         if (typeof theVal == 'string' || typeof showIfVal == 'string'){
-          if (String(showIfVal) == 'None' && String(theVal) == ''){
+          if (String(showIfVal) == 'None' && (String(theVal) == '' || theVal === null)){
             return true;
           }
           return (String(theVal) == String(showIfVal));
@@ -19318,9 +19347,9 @@ def config_page():
     python_version = daconfig.get('python version', word('Unknown'))
     system_version = daconfig.get('system version', word('Unknown'))
     if python_version == system_version:
-        version = word("Version ") + str(python_version)
+        version = word("Version") + " " + str(python_version)
     else:
-        version = word("Version ") + str(python_version) + ' (Python); ' + str(system_version) + ' (' + word('system') + ')'
+        version = word("Version") + " " + str(python_version) + ' (Python); ' + str(system_version) + ' (' + word('system') + ')'
     response = make_response(render_template('pages/config.html', underlying_python_version=re.sub(r' \(.*', '', sys.version, flags=re.DOTALL), free_disk_space=humanize.naturalsize(disk_free), config_errors=docassemble.base.config.errors, config_messages=docassemble.base.config.env_messages, version_warning=version_warning, version=version, bodyclass='daadminbody', tab_title=word('Configuration'), page_title=word('Configuration'), extra_css=Markup('\n    <link href="' + url_for('static', filename='codemirror/lib/codemirror.css', v=da_version) + '" rel="stylesheet">\n    <link href="' + url_for('static', filename='codemirror/addon/search/matchesonscrollbar.css', v=da_version) + '" rel="stylesheet">\n    <link href="' + url_for('static', filename='codemirror/addon/display/fullscreen.css', v=da_version) + '" rel="stylesheet">\n    <link href="' + url_for('static', filename='codemirror/addon/scroll/simplescrollbars.css', v=da_version) + '" rel="stylesheet">\n    <link href="' + url_for('static', filename='app/pygments.min.css', v=da_version) + '" rel="stylesheet">'), extra_js=Markup('\n    <script src="' + url_for('static', filename="codemirror/lib/codemirror.js", v=da_version) + '"></script>\n    <script src="' + url_for('static', filename="codemirror/addon/search/searchcursor.js", v=da_version) + '"></script>\n    <script src="' + url_for('static', filename="codemirror/addon/scroll/annotatescrollbar.js", v=da_version) + '"></script>\n    <script src="' + url_for('static', filename="codemirror/addon/search/matchesonscrollbar.js", v=da_version) + '"></script>\n    <script src="' + url_for('static', filename="codemirror/addon/display/fullscreen.js", v=da_version) + '"></script>\n    <script src="' + url_for('static', filename="codemirror/addon/edit/matchbrackets.js", v=da_version) + '"></script>\n    <script src="' + url_for('static', filename="codemirror/mode/yaml/yaml.js", v=da_version) + '"></script>\n    ' + kbLoad + '<script>\n      daTextArea=document.getElementById("config_content");\n      daTextArea.value = JSON.parse(atob("' + safeid(json.dumps(content)) + '"));\n      var daCodeMirror = CodeMirror.fromTextArea(daTextArea, {mode: "yaml", ' + kbOpt + 'tabSize: 2, tabindex: 70, autofocus: true, lineNumbers: true, matchBrackets: true});\n      daCodeMirror.setOption("extraKeys", { Tab: function(cm) { var spaces = Array(cm.getOption("indentUnit") + 1).join(" "); cm.replaceSelection(spaces); }, "F11": function(cm) { cm.setOption("fullScreen", !cm.getOption("fullScreen")); }, "Esc": function(cm) { if (cm.getOption("fullScreen")) cm.setOption("fullScreen", false); }});\n      daCodeMirror.setOption("coverGutterNextToScrollbar", true);\n      daCodeMirror.setOption("viewportMargin", Infinity);\n    </script>'), form=form), 200)
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
     return response
@@ -22218,7 +22247,7 @@ def playground_select():
 @login_required
 @roles_required(['developer', 'admin'])
 def get_pg_var_cache():
-    response = make_response(ruamel.yaml.safe_dump(pg_code_cache, default_flow_style=False, default_style='"', allow_unicode=True, width=10000).encode('utf-8'), 200)
+    response = make_response(altyaml.dump_to_bytes(pg_code_cache), 200)
     response.headers['Content-Disposition'] = 'attachment; filename=pgcodecache.yml'
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
     response.headers['Content-Type'] = 'text/plain; charset=utf-8'
@@ -23021,7 +23050,11 @@ $( document ).ready(function() {
         page_title += " / " + playground_user.email
     if current_project != 'default':
         page_title += " / " + current_project
-    response = make_response(render_template('pages/playground.html', projects=get_list_of_projects(playground_user.id), current_project=current_project, version_warning=None, bodyclass='daadminbody', use_gd=use_gd, use_od=use_od, userid=playground_user.id, page_title=Markup(page_title), tab_title=word("Playground"), extra_css=Markup('\n    <link href="' + url_for('static', filename='app/playgroundbundle.css', v=da_version) + '" rel="stylesheet">'), extra_js=Markup('\n    <script src="' + url_for('static', filename="app/playgroundbundle.js", v=da_version) + '"></script>\n    ' + kbLoad + cm_setup + '<script>\n      var daConsoleMessages = ' + json.dumps(console_messages) + ';\n      $("#daDelete").click(function(event){if (originalFileName != $("#playground_name").val() || $("#playground_name").val() == \'\'){ $("#form button[name=\'submit\']").click(); event.preventDefault(); return false; } if(!confirm("' + word("Are you sure that you want to delete this playground file?") + '")){event.preventDefault();}});\n      daTextArea = document.getElementById("playground_content");\n      var daCodeMirror = CodeMirror.fromTextArea(daTextArea, {specialChars: /[\\u00a0\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u200b-\\u200f\\u2028\\u2029\\ufeff]/, mode: "' + ('yamlmixed' if daconfig.get('test yamlmixed mode') else 'yamlmixed') + '", ' + kbOpt + 'tabSize: 2, tabindex: 70, autofocus: false, lineNumbers: true, matchBrackets: true, lineWrapping: ' + ('true' if daconfig.get('wrap lines in playground', True) else 'false') + '});\n      $(window).bind("beforeunload", function(){daCodeMirror.save(); $("#form").trigger("checkform.areYouSure");});\n      $("#form").areYouSure(' + json.dumps({'message': word("There are unsaved changes.  Are you sure you wish to leave this page?")}) + ');\n      $("#form").bind("submit", function(){daCodeMirror.save(); $("#form").trigger("reinitialize.areYouSure"); return true;});\n      daCodeMirror.setSize(null, null);\n      daCodeMirror.setOption("extraKeys", { Tab: function(cm) { var spaces = Array(cm.getOption("indentUnit") + 1).join(" "); cm.replaceSelection(spaces); }, "Ctrl-Space": "autocomplete", "F11": function(cm) { cm.setOption("fullScreen", !cm.getOption("fullScreen")); }, "Esc": function(cm) { if (cm.getOption("fullScreen")) cm.setOption("fullScreen", false); }});\n      daCodeMirror.setOption("coverGutterNextToScrollbar", true);\n' + indent_by(ajax, 6) + '\n      exampleData = JSON.parse(atob("' + pg_ex['encoded_data_dict'] + '"));\n      activateExample("' + str(pg_ex['pg_first_id'][0]) + '", false);\n    $("#my-form").trigger("reinitialize.areYouSure");\n      $("#daVariablesReport").on("shown.bs.modal", function () { daFetchVariableReport(); })\n    </script>'), form=form, fileform=fileform, files=sorted(files, key=lambda y: y['name'].lower()), any_files=any_files, pulldown_files=sorted(pulldown_files, key=lambda y: y.lower()), current_file=the_file, active_file=active_file, content=content, variables_html=Markup(variables_html), example_html=pg_ex['encoded_example_html'], interview_path=interview_path, is_new=str(is_new), valid_form=str(valid_form), own_playground=bool(playground_user.id == current_user.id)), 200)
+    extra_js = '<script src="' + url_for('static', filename="app/playgroundbundle.js", v=da_version) + '"></script>\n    ' + kbLoad + cm_setup + '<script>\n      var daConsoleMessages = ' + json.dumps(console_messages) + ';\n      $("#daDelete").click(function(event){if (originalFileName != $("#playground_name").val() || $("#playground_name").val() == \'\'){ $("#form button[name=\'submit\']").click(); event.preventDefault(); return false; } if(!confirm("' + word("Are you sure that you want to delete this playground file?") + '")){event.preventDefault();}});\n      daTextArea = document.getElementById("playground_content");\n      var daCodeMirror = CodeMirror.fromTextArea(daTextArea, {specialChars: /[\\u00a0\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u200b-\\u200f\\u2028\\u2029\\ufeff]/, mode: "' + ('yamlmixed' if daconfig.get('test yamlmixed mode') else 'yamlmixed') + '", ' + kbOpt + 'tabSize: 2, tabindex: 70, autofocus: false, lineNumbers: true, matchBrackets: true, lineWrapping: ' + ('true' if daconfig.get('wrap lines in playground', True) else 'false') + '});\n      $(window).bind("beforeunload", function(){daCodeMirror.save(); $("#form").trigger("checkform.areYouSure");});\n      $("#form").areYouSure(' + json.dumps({'message': word("There are unsaved changes.  Are you sure you wish to leave this page?")}) + ');\n      $("#form").bind("submit", function(){daCodeMirror.save(); $("#form").trigger("reinitialize.areYouSure"); return true;});\n      daCodeMirror.setSize(null, null);\n      daCodeMirror.setOption("extraKeys", { Tab: function(cm) { var spaces = Array(cm.getOption("indentUnit") + 1).join(" "); cm.replaceSelection(spaces); }, "Ctrl-Space": "autocomplete", "F11": function(cm) { cm.setOption("fullScreen", !cm.getOption("fullScreen")); }, "Esc": function(cm) { if (cm.getOption("fullScreen")) cm.setOption("fullScreen", false); }});\n      daCodeMirror.setOption("coverGutterNextToScrollbar", true);\n' + indent_by(ajax, 6) + '\n'
+    if pg_ex['encoded_data_dict'] is not None:
+        extra_js += '       exampleData = JSON.parse(atob("' + pg_ex['encoded_data_dict'] + '"));\n      activateExample("' + str(pg_ex['pg_first_id'][0]) + '", false);\n'
+    extra_js += '      $("#my-form").trigger("reinitialize.areYouSure");\n      $("#daVariablesReport").on("shown.bs.modal", function () { daFetchVariableReport(); })\n    </script>'
+    response = make_response(render_template('pages/playground.html', projects=get_list_of_projects(playground_user.id), current_project=current_project, version_warning=None, bodyclass='daadminbody', use_gd=use_gd, use_od=use_od, userid=playground_user.id, page_title=Markup(page_title), tab_title=word("Playground"), extra_css=Markup('\n    <link href="' + url_for('static', filename='app/playgroundbundle.css', v=da_version) + '" rel="stylesheet">'), extra_js=Markup(extra_js), form=form, fileform=fileform, files=sorted(files, key=lambda y: y['name'].lower()), any_files=any_files, pulldown_files=sorted(pulldown_files, key=lambda y: y.lower()), current_file=the_file, active_file=active_file, content=content, variables_html=Markup(variables_html), example_html=pg_ex['encoded_example_html'], interview_path=interview_path, is_new=str(is_new), valid_form=str(valid_form), own_playground=bool(playground_user.id == current_user.id)), 200)
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
     return response
 
@@ -23039,7 +23072,14 @@ def server_error(the_error):
     else:
         the_history = None
     the_vars = None
-    if isinstance(the_error, (DAError, DANotFoundError, DAInvalidFilename)):
+    if isinstance(the_error, DASourceError):
+        if (DEBUG and daconfig.get('development site is protected', False)) or (current_user.is_authenticated and current_user.has_role('admin', 'developer')):
+            errmess = str(the_error)
+        else:
+            errmess = word("There was an error. Please contact the system administrator.")
+        the_trace = None
+        logmessage(str(the_error))
+    elif isinstance(the_error, (DAError, DANotFoundError, DAInvalidFilename)):
         errmess = str(the_error)
         the_trace = None
         logmessage(errmess)
@@ -23069,7 +23109,10 @@ def server_error(the_error):
             errmess += "\nIn field index number " + str(docassemble.base.functions.this_thread.misc['current_field'])
         if hasattr(the_error, 'da_line_with_error'):
             errmess += "\nIn line: " + str(the_error.da_line_with_error)
-
+        try:
+            logmessage(errmess)
+        except:
+            logmessage("Could not log the error message")
         logmessage(the_trace)
     if isinstance(the_error, DAError):
         error_code = the_error.error_code
@@ -23292,7 +23335,7 @@ def server_error(the_error):
         if 'in error' not in session and docassemble.base.functions.this_thread.interview is not None and 'error action' in docassemble.base.functions.this_thread.interview.consolidated_metadata:
             session['in error'] = True
             return index(action_argument={'action': docassemble.base.functions.this_thread.interview.consolidated_metadata['error action'], 'arguments': {'error_message': orig_errmess, 'error_history': the_history, 'error_trace': the_trace}}, refer=['error'])
-    show_debug = not bool((not DEBUG) and isinstance(the_error, (DAError, DAInvalidFilename)))
+    show_debug = not bool((not ((DEBUG and daconfig.get('development site is protected', False)) or (current_user.is_authenticated and current_user.has_role('admin', 'developer')))) and isinstance(the_error, (DAError, DAInvalidFilename)))
     if int(int(error_code)/100) == 4:
         show_debug = False
     if error_code == 404:
@@ -23730,7 +23773,7 @@ def utilities():
                         result[language][the_word] = 'XYZNULLXYZ'
                     uses_null = True
             if form.systemfiletype.data == 'YAML':
-                word_box = ruamel.yaml.safe_dump(result, default_flow_style=False, default_style='"', allow_unicode=True, width=1000)
+                word_box = altyamlstring.dump_to_string(result)
                 word_box = re.sub(r'"XYZNULLXYZ"', r'null', word_box)
             elif form.systemfiletype.data == 'XLSX':
                 temp_file = tempfile.NamedTemporaryFile(suffix='.xlsx', delete=False)
@@ -26957,6 +27000,46 @@ def api_create_user():
     return jsonify_with_status({'user_id': user_id, 'password': password}, 200)
 
 
+def invite_user(email_address, privilege=None, send=True):
+    if not (current_user.is_authenticated and current_user.has_role_or_permission('admin', permissions=['create_user'])):
+        raise DAError("You do not have sufficient privileges to create a new user")
+    role_name = privilege or 'user'
+    the_role_id = None
+    for role in db.session.execute(select(Role).order_by('id')).scalars():
+        if role.name == role_name:
+            the_role_id = role.id
+            break
+    if the_role_id is None:
+        raise DAError("Invalid privilege name " + repr(privilege))
+    user, user_email = app.user_manager.find_user_by_email(email_address)  # pylint: disable=unused-variable
+    if user:
+        return DAError("A user with that email address already exists")
+    user_invite = MyUserInvitation(email=email_address, role_id=the_role_id, invited_by_user_id=current_user.id)
+    db.session.add(user_invite)
+    db.session.commit()
+    token = app.user_manager.generate_token(user_invite.id)
+    accept_invite_link = url_for('user.register',
+                                 token=token,
+                                 _external=True)
+    user_invite.token = token
+    db.session.commit()
+    if send:
+        try:
+            logmessage("Trying to send invite e-mail to " + str(user_invite.email))
+            docassemble_flask_user.emails.send_invite_email(user_invite, accept_invite_link)
+            logmessage("Sent e-mail invite to " + str(user_invite.email))
+        except Exception as e:
+            try:
+                logmessage("Failed to send invite e-mail: " + e.__class__.__name__ + ': ' + str(e))
+            except:
+                logmessage("Failed to send invite e-mail")
+            db.session.delete(user_invite)
+            db.session.commit()
+            raise DAError("Invitation email failed to send")
+        return None
+    return accept_invite_link
+
+
 @app.route('/api/user_invite', methods=['POST'])
 @csrf.exempt
 @cross_origin(origins='*', methods=['POST', 'HEAD'], automatic_options=True)
@@ -26967,7 +27050,7 @@ def api_invite_user():
     post_data = request.get_json(silent=True)
     if post_data is None:
         post_data = request.form.copy()
-    send_emails = true_or_false(request.args.get('send_emails', True))
+    send_emails = true_or_false(post_data.get('send_emails', True))
     role_name = str(post_data.get('privilege', 'user')).strip() or 'user'
     valid_role_names = set()
     for rol in db.session.execute(select(Role).where(Role.name != 'cron').order_by(Role.id)).scalars():
@@ -26977,11 +27060,12 @@ def api_invite_user():
     if role_name not in valid_role_names:
         return jsonify_with_status("Invalid privilege name.", 400)
     raw_email_addresses = post_data.get('email_addresses', post_data.get('email_address', []))
-    if raw_email_addresses.startswith('[') or raw_email_addresses.startswith('"'):
-        try:
-            raw_email_addresses = json.loads(raw_email_addresses)
-        except:
-            return jsonify_with_status("The email_addresses field did not contain valid JSON.", 400)
+    if isinstance(raw_email_addresses, str):
+        if raw_email_addresses.startswith('[') or raw_email_addresses.startswith('"'):
+            try:
+                raw_email_addresses = json.loads(raw_email_addresses)
+            except:
+                return jsonify_with_status("The email_addresses field did not contain valid JSON.", 400)
     if not isinstance(raw_email_addresses, list):
         raw_email_addresses = [str(raw_email_addresses)]
     email_addresses = []
@@ -27101,6 +27185,16 @@ def api_user_by_id(user_id):
         for key in ('first_name', 'last_name', 'country', 'subdivisionfirst', 'subdivisionsecond', 'subdivisionthird', 'organization', 'timezone', 'language', 'password', 'old_password'):
             if key in post_data:
                 info[key] = post_data[key]
+        if 'active' in post_data:
+            if user_id in (1, current_user.id):
+                return jsonify_with_status("The active status of this user account cannot be changed.", 403)
+            if not current_user.has_role_or_permission('admin', permissions=['edit_user_active_status']):
+                return jsonify_with_status("You do not have sufficient privileges to change the active status of user accounts.", 403)
+            active_status = true_or_false(post_data['active'])
+            if user_info['active'] and not active_status:
+                info['active'] = False
+            elif not user_info['active'] and active_status:
+                info['active'] = True
         if 'password' in info and not current_user.has_role_or_permission('admin', permissions=['edit_user_password']):
             return jsonify_with_status("You must have admin privileges to change a password.", 403)
         try:
@@ -29173,7 +29267,7 @@ def api_config():
                 data = json.loads(post_data['config'])
             except:
                 return jsonify_with_status("Configuration was not valid JSON.", 400)
-        yaml_data = ruamel.yaml.safe_dump(data, default_flow_style=False, default_style='"', allow_unicode=True, width=10000)
+        yaml_data = altyamlstring.dump_to_string(data)
         if cloud is not None:
             key = cloud.get_key('config.yml')
             key.set_contents_from_string(yaml_data)
@@ -29205,7 +29299,7 @@ def api_config():
             except:
                 return jsonify_with_status("Configuration changes were not valid JSON.", 400)
         data.update(new_data)
-        yaml_data = ruamel.yaml.safe_dump(data, default_flow_style=False, default_style='"', allow_unicode=True, width=10000)
+        yaml_data = altyamlstring.dump_to_string(data)
         if cloud is not None:
             key = cloud.get_key('config.yml')
             key.set_contents_from_string(yaml_data)
@@ -31519,7 +31613,8 @@ docassemble.base.functions.update_server(url_finder=get_url_from_file_reference,
                                          secure_filename=secure_filename,
                                          transform_json_variables=transform_json_variables,
                                          get_login_url=get_login_url,
-                                         run_action_in_session=run_action_in_session)
+                                         run_action_in_session=run_action_in_session,
+                                         invite_user=invite_user)
 
 # docassemble.base.util.set_user_id_function(user_id_dict)
 # docassemble.base.functions.set_generate_csrf(generate_csrf)
@@ -31581,6 +31676,10 @@ def define_examples():
     pg_ex['pg_first_id'] = []
     data_dict = {}
     make_example_html(get_examples(), pg_ex['pg_first_id'], example_html, data_dict)
+    if len(data_dict) == 0:
+        pg_ex['encoded_data_dict'] = None
+        pg_ex['encoded_example_html'] = ""
+        return
     example_html.append('        </div>')
     example_html.append('        <div class="col-md-4 da-example-source-col"><h5 class="mb-1">' + word('Source') + '<a href="#" tabindex="0" class="dabadge btn btn-success da-example-copy">' + word("Insert") + '</a></h5><div id="da-example-source-before" class="dainvisible"></div><div id="da-example-source"></div><div id="da-example-source-after" class="dainvisible"></div><div><a tabindex="0" class="da-example-hider" id="da-show-full-example">' + word("Show context of example") + '</a><a tabindex="0" class="da-example-hider dainvisible" id="da-hide-full-example">' + word("Hide context of example") + '</a></div></div>')
     example_html.append('        <div class="col-md-6"><h5 class="mb-1">' + word("Preview") + '<a href="#" target="_blank" class="dabadge btn btn-primary da-example-documentation da-example-hidden" id="da-example-documentation-link">' + word("View documentation") + '</a></h5><a href="#" target="_blank" id="da-example-image-link"><img title=' + json.dumps(word("Click to try this interview")) + ' class="da-example-screenshot" id="da-example-image"></a></div>')
@@ -31816,6 +31915,7 @@ def initialize():
         if DEBUG_BOOT:
             boot_log("server: entering request context")
         with app.test_request_context(base_url=url_root, path=url):
+            docassemble.webapp.backend.fix_words()
             app.config['USE_FAVICON'] = test_favicon_file('favicon.ico')
             app.config['USE_APPLE_TOUCH_ICON'] = test_favicon_file('apple-touch-icon.png')
             app.config['USE_FAVICON_MD'] = test_favicon_file('favicon-32x32.png')

@@ -55,7 +55,6 @@
 "API Keys": Null
 "Apply": Null
 "App": Null
-"A QR code": Null
 ", are attached": Null
 "A reset password email has been sent to '%(email)s'. Open that email and follow the instructions to reset your password.": Null
 "are you": Null
@@ -312,6 +311,7 @@
 "Falkland Islands (Malvinas)": Null
 "false": Null
 "Faroe Islands": Null
+"Field cannot contain HTML": Null
 "Fiji": Null
 "File could not be converted: ": Null
 "File deleted.": Null
@@ -410,6 +410,7 @@
 "Home Page": Null
 "Honduras": Null
 "Hong Kong": Null
+"hour": Null
 "How question came to be asked": Null
 "How this question came to be asked": Null
 "How would you like the data to be imported?": Null
@@ -570,6 +571,7 @@
 "Methods": Null
 "Mexico": Null
 "Micronesia, Federated States of": Null
+"minute": Null
 "Models": Null
 "Modules available in Playground": Null
 "Modules defined": Null
@@ -788,6 +790,7 @@
 "PyPI package": Null
 "PyPI Password": Null
 "PyPI Username": Null
+"Python version %s": Null
 "Qatar": Null
 "question": Null
 "Question": Null
@@ -863,6 +866,7 @@
 "Score": Null
 "Search": Null
 "Second factor authentication": Null
+"second": Null
 "Second subdivision": Null
 "Second Subdivision": Null
 "Section": Null
@@ -1031,6 +1035,7 @@
 "There is already a username and password on this system with the e-mail address": Null
 "The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.": Null
 "There was an error.": Null
+"There was an error. Please contact the system administrator.": Null
 "There was an error updating the packages.": Null
 "There was an error with the synchronization.": Null
 "There was a problem connecting to GitHub. Please check your GitHub configuration and try again.": Null
@@ -1194,7 +1199,6 @@
 "Verification code": Null
 "Verify": Null
 "Verify your phone": Null
-"Version ": Null
 "Version": Null
 "Version number does not conform to PEP 440": Null
 "Viet Nam": Null
