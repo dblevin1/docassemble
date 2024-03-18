@@ -1,6 +1,50 @@
 # Change Log
 
 <!-- insertion marker -->
+## [1.4.102.1](https://github.com/dblevin1/docassemble/releases/tag/1.4.102.1) - 2024-03-18
+
+<small>[Compare with 1.4.88.1](https://github.com/dblevin1/docassemble/compare/1.4.88.1...1.4.102.1)</small>
+
+### Added
+
+- added raw html field type; added module to docassemble.demo demonstrating how raw html can be used to insert Bootstrap accordion HTML ([0163933](https://github.com/dblevin1/docassemble/commit/016393357498d46c44f5877085f88e3f9162ed06) by Jonathan Pyle).
+- added current_context(); deprecated parts of user_info() that did not relate to the user; fixed issue with default value of non-required boolean fields; fixed issue with words directive being unable to load files from the Playground ([f2d15f4](https://github.com/dblevin1/docassemble/commit/f2d15f460738ffd951fe359aa6febb4f9f965772) by Jonathan Pyle).
+- Add `review` to the list of directives on error ([74dde2a](https://github.com/dblevin1/docassemble/commit/74dde2aa8a9e26a4566de5cfd43ca24c3e57386d) by Bryce Willey).
+- added invite_user function; changed the /api/user/<user_id> endpoint so that it can be used to change the active status of a user; set the background color of the signature canvas to grey in dark mode; added restart-post-logrotate.sh script, which the logrotate script runs in order to stop and start uwsgi; fixed error with debian packages configuration directive; fixed potential error with session lifetime seconds; fixed potential error in listlog.py when a supervisor password is used ([cf27a80](https://github.com/dblevin1/docassemble/commit/cf27a808f346502a60f50c99145c6a398b801a9e) by Jonathan Pyle).
+
+### Fixed
+
+- fix to ip address ban enabled feature ([ff3fbaf](https://github.com/dblevin1/docassemble/commit/ff3fbaf1d4a24eee3c49ef162fe99784477cfee2) by Jonathan Pyle).
+- fixed issue with the html validator ([d243dc1](https://github.com/dblevin1/docassemble/commit/d243dc19ca313da261af6ea805ea25800d1c3ef6) by Jonathan Pyle).
+- fixed security issues; added pdftk option; added development site is protected Configuration directive; altered error message display so that end users will not see certain types of error messages, but they will be displayed in the log ([4801ac7](https://github.com/dblevin1/docassemble/commit/4801ac7ff7c90df00ac09523077930cdb6dea2aa) by Jonathan Pyle).
+- fixes to nice_number and small screen navigation ([836a01f](https://github.com/dblevin1/docassemble/commit/836a01f4d164d980b39b08122f63738cb4cdc265) by Jonathan Pyle).
+- fixed issue with default value of non-required boolean fields ([bbb2b6c](https://github.com/dblevin1/docassemble/commit/bbb2b6cdd3e542a1c90fc719ca5c9a71d4c36577) by Jonathan Pyle).
+- fixed errors resulting from new ruamel.yaml API; upgrade pycryptodomex ([4473e05](https://github.com/dblevin1/docassemble/commit/4473e05528746066e7c391d1b200627f7f4e7e14) by Jonathan Pyle).
+- fixed YAML errors ([d0da661](https://github.com/dblevin1/docassemble/commit/d0da66136b0d8e62c3730f05b81a4bda3269bfa7) by Jonathan Pyle).
+
+### Removed
+
+- remove pip install editable from install script ([5efe81a](https://github.com/dblevin1/docassemble/commit/5efe81a78a6574268bcf22a5756af3118c387e94) by Daniel Blevins).
+
+### Merged
+
+- Merge branch 'upstream-latest' ([9ae9f95](https://github.com/dblevin1/docassemble/commit/9ae9f9546d77203fa56a27b547809901296a56e7) by Daniel Blevins).
+- Merge pull request #751 from plocket/ajax_combobox ([e47ec30](https://github.com/dblevin1/docassemble/commit/e47ec30e54a5f639c64d03ff6fcaddbca8915ed0) by Jonathan Pyle).
+- Merge branch 'master' of github.com:jhpyle/docassemble ([4c6697f](https://github.com/dblevin1/docassemble/commit/4c6697ff05bbbdd338494bed3e30dec897169766) by Jonathan Pyle).
+- Merge pull request #740 from jhpyle/dependabot/pip/docassemble_base/aiohttp-3.9.2 ([aebf33b](https://github.com/dblevin1/docassemble/commit/aebf33b4dba190147988d36e0a6ca9e162bdcf9e) by Jonathan Pyle).
+- Merge pull request #738 from jhpyle/dependabot/pip/docassemble_webapp/pillow-10.2.0 ([4461f02](https://github.com/dblevin1/docassemble/commit/4461f02eb9b89e57c2a269096e0fc6eb48df62b6) by Jonathan Pyle).
+- Merge pull request #739 from jhpyle/dependabot/pip/docassemble_base/pillow-10.2.0 ([032f21a](https://github.com/dblevin1/docassemble/commit/032f21aa3871cc37b36a31964e4ffec9a354203c) by Jonathan Pyle).
+- Merge pull request #741 from jhpyle/dependabot/pip/docassemble_webapp/aiohttp-3.9.2 ([4cce3cb](https://github.com/dblevin1/docassemble/commit/4cce3cb14f9602a2843651289dded860c33b6fcb) by Jonathan Pyle).
+- Merge pull request #749 from jhpyle/dependabot/pip/docassemble_webapp/cryptography-42.0.4 ([9083ea0](https://github.com/dblevin1/docassemble/commit/9083ea0331fa09a28c0af486b196bcfbb38be296) by Jonathan Pyle).
+- Merge pull request #750 from jhpyle/dependabot/pip/docassemble_base/cryptography-42.0.4 ([70fd401](https://github.com/dblevin1/docassemble/commit/70fd401f8277b5d431e7ad85ecb09a762341e04d) by Jonathan Pyle).
+- Merge pull request #736 from jhpyle/dependabot/pip/docassemble_base/jinja2-3.1.3 ([aea3d6a](https://github.com/dblevin1/docassemble/commit/aea3d6a71a3ea517c8a5be5f0d558dea2b59eea9) by Jonathan Pyle).
+- Merge pull request #735 from jhpyle/dependabot/pip/docassemble_webapp/jinja2-3.1.3 ([ad8a494](https://github.com/dblevin1/docassemble/commit/ad8a49477a68028aeae6d4545dcdbe0a8e593035) by Jonathan Pyle).
+- Merge pull request #726 from BryceStevenWilley/review_is_a_directive ([da2ce91](https://github.com/dblevin1/docassemble/commit/da2ce912efbe3b1acbac5b246c2e2ee95f1dbaec) by Jonathan Pyle).
+- Merge pull request #727 from BryceStevenWilley/detailed_code_block_info ([25b16fc](https://github.com/dblevin1/docassemble/commit/25b16fcdca940fefe66ea66a789eb304dc70efec) by Jonathan Pyle).
+- Merge pull request #731 from jhpyle/dependabot/pip/docassemble_base/pycryptodome-3.19.1 ([2426249](https://github.com/dblevin1/docassemble/commit/2426249355b5b20c9dd081b3e1d6b240c31fad5d) by Jonathan Pyle).
+- Merge pull request #732 from jhpyle/dependabot/pip/docassemble_webapp/pycryptodome-3.19.1 ([2bacbcf](https://github.com/dblevin1/docassemble/commit/2bacbcfaefe9a5462c970219268fcbfc5681eac3) by Jonathan Pyle).
+- Merge pull request #722 from BryceStevenWilley/qr_fill ([78a77ae](https://github.com/dblevin1/docassemble/commit/78a77aeb6900f5c98bb6c4ff0ea9ee34bdf6760c) by Jonathan Pyle).
+
 ## [1.4.88.1](https://github.com/dblevin1/docassemble/releases/tag/1.4.88.1) - 2023-12-13
 
 <small>[Compare with 1.4.85.1](https://github.com/dblevin1/docassemble/compare/1.4.85.1...1.4.88.1)</small>
