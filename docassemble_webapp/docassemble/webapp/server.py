@@ -6952,7 +6952,8 @@ def index(action_argument=None, refer=None):
             return do_redirect(redirect_url, is_ajax, is_json, js_target)
         logmessage("Redirecting back to index because user dictionary was None.")
         response = do_redirect(url_for('index', i=yaml_filename), is_ajax, is_json, js_target)
-        flash(word("Unable to locate interview session.  Starting a new session instead."), "error")
+        if not interview.consolidated_metadata.get('temporary session', False):
+            flash(word("Unable to locate interview session.  Starting a new session instead."), "error")
         return response
     if encrypted != is_encrypted:
         update_session(yaml_filename, encrypted=is_encrypted)
