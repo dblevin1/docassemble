@@ -1,6 +1,14 @@
 # Change Log
 
 <!-- insertion marker -->
+## [1.4.102.2](https://github.com/dblevin1/docassemble/releases/tag/1.4.102.2) - 2024-03-19
+
+<small>[Compare with 1.4.102.1](https://github.com/dblevin1/docassemble/compare/1.4.102.1...1.4.102.2)</small>
+
+### Changed
+
+- change, don't flash missing session error for temporary sessions ([5ba8492](https://github.com/dblevin1/docassemble/commit/5ba8492c09b3430993f02bce8069b0e19540d69f) by Daniel Blevins).
+
 ## [1.4.102.1](https://github.com/dblevin1/docassemble/releases/tag/1.4.102.1) - 2024-03-18
 
 <small>[Compare with 1.4.88.1](https://github.com/dblevin1/docassemble/compare/1.4.88.1...1.4.102.1)</small>
