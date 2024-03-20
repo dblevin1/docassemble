@@ -1,6 +1,14 @@
 # Change Log
 
 <!-- insertion marker -->
+## [1.4.102.3](https://github.com/dblevin1/docassemble/releases/tag/1.4.102.3) - 2024-03-20
+
+<small>[Compare with 1.4.102.2](https://github.com/dblevin1/docassemble/compare/1.4.102.2...1.4.102.3)</small>
+
+### Fixed
+
+- fix using unbound interview variable, comment flash msg instead ([848791d](https://github.com/dblevin1/docassemble/commit/848791de408cb32da608f5ba0f039ef4850c5932) by Daniel Blevins).
+
 ## [1.4.102.2](https://github.com/dblevin1/docassemble/releases/tag/1.4.102.2) - 2024-03-19
 
 <small>[Compare with 1.4.102.1](https://github.com/dblevin1/docassemble/compare/1.4.102.1...1.4.102.2)</small>
