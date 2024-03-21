@@ -977,7 +977,7 @@ def delete_user_data(user_id, r, r_user):
 
 # @elapsed('reset_user_dict')
 def reset_user_dict(user_code, filename, user_id=None, temp_user_id=None, force=False):
-    # logmessage("reset_user_dict called with " + str(user_code) + " and " + str(filename) + " and " + str(user_id) + " and " + str(temp_user_id) + " and " + str(force))
+    logmessage(f"reset_user_dict called with {user_code=} {filename=} {user_id=} {temp_user_id=} {force=}")
     if force:
         the_user_id = None
     else:
