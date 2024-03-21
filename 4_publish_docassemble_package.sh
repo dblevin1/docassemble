@@ -16,6 +16,7 @@ install() {
     echo
     echo "------Installing $(pwd)--------"
     pip install .
+    pip install --editable .
     ret=$?
     if [ $ret -ne 0 ]; then
         echo -e "${RED}Exiting pip install failed${NC}"
@@ -37,7 +38,7 @@ upload() {
         exit $ret
     fi
     rm -r dist *egg-info .eggs 2>/dev/null
-
+    rm -r build 2>/dev/null
 }
 
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
