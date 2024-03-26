@@ -107,7 +107,9 @@ def user_list():
         else:
             user_indicator = user.email
         is_active = bool(user.active)
-        users.append({'name': name_string, 'email': user_indicator, 'active': is_active, 'id': user.id, 'high_priv': high_priv})
+        role_names = list(set(role_names) - set(["user", "admin", "developer", "advocate", "trainer"]))
+        role_names.sort()
+        users.append({'name': name_string, 'email': user_indicator, 'active': is_active, 'id': user.id, 'high_priv': high_priv, 'roles': role_names})
     if there_are_more:
         next_page = page + 2
     else:

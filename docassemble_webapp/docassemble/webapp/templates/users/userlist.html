@@ -28,6 +28,7 @@
       <th scope="col"><span class="visually-hidden">{{ word("Privilege") }}</span></th>
       <th scope="col">{{ word('E-mail') }}</th>
       <th scope="col">{{ word('Name') }}</th>
+      <th scope="col">{{ word("Privileges") }}</th>
       <th scope="col" style="text-align:right;">{{ word("Actions") }}</th>
     </tr>
   </thead>
@@ -64,8 +65,14 @@
       <td class="text-danger">{{ user_info['name'] }}</td>
       {%- endif %}
       {%- if current_user.has_role('admin') or (current_user.can_do('edit_user_info') and user_info['high_priv'] in ('trainer', 'user')) %}
+      <td>
+        {%- for role in user_info['roles'] %}
+        <span class="badge bg-secondary">{{ role }}</span>
+        {%- endfor %}
+      </td>
       <td style="text-align:right;"><a class="text-nowrap btn btn-sm {{ config['BUTTON_STYLE'] }}secondary" href="{{ url_for('edit_user_profile_page', user_id=user_info['id']) }}"><i class="fas fa-pencil-alt"></i> {{ word('Edit') }}</a></td>
       {%- else %}
+      <td style="text-align:right;">&nbsp;</td>
       <td style="text-align:right;">&nbsp;</td>
       {%- endif %}
     </tr>
