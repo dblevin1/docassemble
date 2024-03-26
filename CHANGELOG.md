@@ -1,6 +1,22 @@
 # Change Log
 
 <!-- insertion marker -->
+## [1.4.102.4](https://github.com/dblevin1/docassemble/releases/tag/1.4.102.4) - 2024-03-26
+
+<small>[Compare with 1.4.102.3](https://github.com/dblevin1/docassemble/compare/1.4.102.3...1.4.102.4)</small>
+
+### Added
+
+- add custom priv list to userlist ([90552a5](https://github.com/dblevin1/docassemble/commit/90552a5d3fd4f7ea4b941b9a73832e893423467a) by Daniel Blevins).
+
+### Fixed
+
+- fix, remove build files, pip installer ([27d26c1](https://github.com/dblevin1/docassemble/commit/27d26c1a4107c270e2bcc1dcd1bb91e086f74a3c) by Daniel Blevins).
+
+### Changed
+
+- change, enable reset_user_dict logmessage ([d71b6d8](https://github.com/dblevin1/docassemble/commit/d71b6d83de18fdc63a30eb50fc8a663612a82efc) by Daniel Blevins).
+
 ## [1.4.102.3](https://github.com/dblevin1/docassemble/releases/tag/1.4.102.3) - 2024-03-20
 
 <small>[Compare with 1.4.102.2](https://github.com/dblevin1/docassemble/compare/1.4.102.2...1.4.102.3)</small>
