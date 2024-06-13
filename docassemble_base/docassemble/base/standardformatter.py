@@ -562,11 +562,24 @@ def embed_input(status, variable):
 def help_wrap(content, helptext, status):
     if helptext is None:
         return content
-    help_wrapper = '<div class="dachoicewithhelp"><div><div>%s</div><div class="dachoicehelp text-' + (status.extras.get('help button color', None) or BUTTON_COLOR_HELP) + '"><a tabindex="0" data-bs-container="body" data-bs-toggle="popover" data-bs-placement="left" data-bs-content=%s><i class="fas fa-question-circle"></i></a></div></div></div>'
+    help_wrapper = '<div class="dachoicewithhelp"><div><div>%s</div><div class="dachoicehelp text-' + (status.extras.get('help button color', None) or BUTTON_COLOR_HELP) + '"><a tabindex="0" data-bs-container="body" data-bs-toggle="popover" data-bs-placement="left" data-bs-content=%s><i class="fa-solid fa-question-circle"></i></a></div></div></div>'
     return help_wrapper % (content, noquote(markdown_to_html(helptext, trim=True, status=status, do_terms=False)))
 
 
-def field_item(field, grid_info, pre=None, row=True, floating=False, classes=None, hidden_message=None, label_for=None, label_classes=None, label_content=None, grid_type=None, content_classes=None, content=None, side_note=None, under_text=None):
+def field_item(field, grid_info, pre=None, row=True, floating=False, classes=None, hidden_message=None, label_for=None, label_classes=None, label_content=None, grid_type=None, content_classes=None, content=None, side_note=None, under_text=None, use_fieldset=0, required=False):
+    if use_fieldset:
+        enclosing_type = 'fieldset'
+        label_type = 'legend'
+        if required:
+            aria_req = 'aria-required="true" '
+        else:
+            aria_req = ''
+        if use_fieldset == 1:
+            aria_req += 'role="radiogroup" '
+    else:
+        enclosing_type = 'div'
+        label_type = 'label'
+        aria_req = ''
     if grid_info['_enabled']:
         grid_number = grid_info[field.number]['grid']
     else:
@@ -583,19 +596,22 @@ def field_item(field, grid_info, pre=None, row=True, floating=False, classes=Non
                 label_style = ''
             if label_classes:
                 all_label_classes.append(label_classes)
-            label_text = '\n                  <label' + label_style
+            label_text = '\n                  <' + label_type + label_style
             if label_for:
                 label_text += label_for
             if len(all_label_classes) > 0:
                 label_text += ' class="' + (" ".join(all_label_classes)) + '"'
             label_text += '>'
             label_text += label_content
-            label_text += '</label>'
+            label_text += '</' + label_type + '>'
         else:
-            label_text = None
+            if use_fieldset:
+                label_text = '<legend class="visually-hidden">' + hidden_message + '</legend>'
+            else:
+                label_text = None
         grid_label_above = label_text and not floating and not row and grid_type is None
         # update_parent_classes(fieldlist, grid_info[field.number]['index'], classes)
-        output = '                <div '
+        output = '                <' + enclosing_type + ' ' + aria_req
         if pre:
             output += pre
         all_classes = ['da-grid-container']
@@ -642,8 +658,8 @@ def field_item(field, grid_info, pre=None, row=True, floating=False, classes=Non
         output += '>'
         if grid_type in ('offset', 'horizontal'):
             output += '\n                <div class="row">'
-        if hidden_message:
-            output += '\n                <span class="visually-hidden">' + hidden_message + '</span>'
+        # if hidden_message:
+        #     output += '\n                <span class="visually-hidden">' + hidden_message + '</span>'
         if label_text and not floating and not grid_label_above:
             output += label_text
         if content_classes:
@@ -653,6 +669,7 @@ def field_item(field, grid_info, pre=None, row=True, floating=False, classes=Non
             output += '\n                <div'
             if len(all_content_classes) > 0:
                 output += ' class="' + (" ".join(all_content_classes)) + '"'
+            output += ' aria-live="polite"'
             if len(content_styles) > 0:
                 output += ' style="' + (" ".join(k + ': ' + v + ';' for k, v in content_styles.items())) + '"'
             output += '>'
@@ -674,7 +691,7 @@ def field_item(field, grid_info, pre=None, row=True, floating=False, classes=Non
             output += '\n                </div>'
         if label_text and floating and not (hasattr(field, 'datatype') and field.datatype == 'currency'):
             output += label_text
-        output += '\n                </div>'
+        output += '\n                </' + enclosing_type + '>'
     else:
         if label_content:
             all_label_classes = []
@@ -682,17 +699,20 @@ def field_item(field, grid_info, pre=None, row=True, floating=False, classes=Non
                 all_label_classes.append('col-' + daconfig['grid classes']['label width'] + ' col-form-label da-form-label datext-right')
             if label_classes:
                 all_label_classes.append(label_classes)
-            label_text = '\n                  <label'
+            label_text = '\n                  <' + label_type
             if label_for:
                 label_text += label_for
             if len(all_label_classes) > 0:
                 label_text += ' class="' + (" ".join(all_label_classes)) + '"'
             label_text += '>'
             label_text += label_content
-            label_text += '</label>'
+            label_text += '</' + label_type + '>'
         else:
-            label_text = None
-        output = '                <div '
+            if use_fieldset:
+                label_text = '<legend class="visually-hidden">' + str(hidden_message) + '</legend>'
+            else:
+                label_text = None
+        output = '                <' + enclosing_type + ' ' + aria_req
         if pre:
             output += pre
         all_classes = ['da-container']
@@ -707,8 +727,8 @@ def field_item(field, grid_info, pre=None, row=True, floating=False, classes=Non
         if len(all_classes) > 0:
             output += 'class="' + (" ".join(all_classes)) + '"'
         output += '>'
-        if hidden_message:
-            output += '\n                  <span class="visually-hidden">' + hidden_message + '</span>'
+        # if hidden_message:
+        #     output += '\n                  <span class="visually-hidden">' + hidden_message + '</span>'
         if label_text and not floating:
             output += label_text
         all_content_classes = []
@@ -722,7 +742,7 @@ def field_item(field, grid_info, pre=None, row=True, floating=False, classes=Non
         if content_classes:
             all_content_classes.append(content_classes)
         if len(all_content_classes) > 0:
-            output += '\n                  <div class="' + (" ".join(all_content_classes)) + '">'
+            output += '\n                  <div class="' + (" ".join(all_content_classes)) + '" aria-live="polite">'
         if content:
             output += '\n                  '
             if len(all_content_classes) > 0:
@@ -739,8 +759,21 @@ def field_item(field, grid_info, pre=None, row=True, floating=False, classes=Non
             output += side_note
         if label_text and floating and not (hasattr(field, 'datatype') and field.datatype == 'currency'):
             output += label_text
-        output += '\n                </div>'
+        output += '\n                </' + enclosing_type + '>'
     return output
+
+
+def sub_indices(the_var, special_vars):
+    try:
+        if the_var.startswith('x.') and 'x' in special_vars and hasattr(special_vars['x'], 'instanceName'):
+            the_var = re.sub(r'^x\.', special_vars['x'].instanceName + '.', the_var)
+        if the_var.startswith('x[') and 'x' in special_vars and hasattr(special_vars['x'], 'instanceName'):
+            the_var = re.sub(r'^x\[', special_vars['x'].instanceName + '[', the_var)
+        if re.search(r'\[[ijklmn]\]', the_var):
+            the_var = re.sub(r'\[([ijklmn])\]', lambda m: '[' + repr(special_vars[m.group(1)]) + ']', the_var)
+    except KeyError:
+        pass
+    return the_var
 
 
 def as_html(status, debug, root, validation_rules, field_error, the_progress_bar, steps):
@@ -789,7 +822,7 @@ def as_html(status, debug, root, validation_rules, field_error, the_progress_bar
     continue_button_color = status.extras.get('continuecolor', None) or BUTTON_COLOR
     back_button_val = status.extras.get('back_button', None)
     if (back_button_val or (back_button_val is None and status.question.interview.question_back_button)) and status.question.can_go_back and steps > 1:
-        back_button = '\n                  <button type="button" class="btn ' + BUTTON_STYLE + (status.extras.get('back button color', None) or BUTTON_COLOR_BACK) + ' ' + BUTTON_CLASS + ' daquestionbackbutton danonsubmit" title=' + json.dumps(word("Go back to the previous question")) + '><i class="fas fa-chevron-left"></i> '
+        back_button = '\n                  <button type="button" class="btn ' + BUTTON_STYLE + (status.extras.get('back button color', None) or BUTTON_COLOR_BACK) + ' ' + BUTTON_CLASS + ' daquestionbackbutton danonsubmit" title=' + json.dumps(word("Go back to the previous question")) + '><i class="fa-solid fa-chevron-left"></i> '
         back_button += status.back
         back_button += '</button>'
     else:
@@ -820,7 +853,10 @@ def as_html(status, debug, root, validation_rules, field_error, the_progress_bar
             if item['icon'] is not None:
                 icon = re.sub(r'^(fa[a-z])-fa-', r'\1 fa-', item['icon'])
                 if not re.search(r'^fa[a-z] fa-', icon):
-                    icon = 'fas fa-' + icon
+                    icon = 'fa-solid fa-' + icon
+                icon = re.sub(r'^fas ', 'fa-solid ', icon)
+                icon = re.sub(r'^far ', 'fa-regular ', icon)
+                icon = re.sub(r'^fab ', 'fa-brands ', icon)
                 icon = '<i class="' + icon + '"></i> '
             else:
                 icon = ''
@@ -1070,11 +1106,14 @@ def as_html(status, debug, root, validation_rules, field_error, the_progress_bar
                     color = status.question.interview.options.get('review button color', BUTTON_COLOR_REVIEW)
                     if color not in ('link', 'danger', 'warning', 'info', 'primary', 'secondary', 'tertiary', 'light', 'dark', 'success'):
                         color = BUTTON_COLOR_REVIEW
-                    icon = status.question.interview.options.get('review button icon', 'fas fa-pencil-alt')
+                    icon = status.question.interview.options.get('review button icon', 'fa-solid fa-pencil-alt')
                     if isinstance(icon, str) and icon != '':
                         icon = re.sub(r'^(fa[a-z])-fa-', r'\1 fa-', icon)
                         if not re.search(r'^fa[a-z] fa-', icon):
-                            icon = 'fas fa-' + icon
+                            icon = 'fa-solid fa-' + icon
+                        icon = re.sub(r'^fas ', 'fa-solid ', icon)
+                        icon = re.sub(r'^far ', 'fa-regular ', icon)
+                        icon = re.sub(r'^fab ', 'fa-brands ', icon)
                         icon = '<i class="' + icon + '"></i> '
                     else:
                         icon = ''
@@ -1258,8 +1297,10 @@ def as_html(status, debug, root, validation_rules, field_error, the_progress_bar
                 null_question = False
             if status.extras['required'][field.number]:
                 req_tag = ' darequired'
+                is_required = True
             else:
                 req_tag = ''
+                is_required = False
             extra_container_class = ''
             if grid_info['_enabled'] and grid_info[field.number]['start']:
                 fieldlist.append('                <div class="row align-items-end">\n')
@@ -1323,7 +1364,7 @@ def as_html(status, debug, root, validation_rules, field_error, the_progress_bar
                     if hasattr(field, 'collect_type'):
                         hide_delete = bool('list_minimum' in status.extras and field.collect_number < status.extras['list_minimum'])
                         if status.extras['list_collect_allow_delete'] and not hide_delete:
-                            da_remove_existing = '<button type="button" class="btn btn-sm ' + BUTTON_STYLE + BUTTON_COLOR_DELETE + ' float-end dacollectremoveexisting' + class_of_first + '"><i class="fas fa-trash"></i> ' + word("Delete") + '</button>'
+                            da_remove_existing = '<button type="button" class="btn btn-sm ' + BUTTON_STYLE + BUTTON_COLOR_DELETE + ' float-end dacollectremoveexisting' + class_of_first + '"><i class="fa-solid fa-trash"></i> ' + word("Delete") + '</button>'
                         else:
                             da_remove_existing = ''
                         list_message = status.extras['list_message'][field.collect_number]
@@ -1336,17 +1377,17 @@ def as_html(status, debug, root, validation_rules, field_error, the_progress_bar
                         else:
                             add_another = word("Add another")
                         if field.collect_type == 'extraheader':
-                            fieldlist.append('                <div ' + style_def + data_def + 'class="da-form-group row' + class_def + '"><div class="col"><hr><span class="dacollectnum dainvisible">' + list_message + '</span><span class="dacollectremoved text-danger dainvisible"> ' + word("(Deleted)") + '</span><button type="button" class="btn btn-sm ' + BUTTON_STYLE + BUTTON_COLOR_DELETE + ' float-end dainvisible dacollectremove"><i class="fas fa-trash"></i> ' + word("Delete") + '</button><button type="button" class="btn btn-sm ' + BUTTON_STYLE + BUTTON_COLOR_UNDELETE + ' float-end dainvisible dacollectunremove"><i class="fas fa-trash-restore"></i> ' + word("Undelete") + '</button><button type="button" class="btn btn-sm ' + BUTTON_STYLE + BUTTON_COLOR_ADD + ' dacollectadd"><i class="fas fa-plus-circle"></i> ' + add_another + '</button></div></div>\n')
+                            fieldlist.append('                <div ' + style_def + data_def + 'class="da-form-group row' + class_def + '"><div class="col"><hr><span class="dacollectnum dainvisible">' + list_message + '</span><span class="dacollectremoved text-danger dainvisible"> ' + word("(Deleted)") + '</span><button type="button" class="btn btn-sm ' + BUTTON_STYLE + BUTTON_COLOR_DELETE + ' float-end dainvisible dacollectremove"><i class="fa-solid fa-trash"></i> ' + word("Delete") + '</button><button type="button" class="btn btn-sm ' + BUTTON_STYLE + BUTTON_COLOR_UNDELETE + ' float-end dainvisible dacollectunremove"><i class="fa-solid fa-trash-restore"></i> ' + word("Undelete") + '</button><button type="button" class="btn btn-sm ' + BUTTON_STYLE + BUTTON_COLOR_ADD + ' dacollectadd"><i class="fa-solid fa-plus-circle"></i> ' + add_another + '</button></div></div>\n')
                         elif field.collect_type == 'postheader':
                             fieldlist.append('                <div ' + style_def + data_def + 'class="da-form-group row' + class_def + '"><div class="col"></div></div>\n')
                         elif field.collect_type == 'extrapostheader':
                             fieldlist.append('                <div ' + style_def + data_def + 'class="da-form-group row' + class_def + '"><div class="col"></div></div>\n')
                         elif field.collect_type == 'extrafinalpostheader':
-                            fieldlist.append('                <div ' + style_def + data_def + 'class="da-form-group row' + class_def + '"><div class="col"><button type="button" id="da-extra-collect" value=' + myb64doublequote(json.dumps({'function': 'add', 'list': status.extras['list_collect'].instanceName})) + ' class="btn btn-sm ' + BUTTON_STYLE + BUTTON_COLOR_ADD + '"><i class="fas fa-plus-circle"></i> ' + add_another + '</button></div></div>\n')
+                            fieldlist.append('                <div ' + style_def + data_def + 'class="da-form-group row' + class_def + '"><div class="col"><button type="button" id="da-extra-collect" value=' + myb64doublequote(json.dumps({'function': 'add', 'list': status.extras['list_collect'].instanceName})) + ' class="btn btn-sm ' + BUTTON_STYLE + BUTTON_COLOR_ADD + '"><i class="fa-solid fa-plus-circle"></i> ' + add_another + '</button></div></div>\n')
                         elif field.collect_type == 'firstheader':
-                            fieldlist.append('                <div ' + style_def + data_def + 'class="da-form-group row' + class_def + '"><div class="col"><span class="dacollectnum">' + list_message + '</span><span class="dacollectremoved text-danger dainvisible"> ' + word("(Deleted)") + '</span><button type="button" class="btn btn-sm ' + BUTTON_STYLE + BUTTON_COLOR_UNDELETE + ' float-end dainvisible dacollectunremove"><i class="fas fa-trash-restore"></i> ' + word("Undelete") + '</button>' + da_remove_existing + '</div></div>\n')
+                            fieldlist.append('                <div ' + style_def + data_def + 'class="da-form-group row' + class_def + '"><div class="col"><span class="dacollectnum">' + list_message + '</span><span class="dacollectremoved text-danger dainvisible"> ' + word("(Deleted)") + '</span><button type="button" class="btn btn-sm ' + BUTTON_STYLE + BUTTON_COLOR_UNDELETE + ' float-end dainvisible dacollectunremove"><i class="fa-solid fa-trash-restore"></i> ' + word("Undelete") + '</button>' + da_remove_existing + '</div></div>\n')
                         else:
-                            fieldlist.append('                <div ' + style_def + data_def + 'class="da-form-group row' + class_def + '"><div class="col"><hr><span class="dacollectnum">' + list_message + '</span><span class="dacollectremoved text-danger dainvisible"> ' + word("(Deleted)") + '</span><button type="button" class="btn btn-sm ' + BUTTON_STYLE + BUTTON_COLOR_UNDELETE + ' float-end dainvisible dacollectunremove"><i class="fas fa-trash-restore"></i> ' + word("Undelete") + '</button>' + da_remove_existing + '</div></div>\n')
+                            fieldlist.append('                <div ' + style_def + data_def + 'class="da-form-group row' + class_def + '"><div class="col"><hr><span class="dacollectnum">' + list_message + '</span><span class="dacollectremoved text-danger dainvisible"> ' + word("(Deleted)") + '</span><button type="button" class="btn btn-sm ' + BUTTON_STYLE + BUTTON_COLOR_UNDELETE + ' float-end dainvisible dacollectunremove"><i class="fa-solid fa-trash-restore"></i> ' + word("Undelete") + '</button>' + da_remove_existing + '</div></div>\n')
                     else:
                         if field.number in note_fields:
                             if field.datatype == 'raw html':
@@ -1394,21 +1435,26 @@ def as_html(status, debug, root, validation_rules, field_error, the_progress_bar
                         datatypes[safeid(from_safeid(field.saveas) + ".gathered")] = 'boolean'
             else:
                 field_class = ' da-field-container'
+            use_fieldset = 0
             if hasattr(field, 'inputtype'):
                 field_class += ' da-field-container-inputtype-' + field.inputtype
+                if field.inputtype in ('radio', 'checkboxes', 'yesnoradio', 'noyesradio', 'yesno', 'noyes', 'yesnowide', 'noyeswide', 'yesnomaybe', 'noyesmaybe'):
+                    use_fieldset = 1
             elif hasattr(field, 'choicetype'):
                 if field.datatype in ['checkboxes', 'object_checkboxes']:
                     field_class += ' da-field-container-inputtype-checkboxes'
+                    use_fieldset = 2
                 elif field.datatype in ['multiselect', 'object_multiselect']:
                     field_class += ' da-field-container-inputtype-multiselect'
                 elif field.datatype == 'object_radio' or (field.datatype == 'object' and hasattr(field, 'inputtype') and field.inputtype == 'radio'):
                     field_class += ' da-field-container-inputtype-radio'
+                    use_fieldset = 1
                 else:
                     field_class += ' da-field-container-inputtype-dropdown'
             field_class += extra_container_class
             if field.number in status.helptexts:
                 helptext_start = '<a tabindex="0" class="text-info ms-1 dapointer" data-bs-container="body" data-bs-toggle="popover" data-bs-placement="bottom" data-bs-content=' + noquote(markdown_to_html(status.helptexts[field.number], trim=True, status=status)) + '>'
-                helptext_end = '<i class="fas fa-question-circle"></i></a>'
+                helptext_end = '<i class="fa-solid fa-question-circle"></i></a>'
             else:
                 helptext_start = ''
                 helptext_end = ''
@@ -1740,48 +1786,48 @@ def as_html(status, debug, root, validation_rules, field_error, the_progress_bar
             if hasattr(field, 'saveas') and field.saveas in status.embedded:
                 continue
             if hasattr(field, 'label'):
-                if hasattr(field, 'datatype') and field.datatype not in ('checkboxes', 'object_checkboxes'):
+                if hasattr(field, 'datatype') and field.datatype not in ('checkboxes', 'object_checkboxes') and not use_fieldset:
                     label_for = ' for="' + escape_id(label_saveas) + '"'
                 else:
                     label_for = ''
                 if status.labels[field.number] == 'no label':
-                    fieldlist.append(field_item(field, grid_info, pre=style_def + data_def, classes=class_def + side_note_parent + req_tag + field_class + ' da-field-container-nolabel', hidden_message=word("Answer here"), grid_type='wide', content_classes='dafieldpart', content=input_for(status, field), side_note=side_note, under_text=under_text))
+                    fieldlist.append(field_item(field, grid_info, pre=style_def + data_def, classes=class_def + side_note_parent + req_tag + field_class + ' da-field-container-nolabel', hidden_message=word("Answer here"), grid_type='wide', content_classes='dafieldpart', content=input_for(status, field), side_note=side_note, under_text=under_text, use_fieldset=use_fieldset, required=is_required))
                     # fieldlist.append('                <div ' + style_def + data_def + 'class="da-form-group row' + class_def + '' + side_note_parent + req_tag + field_class + ' da-field-container-nolabel">\n                  <span class="visually-hidden">' + word("Answer here") + '</span>\n                  <div class="col dawidecol dafieldpart">' + input_for(status, field) + '</div>' + side_note + '\n                </div>\n')
                 elif hasattr(field, 'inputtype') and field.inputtype in ['yesnowide', 'noyeswide']:
-                    fieldlist.append(field_item(field, grid_info, pre=style_def + data_def, classes='dayesnospacing ' + side_note_parent + field_class + ' da-field-container-nolabel' + class_def, hidden_message=word("Check if applicable"), grid_type='wide', content_classes='dafieldpart', content=input_for(status, field), side_note=side_note, under_text=under_text))
+                    fieldlist.append(field_item(field, grid_info, pre=style_def + data_def, classes='dayesnospacing ' + side_note_parent + field_class + ' da-field-container-nolabel' + class_def, hidden_message=word("Check if applicable"), grid_type='wide', content_classes='dafieldpart', content=input_for(status, field), side_note=side_note, under_text=under_text, use_fieldset=use_fieldset, required=is_required))
                     # fieldlist.append('                <div ' + style_def + data_def + 'class="da-form-group row dayesnospacing ' + side_note_parent + field_class + ' da-field-container-nolabel' + class_def + '">\n                  <span class="visually-hidden">' + word("Check if applicable") + '</span>\n                  <div class="col dawidecol dafieldpart">' + input_for(status, field) + '</div>' + side_note + '\n                </div>\n')
                 elif floating_labels or (hasattr(field, 'floating_label') and status.extras['floating_label'][field.number]):
                     if hasattr(field, 'inputtype') and field.inputtype in ['yesno', 'noyes']:
-                        fieldlist.append(field_item(field, grid_info, pre=style_def + data_def, row=False, classes='dayesnospacing' + side_note_parent + field_class + ' da-field-container-nolabel' + class_def, hidden_message=word("Check if applicable"), grid_type='offset', content_classes='dafieldpart', content=input_for(status, field), side_note=side_note, under_text=under_text, label_content=''))
+                        fieldlist.append(field_item(field, grid_info, pre=style_def + data_def, row=False, classes='dayesnospacing' + side_note_parent + field_class + ' da-field-container-nolabel' + class_def, hidden_message=word("Check if applicable"), grid_type='offset', content_classes='dafieldpart', content=input_for(status, field), side_note=side_note, under_text=under_text, label_content='', use_fieldset=use_fieldset, required=is_required))
                         # fieldlist.append('                <div ' + style_def + data_def + 'class="da-form-group dayesnospacing' + side_note_parent + field_class + ' da-field-container-nolabel' + class_def + '">\n                  <span class="visually-hidden">' + word("Check if applicable") + '</span>\n                  <div class="dafieldpart">' + input_for(status, field) + side_note + '</div>\n                </div>\n')
                     elif status.labels[field.number] == '':
-                        fieldlist.append(field_item(field, grid_info, pre=style_def + data_def, row=False, classes='da-form-group' + side_note_parent + req_tag + field_class + ' da-field-container-emptylabel' + class_def, hidden_message=word("Answer here"), content_classes='dafieldpart', content=input_for(status, field), side_note=side_note, under_text=under_text))
+                        fieldlist.append(field_item(field, grid_info, pre=style_def + data_def, row=False, classes='da-form-group' + side_note_parent + req_tag + field_class + ' da-field-container-emptylabel' + class_def, hidden_message=word("Answer here"), content_classes='dafieldpart', content=input_for(status, field), side_note=side_note, under_text=under_text, use_fieldset=use_fieldset, required=is_required))
                         # fieldlist.append('                <div ' + style_def + data_def + 'class="da-form-group' + side_note_parent + req_tag + field_class + ' da-field-container-emptylabel' + class_def + '">\n                  <span class="visually-hidden">' + word("Answer here") + '</span>\n                  <div class="dafieldpart">' + input_for(status, field) + side_note + '</div>\n                </div>\n')
                     else:
                         floating_label = markdown_to_html(status.labels[field.number], trim=True, status=status, strip_newlines=True)
                         # logmessage("field is " + repr(field.number) + " and status labels is " + repr(status.labels[field.number]))
                         # logmessage("field is " + repr(field.number) + " and floating_label is " + repr(floating_label))
-                        fieldlist.append(field_item(field, grid_info, pre=style_def + data_def, row=False, floating=True, classes=side_note_parent + req_tag + field_class + class_def, content=input_for(status, field, floating_label=strip_quote(to_text(floating_label, {}, []).strip())), side_note=side_note, label_for=label_for, label_content=floating_label, under_text=under_text))
+                        fieldlist.append(field_item(field, grid_info, pre=style_def + data_def, row=False, floating=True, classes=side_note_parent + req_tag + field_class + class_def, content=input_for(status, field, floating_label=strip_quote(to_text(floating_label, {}, []).strip())), side_note=side_note, label_for=label_for, label_content=floating_label, under_text=under_text, use_fieldset=use_fieldset, required=is_required))
                         # fieldlist.append('                <div ' + style_def + data_def + 'class="da-form-group-floating form-floating mb-3' + side_note_parent + req_tag + field_class + class_def + '">\n                  ' + input_for(status, field, floating_label=strip_quote(to_text(floating_label, {}, []).strip())) + side_note + '\n                  <label ' + label_for + '>' + floating_label + '</label>\n                </div>\n')
                 elif labels_above or (hasattr(field, 'label_above_field') and status.extras['label_above_field'][field.number]):
                     if hasattr(field, 'inputtype') and field.inputtype in ['yesno', 'noyes']:
-                        fieldlist.append(field_item(field, grid_info, pre=style_def + data_def, row=False, classes='dayesnospacing' + side_note_parent + field_class + ' da-field-container-nolabel' + class_def, hidden_message=word("Check if applicable"), content_classes='dafieldpart', content=input_for(status, field), side_note=side_note, under_text=under_text))
+                        fieldlist.append(field_item(field, grid_info, pre=style_def + data_def, row=False, classes='dayesnospacing' + side_note_parent + field_class + ' da-field-container-nolabel' + class_def, hidden_message=word("Check if applicable"), content_classes='dafieldpart', content=input_for(status, field), side_note=side_note, under_text=under_text, use_fieldset=use_fieldset, required=is_required))
                         # fieldlist.append('                <div ' + style_def + data_def + 'class="da-form-group dayesnospacing' + side_note_parent + field_class + ' da-field-container-nolabel' + class_def + '">\n                  <span class="visually-hidden">' + word("Check if applicable") + '</span>\n                  <div class="dafieldpart">' + input_for(status, field) + side_note + '</div>\n                </div>\n')
                     elif status.labels[field.number] == '':
-                        fieldlist.append(field_item(field, grid_info, pre=style_def + data_def, row=False, classes=side_note_parent + req_tag + field_class + ' da-field-container-emptylabel' + class_def, hidden_message=word("Answer here"), content_classes='dafieldpart', content=input_for(status, field), side_note=side_note, under_text=under_text))
+                        fieldlist.append(field_item(field, grid_info, pre=style_def + data_def, row=False, classes=side_note_parent + req_tag + field_class + ' da-field-container-emptylabel' + class_def, hidden_message=word("Answer here"), content_classes='dafieldpart', content=input_for(status, field), side_note=side_note, under_text=under_text, use_fieldset=use_fieldset, required=is_required))
                         # fieldlist.append('                <div ' + style_def + data_def + 'class="da-form-group' + side_note_parent + req_tag + field_class + ' da-field-container-emptylabel' + class_def + '">\n                  <span class="visually-hidden">' + word("Answer here") + '</span>\n                  <div class="dafieldpart">' + input_for(status, field) + side_note + '</div>\n                </div>\n')
                     else:
-                        fieldlist.append(field_item(field, grid_info, pre=style_def + data_def, row=False, classes=side_note_parent + req_tag + field_class + class_def, label_for=label_for, label_classes='form-label da-top-label', label_content=markdown_to_html(status.labels[field.number], trim=True, status=status, strip_newlines=True) + helptext_start + helptext_end, content_classes='dafieldpart', content=input_for(status, field), side_note=side_note, under_text=under_text))
+                        fieldlist.append(field_item(field, grid_info, pre=style_def + data_def, row=False, classes=side_note_parent + req_tag + field_class + class_def, label_for=label_for, label_classes='form-label da-top-label', label_content=markdown_to_html(status.labels[field.number], trim=True, status=status, strip_newlines=True) + helptext_start + helptext_end, content_classes='dafieldpart', content=input_for(status, field), side_note=side_note, under_text=under_text, use_fieldset=use_fieldset, required=is_required))
                         # fieldlist.append('                <div ' + style_def + data_def + 'class="da-form-group' + side_note_parent + req_tag + field_class + class_def + '">\n                  <label class="form-label da-top-label"' + label_for + '>' + markdown_to_html(status.labels[field.number], trim=True, status=status, strip_newlines=True) + helptext_start + helptext_end + '</label>\n                  <div class="dafieldpart">' + input_for(status, field) + side_note + '</div>\n                </div>\n')
                 else:
                     if hasattr(field, 'inputtype') and field.inputtype in ['yesno', 'noyes']:
-                        fieldlist.append(field_item(field, grid_info, pre=style_def + data_def, classes='dayesnospacing' + side_note_parent + req_tag + field_class + ' da-field-container-emptylabel' + class_def, hidden_message=word("Check if applicable"), grid_type='offset', content_classes='dafieldpart', content=input_for(status, field), side_note=side_note, under_text=under_text))
+                        fieldlist.append(field_item(field, grid_info, pre=style_def + data_def, classes='dayesnospacing' + side_note_parent + req_tag + field_class + ' da-field-container-emptylabel' + class_def, hidden_message=word("Check if applicable"), grid_type='offset', content_classes='dafieldpart', content=input_for(status, field), side_note=side_note, under_text=under_text, use_fieldset=use_fieldset, required=is_required))
                         # fieldlist.append('                <div ' + style_def + data_def + 'class="da-form-group row dayesnospacing' + side_note_parent + req_tag + field_class + ' da-field-container-emptylabel' + class_def + '"><span  class="visually-hidden">' + word("Check if applicable") + '</span><div class="offset-' + daconfig['grid classes']['label width'] + ' col-' + daconfig['grid classes']['field width'] + ' dafieldpart">' + input_for(status, field) + '</div>' + side_note + '</div>\n')
                     elif status.labels[field.number] == '':
-                        fieldlist.append(field_item(field, grid_info, pre=style_def + data_def, classes=side_note_parent + req_tag + field_class + ' da-field-container-emptylabel' + class_def, hidden_message=word("Answer here"), grid_type='offset', content_classes='dafieldpart danolabel', content=input_for(status, field), side_note=side_note, under_text=under_text))
+                        fieldlist.append(field_item(field, grid_info, pre=style_def + data_def, classes=side_note_parent + req_tag + field_class + ' da-field-container-emptylabel' + class_def, hidden_message=word("Answer here"), grid_type='offset', content_classes='dafieldpart danolabel', content=input_for(status, field), side_note=side_note, under_text=under_text, use_fieldset=use_fieldset, required=is_required))
                         # fieldlist.append('                <div ' + style_def + data_def + 'class="da-form-group row' + side_note_parent + req_tag + field_class + ' da-field-container-emptylabel' + class_def + '"><span class="visually-hidden">' + word("Answer here") + '</span><div class="offset-' + daconfig['grid classes']['label width'] + ' col-' + daconfig['grid classes']['field width'] + ' dafieldpart danolabel">' + input_for(status, field) + '</div>' + side_note + '</div>\n')
                     else:
-                        fieldlist.append(field_item(field, grid_info, pre=style_def + data_def, classes=side_note_parent + req_tag + field_class + class_def, label_for=label_for, grid_type='horizontal', label_content=markdown_to_html(status.labels[field.number], trim=True, status=status, strip_newlines=True) + helptext_start + helptext_end, content_classes='dafieldpart', content=input_for(status, field), side_note=side_note, under_text=under_text))
+                        fieldlist.append(field_item(field, grid_info, pre=style_def + data_def, classes=side_note_parent + req_tag + field_class + class_def, label_for=label_for, grid_type='horizontal', label_content=markdown_to_html(status.labels[field.number], trim=True, status=status, strip_newlines=True) + helptext_start + helptext_end, content_classes='dafieldpart', content=input_for(status, field), side_note=side_note, under_text=under_text, use_fieldset=use_fieldset, required=is_required))
                         # fieldlist.append('                <div ' + style_def + data_def + 'class="da-form-group row' + side_note_parent + req_tag + field_class + class_def + '"><label' + label_for + ' class="col-' + daconfig['grid classes']['label width'] + ' col-form-label da-form-label datext-right">' + markdown_to_html(status.labels[field.number], trim=True, status=status, strip_newlines=True) + helptext_start + helptext_end + '</label><div class="col-' + daconfig['grid classes']['field width'] + ' dafieldpart">' + input_for(status, field) + '</div>' + side_note + '</div>\n')
             if grid_info['_enabled'] and grid_info[field.number]['end']:
                 fieldlist.append('                </div>\n')
@@ -1963,6 +2009,7 @@ def as_html(status, debug, root, validation_rules, field_error, the_progress_bar
                             datadefault = ' data-default=' + fix_double_quote(str(defaultvalue))
                         else:
                             datadefault = ''
+                        datadefault += ' aria-labelledby="daMainQuestion"'
                         field_container_class = ' da-field-container-combobox'
                     else:
                         combobox = ' form-select'
@@ -2058,7 +2105,7 @@ def as_html(status, debug, root, validation_rules, field_error, the_progress_bar
                         else:
                             the_icon = ''
                             if pair.get('color', None):
-                                btn_class = ' ' + BUTTON_STYLE + ' btn-' + pair['color'].strip()
+                                btn_class = ' ' + BUTTON_STYLE + pair['color'].strip()
                             else:
                                 btn_class = ' ' + BUTTON_STYLE + continue_button_color
                         if pair.get('css class', None):
@@ -2082,7 +2129,7 @@ def as_html(status, debug, root, validation_rules, field_error, the_progress_bar
                         else:
                             the_icon = ''
                             if choice.get('color', None):
-                                btn_class = ' ' + BUTTON_STYLE + ' btn-' + choice['color'].strip()
+                                btn_class = ' ' + BUTTON_STYLE + choice['color'].strip()
                             else:
                                 btn_class = ' ' + BUTTON_STYLE + continue_button_color
                         if choice.get('css class', None):
@@ -2099,7 +2146,7 @@ def as_html(status, debug, root, validation_rules, field_error, the_progress_bar
                     else:
                         css_class = ''
                     if choice.get('color', None):
-                        btn_class = ' ' + BUTTON_STYLE + ' btn-' + choice['color'].strip()
+                        btn_class = ' ' + BUTTON_STYLE + choice['color'].strip()
                         auto_color = False
                     else:
                         btn_class = ' ' + BUTTON_STYLE + continue_button_color
@@ -2182,7 +2229,12 @@ def as_html(status, debug, root, validation_rules, field_error, the_progress_bar
             output += markdown_to_html(status.extras['underText'], status=status, divclass="daundertext")
         output += tracker_tag(status)
         output += '            </form>\n'
-    if len(status.attachments) > 0:
+    any_attachments = False
+    for attachment in status.attachments:
+        if len(attachment['valid_formats']) > 0:
+            any_attachments = True
+            break
+    if any_attachments:
         if not status.extras.get('manual_attachment_list', False):
             output += '            <br/>\n'
             if len(status.attachments) > 1:
@@ -2213,6 +2265,10 @@ def as_html(status, debug, root, validation_rules, field_error, the_progress_bar
                     editable_options.add('DOCX')
             if status.extras.get('manual_attachment_list', False):
                 continue
+            extra_formats = []
+            for output_format in attachment.get('manual_formats', []):
+                if output_format not in ('pdf', 'rtf', 'docx', 'rtf to docx', 'tex', 'md', '*'):
+                    extra_formats.append(output_format)
             if debug and len(attachment['markdown']):
                 if 'html' in attachment['valid_formats'] or '*' in attachment['valid_formats']:
                     md_format = 'html'
@@ -2224,7 +2280,7 @@ def as_html(status, debug, root, validation_rules, field_error, the_progress_bar
             else:
                 show_markdown = False
             # logmessage("markdown is " + str(attachment['markdown']))
-            show_download = bool('pdf' in attachment['valid_formats'] or 'rtf' in attachment['valid_formats'] or 'rtf to docx' in attachment['valid_formats'] or 'docx' in attachment['valid_formats'] or 'md' in attachment['valid_formats'] or (debug and 'tex' in attachment['valid_formats']) or '*' in attachment['valid_formats'])
+            show_download = bool('pdf' in attachment['valid_formats'] or 'rtf' in attachment['valid_formats'] or 'rtf to docx' in attachment['valid_formats'] or 'docx' in attachment['valid_formats'] or 'md' in attachment['valid_formats'] or (debug and 'tex' in attachment['valid_formats']) or '*' in attachment['valid_formats'] or len(extra_formats) > 0)
             show_preview = bool('html' in attachment['valid_formats'] or '*' in attachment['valid_formats'])
             multiple_formats = bool(len(attachment['valid_formats']) > 1 or '*' in attachment['valid_formats'])
             if attachment.get('raw', False):
@@ -2257,20 +2313,22 @@ def as_html(status, debug, root, validation_rules, field_error, the_progress_bar
                 if multiple_formats:
                     output += '                  <p class="da-attachment-tab-download-intro">' + word('The document is available in the following formats:') + '</p>\n'
                 if attachment.get('raw', False):
-                    output += '                  <p class="da-attachment-tab-download-raw"><a href="' + server.url_finder(attachment['file']['raw'], display_filename=attachment['filename'] + attachment['raw']) + '" target="_blank"><i class="fas fa-code fa-fw"></i> ' + attachment['filename'] + attachment['raw'] + '</a> (' + word('for downloading') + ')</p>\n'
+                    output += '                  <p class="da-attachment-tab-download-raw"><a href="' + server.url_finder(attachment['file']['raw'], display_filename=attachment['filename'] + attachment['raw']) + '" target="_blank"><i class="fa-solid fa-code fa-fw"></i> ' + attachment['filename'] + attachment['raw'] + '</a> (' + word('for downloading') + ')</p>\n'
                 else:
                     if 'pdf' in attachment['valid_formats'] or '*' in attachment['valid_formats']:
-                        output += '                  <p class="da-attachment-tab-download-pdf"><a href="' + server.url_finder(attachment['file']['pdf'], display_filename=attachment['filename'] + '.pdf') + '" target="_blank"><i class="fas fa-print fa-fw"></i> PDF</a> (' + word('for printing; requires Adobe Reader or similar application') + ')</p>\n'
+                        output += '                  <p class="da-attachment-tab-download-pdf"><a href="' + server.url_finder(attachment['file']['pdf'], display_filename=attachment['filename'] + '.pdf') + '" target="_blank"><i class="fa-solid fa-print fa-fw"></i> PDF</a> (' + word('for printing; requires Adobe Reader or similar application') + ')</p>\n'
                     if 'rtf' in attachment['valid_formats'] or '*' in attachment['valid_formats']:
-                        output += '                  <p class="da-attachment-tab-download-rtf"><a href="' + server.url_finder(attachment['file']['rtf'], display_filename=attachment['filename'] + '.rtf') + '" target="_blank"><i class="fas fa-pencil-alt fa-fw"></i> RTF</a> (' + word('for editing; requires Microsoft Word, Wordpad, or similar application') + ')</p>\n'
+                        output += '                  <p class="da-attachment-tab-download-rtf"><a href="' + server.url_finder(attachment['file']['rtf'], display_filename=attachment['filename'] + '.rtf') + '" target="_blank"><i class="fa-solid fa-pencil-alt fa-fw"></i> RTF</a> (' + word('for editing; requires Microsoft Word, Wordpad, or similar application') + ')</p>\n'
                     if 'docx' in attachment['valid_formats']:
-                        output += '                  <p class="da-attachment-tab-download-docx"><a href="' + server.url_finder(attachment['file']['docx'], display_filename=attachment['filename'] + '.docx') + '" target="_blank"><i class="fas fa-pencil-alt fa-fw"></i> DOCX</a> (' + word('for editing; requires Microsoft Word or compatible application') + ')</p>\n'
+                        output += '                  <p class="da-attachment-tab-download-docx"><a href="' + server.url_finder(attachment['file']['docx'], display_filename=attachment['filename'] + '.docx') + '" target="_blank"><i class="fa-solid fa-pencil-alt fa-fw"></i> DOCX</a> (' + word('for editing; requires Microsoft Word or compatible application') + ')</p>\n'
                     if 'rtf to docx' in attachment['valid_formats']:
-                        output += '                  <p class="da-attachment-tab-download-docx"><a href="' + server.url_finder(attachment['file']['rtf to docx'], display_filename=attachment['filename'] + '.docx') + '" target="_blank"><i class="fas fa-pencil-alt fa-fw"></i> DOCX</a> (' + word('for editing; requires Microsoft Word or compatible application') + ')</p>\n'
+                        output += '                  <p class="da-attachment-tab-download-docx"><a href="' + server.url_finder(attachment['file']['rtf to docx'], display_filename=attachment['filename'] + '.docx') + '" target="_blank"><i class="fa-solid fa-pencil-alt fa-fw"></i> DOCX</a> (' + word('for editing; requires Microsoft Word or compatible application') + ')</p>\n'
                     if 'tex' in attachment['valid_formats']:
-                        output += '                  <p class="da-attachment-tab-download-tex"><a href="' + server.url_finder(attachment['file']['tex'], display_filename=attachment['filename'] + '.tex') + '" target="_blank"><i class="fas fa-pencil-alt fa-fw"></i> LaTeX</a> (' + word('for debugging PDF output') + ')</p>\n'
+                        output += '                  <p class="da-attachment-tab-download-tex"><a href="' + server.url_finder(attachment['file']['tex'], display_filename=attachment['filename'] + '.tex') + '" target="_blank"><i class="fa-solid fa-pencil-alt fa-fw"></i> LaTeX</a> (' + word('for debugging PDF output') + ')</p>\n'
                     if 'md' in attachment['valid_formats']:
-                        output += '                  <p class="da-attachment-tab-download-md"><a href="' + server.url_finder(attachment['file']['md'], display_filename=attachment['filename'] + '.md') + '" target="_blank"><i class="fab fa-markdown fa-fw"></i> Markdown</a></p>\n'
+                        output += '                  <p class="da-attachment-tab-download-md"><a href="' + server.url_finder(attachment['file']['md'], display_filename=attachment['filename'] + '.md') + '" target="_blank"><i class="fa-brands fa-markdown fa-fw"></i> Markdown</a></p>\n'
+                    for output_format in extra_formats:
+                        output += '                  <p class="da-attachment-tab-download-extra"><a href="' + server.url_finder(attachment['file'][output_format], display_filename=attachment['filename'] + '.' + output_format) + '" target="_blank"><i class="fa-solid fa-file fa-fw"></i> ' + attachment['filename'] + '.' + output_format + '</a></p>\n'
                 output += '                </div>\n'
             if show_preview:
                 output += '                <div class="tab-pane da-attachment-tab-preview" id="dapreview' + str(attachment_index) + '" role="tabpanel" aria-labelledby="dapreview-tab' + str(attachment_index) + '">\n'
@@ -2400,7 +2458,7 @@ def as_html(status, debug, root, validation_rules, field_error, the_progress_bar
     master_output += output
     master_output += '          </div>\n'
     master_output += '          <div id="dahelp" role="tabpanel" aria-labelledby="dahelptoggle" class="tab-pane fade ' + grid_class + '">\n'
-    output = '            <div class="mt-2 mb-2"><button id="dabackToQuestion" class="btn ' + BUTTON_STYLE + BUTTON_COLOR_BACK_TO_QUESTION + '"><i class="fas fa-chevron-left"></i> ' + word("Back to question") + '</button></div>'
+    output = '            <div class="mt-2 mb-2"><button id="dabackToQuestion" class="btn ' + BUTTON_STYLE + BUTTON_COLOR_BACK_TO_QUESTION + '"><i class="fa-solid fa-chevron-left"></i> ' + word("Back to question") + '</button></div>'
     output += """
             <div id="daPhoneMessage" class="row dainvisible">
               <div class="col">
@@ -2638,8 +2696,19 @@ def input_for(status, field, embedded=False, floating_label=None):
     if field.number in status.defaults:
         defaultvalue_set = True
         if hasattr(field, 'datatype') and field.datatype in custom_types:
+            field_data = {}
+            for parameter in ('min', 'max', 'minlength', 'maxlength', 'step', 'scale', 'currency symbol', 'field metadata'):
+                if parameter in status.extras and field.number in status.extras[parameter]:
+                    field_data[parameter] = status.extras[parameter][field.number]
+            if hasattr(field, 'extras') and 'custom_parameters' in field.extras:
+                for parameter, parameter_value in field.extras['custom_parameters'].items():
+                    field_data[parameter] = parameter_value
+            for param_type in ('custom_parameters_code', 'custom_parameters_mako'):
+                if param_type in status.extras and field.number in status.extras[param_type]:
+                    for parameter, parameter_value in status.extras[param_type][field.number].items():
+                        field_data[parameter] = parameter_value
             try:
-                defaultvalue = custom_types[field.datatype]['class'].default_for(status.defaults[field.number])
+                defaultvalue = custom_types[field.datatype]['class'].call_default_for(status.defaults[field.number], sub_indices(from_safeid(field.saveas), status.special_vars), field_data)
             except:
                 defaultvalue_set = False
                 defaultvalue = None
@@ -2708,10 +2777,10 @@ def input_for(status, field, embedded=False, floating_label=None):
         inline_width = None
     if status.extras['required'][field.number]:
         req_attr = ' required'
-        req_aria = ' aria-required="true"'
     else:
         req_attr = ''
-        req_aria = ''
+    if status.labels[field.number] == 'no label':
+        req_attr += ' aria-labelledby="daMainQuestion"'
     if embedded:
         extra_class = ' dainput-embedded'
         if hasattr(field, 'datatype') and field.datatype == 'date':
@@ -2859,15 +2928,11 @@ def input_for(status, field, embedded=False, floating_label=None):
             if embedded:
                 output += '<span class="da-embed-checkbox-wrapper">'
             else:
-                if req_aria:
-                    legend_text = 'Checkboxes (select at least one):'
-                else:
-                    legend_text = 'Checkboxes:'
                 if is_object:
-                    output += '<fieldset class="da-field-checkboxes daobject"'
+                    output += '<div class="da-field-group da-field-checkboxes daobject"'
                 else:
-                    output += '<fieldset class="da-field-checkboxes"'
-                output += ' data-varname=' + myb64doublequote(from_safeid(field.saveas)) + ' role="group"><legend class="visually-hidden">' + word(legend_text) + '</legend>'
+                    output += '<div class="da-field-group da-field-checkboxes"'
+                output += ' data-varname=' + myb64doublequote(from_safeid(field.saveas)) + ' role="group">'
                 if item_grid:
                     output += '<div class="row">'
             all_checked = True
@@ -2956,7 +3021,7 @@ def input_for(status, field, embedded=False, floating_label=None):
                 output += ''.join(inner_fieldlist)
                 if item_grid:
                     output += '</div>'
-            output += '</fieldset>'
+            output += '</div>'
             if field.datatype in ['object_checkboxes'] and not is_disabled:
                 output += '<input type="hidden" name="' + safeid(from_safeid(field.saveas) + ".gathered") + '" value="True"' + disable_others_data + '/>'
         elif field.datatype == 'object_radio' or (hasattr(field, 'inputtype') and field.inputtype == 'radio'):
@@ -3021,7 +3086,7 @@ def input_for(status, field, embedded=False, floating_label=None):
             else:
                 all_checked = True
                 default_selected = False
-                output += '<fieldset class="da-field-radio" role="radiogroup"' + req_aria + '><legend class="visually-hidden">' + word('Choices:') + '</legend>'
+                output += '<div class="da-field-group da-field-radio">'
                 if item_grid:
                     output += '<div class="row">'
                 for pair in pairlist:
@@ -3078,7 +3143,7 @@ def input_for(status, field, embedded=False, floating_label=None):
                     output += "".join(inner_fieldlist)
                     if item_grid:
                         output += '</div>'
-                output += "</fieldset>"
+                output += "</div>"
         else:
             if hasattr(field, 'datatype') and field.datatype == 'object':
                 daobject = ' daobject'
@@ -3096,7 +3161,6 @@ def input_for(status, field, embedded=False, floating_label=None):
                 if label_text != 'no label':
                     emb_text += 'title=' + fix_double_quote(str(label_text)) + ' '
             else:
-                output += '<p class="visually-hidden">' + word('Select box') + '</p>'
                 if hasattr(field, 'inputtype') and field.inputtype == 'combobox':
                     emb_text = 'class="form-control dasingleselect combobox' + daobject + '" '
                 else:
@@ -3171,7 +3235,7 @@ def input_for(status, field, embedded=False, floating_label=None):
                 if embedded:
                     output += '<span class="da-embed-radio-wrapper">'
                 else:
-                    output += '<fieldset class="da-field-radio" role="radiogroup"' + req_aria + '><legend class="visually-hidden">' + word('Choices:') + '</legend>'
+                    output += '<div class="da-field-group da-field-radio">'
                     if item_grid:
                         output += '<div class="row">'
                 if field.sign > 0:
@@ -3204,7 +3268,7 @@ def input_for(status, field, embedded=False, floating_label=None):
                     output += "".join(inner_fieldlist)
                     if item_grid:
                         output += '</div>'
-                    output += '</fieldset>'
+                    output += '</div>'
             else:
                 if hasattr(field, 'uncheckothers') and field.uncheckothers is not False:
                     if isinstance(field.uncheckothers, list):
@@ -3234,7 +3298,7 @@ def input_for(status, field, embedded=False, floating_label=None):
                 if embedded:
                     output += '<span class="da-embed-yesno-wrapper">'
                 else:
-                    output += '<fieldset class="da-field-checkbox"><legend class="visually-hidden">' + word('Choices:') + '</legend>'
+                    output += '<div class="da-field-group da-field-checkbox">'
                 if field.number in status.helptexts:
                     helptext = status.helptexts[field.number]
                 else:
@@ -3252,14 +3316,14 @@ def input_for(status, field, embedded=False, floating_label=None):
                 if embedded:
                     output += '</span>'
                 else:
-                    output += '</fieldset>'
+                    output += '</div>'
         elif field.datatype == 'threestate' and not is_hidden:
             inner_fieldlist = []
             id_index = 0
             if embedded:
                 output += '<span class="da-embed-threestate-wrapper">'
             else:
-                output += '<fieldset class="da-field-radio" role="radiogroup"' + req_aria + '><legend class="visually-hidden">' + word('Choices:') + '</legend>'
+                output += '<div class="da-field-group da-field-radio">'
                 if item_grid:
                     output += '<div class="row">'
             if field.sign > 0:
@@ -3292,7 +3356,7 @@ def input_for(status, field, embedded=False, floating_label=None):
                 output += "".join(inner_fieldlist)
                 if item_grid:
                     output += '</div>'
-                output += '</fieldset>'
+                output += '</div>'
         elif field.datatype in ['file', 'files', 'camera', 'user', 'environment', 'camcorder', 'microphone'] and not is_hidden:
             if 'file css class' in status.extras and field.number in status.extras['file css class']:
                 file_class = status.extras['file css class'][field.number]
@@ -3338,8 +3402,8 @@ def input_for(status, field, embedded=False, floating_label=None):
             if embedded:
                 output += '<span class="da-inline-error-wrapper"><input alt="' + word("You can upload a file here") + '" type="file" class="dafile-embedded" name="' + escape_id(saveas_string) + '"' + title_text + ' id="' + escape_id(saveas_string) + '"' + multipleflag + accept + disable_others_data + req_attr + disabled_attr + '/></span>'
             else:
-                output += '<input aria-describedby="' + escape_id(saveas_string) + '-error" alt=' + fix_double_quote(word("You can upload a file here")) + ' type="file" tabindex="-1" class="' + file_class + '" data-show-upload="false" ' + maximagesize + imagetype + ' data-preview-file-type="text" name="' + escape_id(saveas_string) + '" id="' + escape_id(saveas_string) + '"' + multipleflag + accept + disable_others_data + req_attr + disabled_attr + ' /><div class="da-has-error invalid-feedback" style="display: none;" id="' + escape_id(saveas_string) + '-error"></div>'
-            # output += '<div class="fileinput fileinput-new input-group" data-provides="fileinput"><div class="form-control" data-trigger="fileinput"><i class="fas fa-file fileinput-exists"></i><span class="fileinput-filename"></span></div><span class="input-group-addon btn btn-secondary btn-file"><span class="fileinput-new">' + word('Select file') + '</span><span class="fileinput-exists">' + word('Change') + '</span><input type="file" name="' + escape_id(saveas_string) + '" id="' + escape_id(saveas_string) + '"' + multipleflag + '></span><a href="#" class="input-group-addon btn btn-secondary fileinput-exists" data-dismiss="fileinput">' + word('Remove') + '</a></div>\n'
+                output += '<input alt=' + fix_double_quote(word("You can upload a file here")) + ' type="file" tabindex="-1" class="' + file_class + '" data-show-upload="false" ' + maximagesize + imagetype + ' data-preview-file-type="text" name="' + escape_id(saveas_string) + '" id="' + escape_id(saveas_string) + '"' + multipleflag + accept + disable_others_data + req_attr + disabled_attr + ' /><div class="da-has-error invalid-feedback" role="alert" style="display: none;" id="' + escape_id(saveas_string) + '-error"></div>'
+            # output += '<div class="fileinput fileinput-new input-group" data-provides="fileinput"><div class="form-control" data-trigger="fileinput"><i class="fa-solid fa-file fileinput-exists"></i><span class="fileinput-filename"></span></div><span class="input-group-addon btn btn-secondary btn-file"><span class="fileinput-new">' + word('Select file') + '</span><span class="fileinput-exists">' + word('Change') + '</span><input type="file" name="' + escape_id(saveas_string) + '" id="' + escape_id(saveas_string) + '"' + multipleflag + '></span><a href="#" class="input-group-addon btn btn-secondary fileinput-exists" data-dismiss="fileinput">' + word('Remove') + '</a></div>\n'
         elif field.datatype == 'range' and not is_hidden:
             ok = True
             for key in ['min', 'max']:
@@ -3496,6 +3560,12 @@ def input_for(status, field, embedded=False, floating_label=None):
                 input_type = custom_types[field.datatype]['input_type']
                 extra_class += ' ' + custom_types[field.datatype]['input_class']
                 custom_parameters = {}
+                if hasattr(field, 'extras'):
+                    for param_type in ('minlength', 'maxlength', 'min', 'max', 'step', 'scale', 'currency symbol'):
+                        if param_type in status.extras and field.number in status.extras[param_type]:
+                            custom_parameters[param_type] = status.extras[param_type][field.number]
+                    if 'field metadata' in status.extras and field.number in status.extras['field metadata']:
+                        custom_parameters['field-metadata'] = json.dumps(status.extras['field metadata'][field.number])
                 if hasattr(field, 'extras') and 'custom_parameters' in field.extras:
                     for parameter, parameter_value in field.extras['custom_parameters'].items():
                         custom_parameters[parameter] = parameter_value
@@ -3508,12 +3578,13 @@ def input_for(status, field, embedded=False, floating_label=None):
                         data_part += ' data-' + re.sub(r'[^A-Za-z0-9\-]', '-', param_name).strip('-') + '=' + fix_double_quote(str(param_val))
             output += '<input' + defaultstring + placeholdertext + ' alt="' + word("Input box") + '" class="form-control' + extra_class + '"' + extra_style + title_text + data_part + ' type="' + input_type + '"' + html_valid_part + step_string + ' name="' + escape_id(saveas_string) + '" id="' + escape_id(saveas_string) + '"'
             if not embedded and field.datatype == 'currency':
-                output += ' aria-describedby="' + escape_id(saveas_string) + '-error"' + disable_others_data + autocomplete_off + req_attr + disabled_attr + ' />'
+                output += disable_others_data + autocomplete_off + req_attr + disabled_attr + ' />'
                 if not currency_symbol_before:
                     output += currency_symbol
                 # if floating_label:
                 #     output += '<label class="form-label" for="' + escape_id(saveas_string) + '">' + floating_label + '</label>'
-                output += '</div><div class="da-has-error invalid-feedback" style="display: none;" id="' + escape_id(saveas_string) + '-error"></div>'
+                # output += '</div><div class="da-has-error invalid-feedback" style="display: none;" id="' + escape_id(saveas_string) + '-error"></div>'
+                output += '</div>'
             else:
                 output += disable_others_data + autocomplete_off + req_attr + disabled_attr + ' />'
             if embedded:

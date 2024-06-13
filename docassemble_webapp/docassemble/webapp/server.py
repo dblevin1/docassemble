@@ -1177,6 +1177,8 @@ def my_default_url(error, endpoint, values):  # pylint: disable=unused-argument
 
 
 def make_safe_url(url):
+    if url is None:
+        return url
     if url in ('help', 'login', 'signin', 'restart', 'new_session', 'exit', 'interview', 'logout', 'exit_logout', 'leave', 'register', 'profile', 'change_password', 'interviews', 'dispatch', 'manage', 'config', 'playground', 'playgroundtemplate', 'playgroundstatic', 'playgroundsources', 'playgroundmodules', 'playgroundpackages', 'configuration', 'root', 'temp_url', 'login_url', 'exit_endpoint', 'interview_start', 'interview_list', 'playgroundfiles', 'create_playground_package', 'run', 'run_interview_in_package', 'run_dispatch', 'run_new', 'run_new_dispatch'):
         return url
     parts = urlsplit(url)
@@ -2353,6 +2355,15 @@ def add_timestamps(the_dict, manual_user_id=None):
         the_dict['_internal']['accesstime'][-1] = nowtime
 
 
+def get_request_url():
+    return {'args': dict(request.args),
+            'base_url': request.base_url,
+            'full_path': request.full_path,
+            'path': request.path,
+            'scheme': request.scheme,
+            'url': request.url,
+            'url_root': request.url_root}
+
 def fresh_dictionary():
     the_dict = copy.deepcopy(initial_dict)
     add_timestamps(the_dict)
@@ -2962,7 +2973,7 @@ def navigation_bar(nav, interview, wrapper=True, inner_div_class=None, inner_div
     # logmessage("Sections is " + repr(the_sections))
     for x in the_sections:
         if include_arrows and not on_first:
-            output += '<span class="dainlinearrow"><i class="fas fa-chevron-right"></i></span>'
+            output += '<span class="dainlinearrow"><i class="fa-solid fa-chevron-right"></i></span>'
         on_first = False
         indexno += 1
         the_key = None
@@ -3041,7 +3052,7 @@ def navigation_bar(nav, interview, wrapper=True, inner_div_class=None, inner_div
             oldindexno = indexno
             for y in subitems:
                 if include_arrows:
-                    suboutput += '<span class="dainlinearrow"><i class="fas fa-chevron-right"></i></span>'
+                    suboutput += '<span class="dainlinearrow"><i class="fa-solid fa-chevron-right"></i></span>'
                 indexno += 1
                 sub_currently_active = False
                 if isinstance(y, dict):
@@ -3214,7 +3225,7 @@ def make_navbar(status, steps, show_login, chat_info, debug_mode, index_params, 
     if status.question.can_go_back and steps > 1:
         if status.question.interview.navigation_back_button:
             navbar += """\
-          <form style="display: inline-block" id="dabackbutton" method="POST" action=""" + json.dumps(url_for('index', **index_params)) + """><input type="hidden" name="csrf_token" value=""" + '"' + generate_csrf() + '"' + """/><input type="hidden" name="_back_one" value="1"/><button class="navbar-brand navbar-nav dabackicon dabackbuttoncolor me-3" type="submit" title=""" + json.dumps(word("Go back to the previous question")) + """><span class="nav-link"><i class="fas fa-chevron-left"></i><span class="daback">""" + status.cornerback + """</span></span></button></form>
+          <form style="display: inline-block" id="dabackbutton" method="POST" action=""" + json.dumps(url_for('index', **index_params)) + """><input type="hidden" name="csrf_token" value=""" + '"' + generate_csrf() + '"' + """/><input type="hidden" name="_back_one" value="1"/><button class="navbar-brand navbar-nav dabackicon dabackbuttoncolor me-3" type="submit" title=""" + json.dumps(word("Go back to the previous question")) + """><span class="nav-link"><i class="fa-solid fa-chevron-left"></i><span class="daback">""" + status.cornerback + """</span></span></button></form>
 """
         else:
             navbar += """\
@@ -3252,7 +3263,7 @@ def make_navbar(status, steps, show_login, chat_info, debug_mode, index_params, 
     chat_sr = word("Live chat")
     source_message = word("Information for the developer")
     if debug_mode:
-        source_button = '<div class="nav-item navbar-nav d-none d-md-block"><button class="btn btn-link nav-link da-no-outline" title=' + json.dumps(source_message) + ' id="dasourcetoggle" data-bs-toggle="collapse" data-bs-target="#dasource"><i class="fas fa-code"></i></button></div>'
+        source_button = '<div class="nav-item navbar-nav d-none d-md-block"><button class="btn btn-link nav-link da-no-outline" title=' + json.dumps(source_message) + ' id="dasourcetoggle" data-bs-toggle="collapse" data-bs-target="#dasource"><i class="fa-solid fa-code"></i></button></div>'
         source_menu_item = '<a class="dropdown-item d-block d-lg-none" title=' + json.dumps(source_message) + ' href="#dasource" data-bs-toggle="collapse" aria-expanded="false" aria-controls="source">' + word('Source') + '</a>'
     else:
         source_button = ''
@@ -3263,11 +3274,11 @@ def make_navbar(status, steps, show_login, chat_info, debug_mode, index_params, 
         if status.question.helptext is None or status.question.interview.question_help_button:
             navbar += '<li class="nav-item" role="presentation"><button class="btn btn-link nav-link dahelptrigger da-no-outline" data-bs-target="#dahelp" data-bs-toggle="tab" role="tab" id="dahelptoggle" title=' + json.dumps(help_message) + '>' + help_label + '</button></li>'
         else:
-            navbar += '<li class="nav-item" role="presentation"><button class="btn btn-link nav-link dahelptrigger da-no-outline daactivetext" data-bs-target="#dahelp" data-bs-toggle="tab" role="tab" id="dahelptoggle" title=' + json.dumps(extra_help_message) + '>' + help_label + ' <i class="fas fa-star"></i></button></li>'
+            navbar += '<li class="nav-item" role="presentation"><button class="btn btn-link nav-link dahelptrigger da-no-outline daactivetext" data-bs-target="#dahelp" data-bs-toggle="tab" role="tab" id="dahelptoggle" title=' + json.dumps(extra_help_message) + '>' + help_label + ' <i class="fa-solid fa-star"></i></button></li>'
     else:
         navbar += '<li hidden class="nav-item dainvisible" role="presentation"><button class="btn btn-link nav-link dahelptrigger da-no-outline" id="dahelptoggle" data-bs-target="#dahelp" data-bs-toggle="tab" role="tab">' + word('Help') + '</button></li>'
-    navbar += '<li hidden class="nav-item dainvisible" id="daPhoneAvailable"><button data-bs-target="#dahelp" data-bs-toggle="tab" role="tab" title=' + json.dumps(phone_message) + ' class="btn btn-link nav-link dapointer dahelptrigger da-no-outline"><i class="fas fa-phone da-chat-active"></i><span class="visually-hidden">' + phone_sr + '</span></button></li>' + \
-              '<li class="nav-item dainvisible" id="daChatAvailable"><button data-bs-target="#dahelp" data-bs-toggle="tab" class="btn btn-link nav-link dapointer dahelptrigger da-no-outline"><i class="fas fa-comment-alt"></i><span class="visually-hidden">' + chat_sr + '</span></button></li></ul>'
+    navbar += '<li hidden class="nav-item dainvisible" id="daPhoneAvailable"><button data-bs-target="#dahelp" data-bs-toggle="tab" role="tab" title=' + json.dumps(phone_message) + ' class="btn btn-link nav-link dapointer dahelptrigger da-no-outline"><i class="fa-solid fa-phone da-chat-active"></i><span class="visually-hidden">' + phone_sr + '</span></button></li>' + \
+              '<li class="nav-item dainvisible" id="daChatAvailable"><button data-bs-target="#dahelp" data-bs-toggle="tab" class="btn btn-link nav-link dapointer dahelptrigger da-no-outline"><i class="fa-solid fa-comment-alt"></i><span class="visually-hidden">' + chat_sr + '</span></button></li></ul>'
     if not status.question.interview.options.get('hide corner interface', False):
         navbar += """
           <button id="damobile-toggler" type="button" class="navbar-toggler ms-auto" data-bs-toggle="collapse" data-bs-target="#danavbar-collapse">
@@ -3304,6 +3315,10 @@ def make_navbar(status, steps, show_login, chat_info, debug_mode, index_params, 
             custom_menu = ""
         if ALLOW_REGISTRATION:
             sign_in_text = word('Sign in or sign up to save answers')
+            if daconfig.get('resume interview after login', False):
+                register_url = url_for('user.register', next=url_for('index', **index_params))
+            else:
+                register_url = url_for('user.register')
         else:
             sign_in_text = word('Sign in to save answers')
         if daconfig.get('resume interview after login', False):
@@ -3322,12 +3337,8 @@ def make_navbar(status, steps, show_login, chat_info, debug_mode, index_params, 
                 else:
                     if daconfig.get('login link style', 'normal') == 'button':
                         if ALLOW_REGISTRATION:
-                            if daconfig.get('resume interview after login', False):
-                                register_url = url_for('user.register', next=url_for('index', **index_params))
-                            else:
-                                register_url = url_for('user.register')
-                            navbar += '              <li class="nav-item"><a class="nav-link" href="' + register_url + '">' + word('Sign up') + '</a></li>'
-                            navbar += '              <li class="nav-item"><a class="nav-link d-block d-md-none" href="' + login_url + '">' + word('Sign in') + '</a>'
+                            navbar += '              <li class="nav-item"><a class="nav-link d-block d-md-none" href="' + register_url + '">' + word('Sign up') + '</a></li>'
+                        navbar += '              <li class="nav-item"><a class="nav-link d-block d-md-none" href="' + login_url + '">' + word('Sign in') + '</a>'
                     else:
                         navbar += '              <li class="nav-item"><a class="nav-link" href="' + login_url + '">' + sign_in_text + '</a></li>'
             elif current_user.is_authenticated:
@@ -3381,6 +3392,8 @@ def make_navbar(status, steps, show_login, chat_info, debug_mode, index_params, 
         navbar += """
             </ul>"""
         if daconfig.get('login link style', 'normal') == 'button' and show_login and current_user.is_anonymous and not custom_menu:
+            if ALLOW_REGISTRATION:
+                navbar += '\n            <a class="btn btn-' + BUTTON_COLOR_NAV_LOGIN + ' btn-sm mb-0 ms-3 d-none d-md-block" href="' + register_url + '">' + word('Sign up') + '</a>'
             navbar += '\n            <a class="btn btn-' + BUTTON_COLOR_NAV_LOGIN + ' btn-sm mb-0 ms-3 d-none d-md-block" href="' + login_url + '">' + word('Sign in') + '</a>'
         navbar += """
           </div>"""
@@ -3714,7 +3727,7 @@ def infobutton(title):
         docstring += noquote(title_documentation[title]['doc'])
     if 'url' in title_documentation[title]:
         docstring += "<br><a target='_blank' href='" + title_documentation[title]['url'] + "'>" + word("View documentation") + "</a>"
-    return '&nbsp;<a tabindex="0" role="button" class="daquestionsign" data-bs-container="body" data-bs-toggle="popover" data-bs-placement="auto" data-bs-content="' + docstring + '" title="' + noquote(title_documentation[title].get('title', title)) + '"><i class="fas fa-question-circle"></i></a>'
+    return '&nbsp;<a tabindex="0" role="button" class="daquestionsign" data-bs-container="body" data-bs-toggle="popover" data-bs-placement="auto" data-bs-content="' + docstring + '" title="' + noquote(title_documentation[title].get('title', title)) + '"><i class="fa-solid fa-question-circle"></i></a>'
     # title=' + json.dumps(word("Help"))
     # data-bs-selector="true"
 
@@ -3765,12 +3778,12 @@ def search_button(var, field_origins, name_origins, interview_source, all_source
         classname = 'dasearchthis'
     else:
         classname = 'dasearchother'
-    return '<a tabindex="0" class="dasearchicon ' + classname + '" ' + title + 'data-name="' + noquote(var) + '"><i class="fas fa-search"></i></a>'
+    return '<a tabindex="0" class="dasearchicon ' + classname + '" ' + title + 'data-name="' + noquote(var) + '"><i class="fa-solid fa-search"></i></a>'
 
 search_key = """
                   <tr><td><h4>""" + word("Note") + """</h4></td></tr>
-                  <tr><td><a tabindex="0" class="dasearchicon dasearchthis"><i class="fas fa-search"></i></a> """ + word("means the name is located in this file") + """</td></tr>
-                  <tr><td><a tabindex="0" class="dasearchicon dasearchother"><i class="fas fa-search"></i></a> """ + word("means the name may be located in a file included by reference, such as:") + """</td></tr>"""
+                  <tr><td><a tabindex="0" class="dasearchicon dasearchthis"><i class="fa-solid fa-search"></i></a> """ + word("means the name is located in this file") + """</td></tr>
+                  <tr><td><a tabindex="0" class="dasearchicon dasearchother"><i class="fa-solid fa-search"></i></a> """ + word("means the name may be located in a file included by reference, such as:") + """</td></tr>"""
 
 
 def find_needed_names(interview, needed_names, the_name=None, the_question=None):
@@ -4208,23 +4221,23 @@ def get_vars_in_use(interview, interview_status, debug_mode=False, return_json=F
             content += '\n                  <tr' + hide_it + '><td>' + search_button(var, field_origins, name_origins, interview.source, all_sources) + '<a role="button" tabindex="0" data-name="' + noquote(var) + '" data-insert="' + noquote(var) + '" ' + title + 'class="btn btn-sm ' + class_type + ' playground-variable">' + var + '</a>'
             vocab_dict[var] = var
             if var in has_children:
-                content += '&nbsp;<a tabindex="0" class="dashowattributes" role="button" data-name="' + noquote(var) + '" title=' + json.dumps(attr_documentation) + '><i class="fas fa-ellipsis-h"></i></a>'
+                content += '&nbsp;<a tabindex="0" class="dashowattributes" role="button" data-name="' + noquote(var) + '" title=' + json.dumps(attr_documentation) + '><i class="fa-solid fa-ellipsis-h"></i></a>'
             if var in name_info and 'type' in name_info[var] and name_info[var]['type']:
                 content += '&nbsp;<span data-ref="' + noquote(name_info[var]['type']) + '" class="daparenthetical">(' + name_info[var]['type'] + ')</span>'
             elif var in interview.mlfields:
                 content += '&nbsp;<span data-ref="DAModel" class="daparenthetical">(DAModel)</span>'
             if var in name_info and 'doc' in name_info[var] and name_info[var]['doc']:
                 if 'git' in name_info[var] and name_info[var]['git']:
-                    git_link = noquote("<a class='float-end' target='_blank' href='" + name_info[var]['git'] + "'><i class='fas fa-code'></i></a>")
+                    git_link = noquote("<a class='float-end' target='_blank' href='" + name_info[var]['git'] + "'><i class='fa-solid fa-code'></i></a>")
                 else:
                     git_link = ''
-                content += '&nbsp;<a tabindex="0" class="dainfosign" role="button" data-bs-container="body" data-bs-toggle="popover" data-bs-placement="auto" data-bs-content="' + name_info[var]['doc'] + '"  title="' + var + git_link + '"><i class="fas fa-info-circle"></i></a>'  # data-bs-selector="true" title=' + json.dumps(word_documentation) + '
+                content += '&nbsp;<a tabindex="0" class="dainfosign" role="button" data-bs-container="body" data-bs-toggle="popover" data-bs-placement="auto" data-bs-content="' + name_info[var]['doc'] + '"  title="' + var + git_link + '"><i class="fa-solid fa-info-circle"></i></a>'  # data-bs-selector="true" title=' + json.dumps(word_documentation) + '
             if var in interview.mlfields:
                 if 'ml_group' in interview.mlfields[var] and not interview.mlfields[var]['ml_group'].uses_mako:
                     (ml_package, ml_file, ml_group_id) = get_ml_info(interview.mlfields[var]['ml_group'].original_text, ml_parts[0], ml_parts[1])
-                    content += '&nbsp;<a class="datrain" target="_blank" href="' + url_for('train', package=ml_package, file=ml_file, group_id=ml_group_id) + '" title=' + json.dumps(word("Train")) + '><i class="fas fa-graduation-cap"></i></a>'
+                    content += '&nbsp;<a class="datrain" target="_blank" href="' + url_for('train', package=ml_package, file=ml_file, group_id=ml_group_id) + '" title=' + json.dumps(word("Train")) + '><i class="fa-solid fa-graduation-cap"></i></a>'
                 else:
-                    content += '&nbsp;<a class="datrain" target="_blank" href="' + url_for('train', package=ml_parts[0], file=ml_parts[1], group_id=var) + '" title=' + json.dumps(word("Train")) + '><i class="fas fa-graduation-cap"></i></a>'
+                    content += '&nbsp;<a class="datrain" target="_blank" href="' + url_for('train', package=ml_parts[0], file=ml_parts[1], group_id=var) + '" title=' + json.dumps(word("Train")) + '><i class="fa-solid fa-graduation-cap"></i></a>'
             content += '</td></tr>'
         if len(all_sources) > 0 and show_messages:
             content += search_key
@@ -4242,10 +4255,10 @@ def get_vars_in_use(interview, interview_status, debug_mode=False, return_json=F
             vocab_dict[var] = name_info[var]['insert']
             if var in name_info and 'doc' in name_info[var] and name_info[var]['doc']:
                 if 'git' in name_info[var] and name_info[var]['git']:
-                    git_link = noquote("<a class='float-end' target='_blank' href='" + name_info[var]['git'] + "'><i class='fas fa-code'></i></a>")
+                    git_link = noquote("<a class='float-end' target='_blank' href='" + name_info[var]['git'] + "'><i class='fa-solid fa-code'></i></a>")
                 else:
                     git_link = ''
-                content += '&nbsp;<a tabindex="0" class="dainfosign" role="button" data-bs-container="body" data-bs-toggle="popover" data-bs-placement="auto" data-bs-content="' + name_info[var]['doc'] + '" title="' + var + git_link + '"><i class="fas fa-info-circle"></i></a>'  # data-bs-selector="true" title=' + json.dumps(word_documentation) + '
+                content += '&nbsp;<a tabindex="0" class="dainfosign" role="button" data-bs-container="body" data-bs-toggle="popover" data-bs-placement="auto" data-bs-content="' + name_info[var]['doc'] + '" title="' + var + git_link + '"><i class="fa-solid fa-info-circle"></i></a>'  # data-bs-selector="true" title=' + json.dumps(word_documentation) + '
             content += '</td></tr>'
     if len(classes) > 0:
         content += '\n                  <tr><td><h4>' + word('Classes') + infobutton('classes') + '</h4></td></tr>'
@@ -4256,22 +4269,22 @@ def get_vars_in_use(interview, interview_status, debug_mode=False, return_json=F
                 content += '&nbsp;<span data-ref="' + noquote(name_info[var]['bases'][0]) + '" class="daparenthetical">(' + name_info[var]['bases'][0] + ')</span>'
             if name_info[var]['doc']:
                 if 'git' in name_info[var] and name_info[var]['git']:
-                    git_link = noquote("<a class='float-end' target='_blank' href='" + name_info[var]['git'] + "'><i class='fas fa-code'></i></a>")
+                    git_link = noquote("<a class='float-end' target='_blank' href='" + name_info[var]['git'] + "'><i class='fa-solid fa-code'></i></a>")
                 else:
                     git_link = ''
-                content += '&nbsp;<a tabindex="0" class="dainfosign" role="button" data-bs-container="body" data-bs-toggle="popover" data-bs-placement="auto" data-bs-content="' + name_info[var]['doc'] + '" title="' + var + git_link + '"><i class="fas fa-info-circle"></i></a>'  # data-bs-selector="true" title=' + json.dumps(word_documentation) + '
+                content += '&nbsp;<a tabindex="0" class="dainfosign" role="button" data-bs-container="body" data-bs-toggle="popover" data-bs-placement="auto" data-bs-content="' + name_info[var]['doc'] + '" title="' + var + git_link + '"><i class="fa-solid fa-info-circle"></i></a>'  # data-bs-selector="true" title=' + json.dumps(word_documentation) + '
             if len(name_info[var]['methods']) > 0:
-                content += '&nbsp;<a tabindex="0" class="dashowmethods" role="button" data-showhide="XMETHODX' + var + '" title=' + json.dumps(word('Methods')) + '><i class="fas fa-cog"></i></a>'
+                content += '&nbsp;<a tabindex="0" class="dashowmethods" role="button" data-showhide="XMETHODX' + var + '" title=' + json.dumps(word('Methods')) + '><i class="fa-solid fa-cog"></i></a>'
                 content += '<div style="display: none;" id="XMETHODX' + var + '"><table><tbody>'
                 for method_info in name_info[var]['methods']:
                     if 'git' in method_info and method_info['git']:
-                        git_link = noquote("<a class='float-end' target='_blank' href='" + method_info['git'] + "'><i class='fas fa-code'></i></a>")
+                        git_link = noquote("<a class='float-end' target='_blank' href='" + method_info['git'] + "'><i class='fa-solid fa-code'></i></a>")
                     else:
                         git_link = ''
                     content += '<tr><td><a tabindex="0" role="button" data-name="' + noquote(method_info['name']) + '" data-insert="' + noquote(method_info['insert']) + '" class="btn btn-sm btn-warning playground-variable">' + method_info['tag'] + '</a>'
                     # vocab_dict[method_info['name']] = method_info['insert']
                     if method_info['doc']:
-                        content += '&nbsp;<a tabindex="0" class="dainfosign" role="button" data-bs-container="body" data-bs-toggle="popover" data-bs-placement="auto" data-bs-content="' + method_info['doc'] + '" data-bs-title="' + noquote(method_info['name']) + git_link + '"><i class="fas fa-info-circle"></i></a>'  # data-bs-selector="true" title=' + json.dumps(word_documentation) + '
+                        content += '&nbsp;<a tabindex="0" class="dainfosign" role="button" data-bs-container="body" data-bs-toggle="popover" data-bs-placement="auto" data-bs-content="' + method_info['doc'] + '" data-bs-title="' + noquote(method_info['name']) + git_link + '"><i class="fa-solid fa-info-circle"></i></a>'  # data-bs-selector="true" title=' + json.dumps(word_documentation) + '
                     content += '</td></tr>'
                 content += '</tbody></table></div>'
             content += '</td></tr>'
@@ -4282,10 +4295,10 @@ def get_vars_in_use(interview, interview_status, debug_mode=False, return_json=F
             vocab_dict[var] = name_info[var]['insert']
             if name_info[var]['doc']:
                 if 'git' in name_info[var] and name_info[var]['git']:
-                    git_link = noquote("<a class='float-end' target='_blank' href='" + name_info[var]['git'] + "'><i class='fas fa-code'></i></a>")
+                    git_link = noquote("<a class='float-end' target='_blank' href='" + name_info[var]['git'] + "'><i class='fa-solid fa-code'></i></a>")
                 else:
                     git_link = ''
-                content += '&nbsp;<a tabindex="0" class="dainfosign" role="button" data-bs-container="body" data-bs-toggle="popover" data-bs-placement="auto" data-bs-content="' + name_info[var]['doc'] + '" data-bs-title="' + noquote(var) + git_link + '"><i class="fas fa-info-circle"></i></a>'  # data-bs-selector="true" title=' + json.dumps(word_documentation) + '
+                content += '&nbsp;<a tabindex="0" class="dainfosign" role="button" data-bs-container="body" data-bs-toggle="popover" data-bs-placement="auto" data-bs-content="' + name_info[var]['doc'] + '" data-bs-title="' + noquote(var) + git_link + '"><i class="fa-solid fa-info-circle"></i></a>'  # data-bs-selector="true" title=' + json.dumps(word_documentation) + '
             content += '</td></tr>'
     if len(avail_modules) > 0:
         content += '\n                  <tr><td><h4>' + word('Modules available in Playground') + infobutton('playground_modules') + '</h4></td></tr>'
@@ -4391,7 +4404,7 @@ def wait_for_task(task_id, timeout=None):
         result.get(timeout=timeout)
         # logmessage("wait_for_task: returning true")
         return True
-    except celery.exceptions.TimeoutError:
+    except celery.exceptions.TimeoutError:  # pylint: disable=used-before-assignment
         logmessage("wait_for_task: timed out")
         return False
     except Exception as the_error:
@@ -6232,7 +6245,7 @@ def checkin():
                     other_value = other_value.decode()
                     remaining_seconds = r.ttl(call_key)
                     if remaining_seconds > 30:
-                        call_forwarding_message = '<span class="daphone-message"><i class="fas fa-phone"></i> ' + word('To reach an advocate who can assist you, call') + ' <a class="daphone-number" href="tel:' + str(forwarding_phone_number) + '">' + str(forwarding_phone_number) + '</a> ' + word("and enter the code") + ' <span class="daphone-code">' + str(call_forwarding_code) + '</span>.</span>'
+                        call_forwarding_message = '<span class="daphone-message"><i class="fa-solid fa-phone"></i> ' + word('To reach an advocate who can assist you, call') + ' <a class="daphone-number" href="tel:' + str(forwarding_phone_number) + '">' + str(forwarding_phone_number) + '</a> ' + word("and enter the code") + ' <span class="daphone-code">' + str(call_forwarding_code) + '</span>.</span>'
                         break
         chat_session_key = 'da:interviewsession:uid:' + str(session_id) + ':i:' + str(yaml_filename) + ':userid:' + str(the_user_id)
         potential_partners = []
@@ -6416,6 +6429,8 @@ def setup_variables():
 
 @app.after_request
 def apply_security_headers(response):
+    if request.endpoint is not None and request.endpoint.startswith('api_'):
+        session.modified = False
     if app.config['SESSION_COOKIE_SECURE']:
         response.headers['Strict-Transport-Security'] = 'max-age=31536000'
     if 'embed' in g:
@@ -7171,7 +7186,8 @@ def index(action_argument=None, refer=None):
             if empty_field not in post_data:
                 post_data.add(empty_field, 'None')
         ml_info = field_info['ml_info']
-        authorized_fields = [from_safeid(field.saveas) for field in interview_status.get_fields_and_sub_fields_and_collect_fields(user_dict) if hasattr(field, 'saveas')]
+        field_list = interview_status.get_fields_and_sub_fields_and_collect_fields(user_dict)
+        authorized_fields = [from_safeid(field.saveas) for field in field_list if hasattr(field, 'saveas')]
         if 'allowed_to_set' in interview_status.extras:
             authorized_fields.extend(interview_status.extras['allowed_to_set'])
         if interview_status.question.question_type == "multiple_choice":
@@ -7183,6 +7199,7 @@ def index(action_argument=None, refer=None):
             else:
                 authorized_fields.add(interview_status.extras['list_collect'].instanceName + ".there_is_another")
     else:
+        field_list = []
         if STRICT_MODE:
             empty_fields = []
         authorized_fields = set()
@@ -7217,11 +7234,14 @@ def index(action_argument=None, refer=None):
                         file_formats.append('md')
                 if 'raw' in the_attachment['valid_formats']:
                     file_formats.append('raw')
+                for file_format in the_attachment.get('manual_formats', []):
+                    if file_format not in file_formats:
+                        file_formats.append(file_format)
                 for the_format in file_formats:
                     if the_format == 'raw':
                         attachment_info.append({'filename': str(the_attachment['filename']) + the_attachment['raw'], 'number': the_attachment['file'][the_format], 'mimetype': the_attachment['mimetype'][the_format], 'attachment': the_attachment})
                     else:
-                        attachment_info.append({'filename': str(the_attachment['filename']) + '.' + str(docassemble.base.parse.extension_of_doc_format[the_format]), 'number': the_attachment['file'][the_format], 'mimetype': the_attachment['mimetype'][the_format], 'attachment': the_attachment})
+                        attachment_info.append({'filename': str(the_attachment['filename']) + '.' + str(docassemble.base.parse.extension_of_doc_format.get(the_format, the_format)), 'number': the_attachment['file'][the_format], 'mimetype': the_attachment['mimetype'][the_format], 'attachment': the_attachment})
                     attached_file_count += 1
             worker_key = 'da:worker:uid:' + str(user_code) + ':i:' + str(yaml_filename) + ':userid:' + str(the_user_id)
             for email_address in re.split(r' *[,;] *', attachment_email_address):
@@ -7265,6 +7285,9 @@ def index(action_argument=None, refer=None):
                         file_formats.append('docx')
                     if 'rtf to docx' in the_attachment['valid_formats']:
                         file_formats.append('rtf to docx')
+                for file_format in the_attachment.get('manual_formats', []):
+                    if file_format not in file_formats:
+                        file_formats.append(file_format)
                 for the_format in file_formats:
                     files_to_zip.append(str(the_attachment['file'][the_format]))
                     attached_file_count += 1
@@ -7293,7 +7316,7 @@ def index(action_argument=None, refer=None):
             file_field_tr = sub_indices(file_field, user_dict)
             if '_success' in post_data and post_data['_success']:
                 theImage = base64.b64decode(re.search(r'base64,(.*)', post_data['_the_image']).group(1) + '==')
-                filename = secure_filename('canvas.png')
+                filename = 'canvas.png'
                 file_number = get_new_file_number(user_code, filename, yaml_file_name=yaml_filename)
                 extension, mimetype = get_ext_and_mimetype(filename)
                 new_file = SavedFile(file_number, extension=extension, fix=True, should_not_exist=True)
@@ -7623,8 +7646,22 @@ def index(action_argument=None, refer=None):
                     else:
                         data = repr(test_data)
                 else:
+                    key_with_sub = sub_indices(key, user_dict)
+                    field_data = {}
+                    for field in field_list:
+                        if getattr(field, 'saveas', None) == orig_key:
+                            for parameter in ('min', 'max', 'minlength', 'maxlength', 'step', 'scale', 'currency symbol', 'field metadata'):
+                                if parameter in interview_status.extras and field.number in interview_status.extras[parameter]:
+                                    field_data[parameter] = interview_status.extras[parameter][field.number]
+                            if hasattr(field, 'extras') and 'custom_parameters' in field.extras:
+                                for parameter, parameter_value in field.extras['custom_parameters'].items():
+                                    field_data[parameter] = parameter_value
+                            for param_type in ('custom_parameters_code', 'custom_parameters_mako'):
+                                if param_type in interview_status.extras and field.number in interview_status.extras[param_type]:
+                                    for parameter, parameter_value in interview_status.extras[param_type][field.number].items():
+                                        field_data[parameter] = parameter_value
                     try:
-                        if not info['class'].validate(raw_data):
+                        if not info['class'].call_validate(raw_data, key_with_sub, field_data):
                             raise DAValidationError(word("You need to enter a valid value."))
                     except DAValidationError as err:
                         validated = False
@@ -7634,7 +7671,7 @@ def index(action_argument=None, refer=None):
                             field_error[orig_key] = word(str(err))
                         new_values[key] = repr(raw_data)
                         continue
-                    test_data = info['class'].transform(raw_data)
+                    test_data = info['class'].call_transform(raw_data, key_with_sub, field_data)
                     if is_object:
                         user_dict['__DANEWOBJECT'] = test_data
                         data = '__DANEWOBJECT'
@@ -7650,6 +7687,7 @@ def index(action_argument=None, refer=None):
             else:
                 if isinstance(raw_data, str):
                     raw_data = BeautifulSoup(raw_data, "html.parser").get_text('\n')
+                    raw_data = re.sub(r'\\', '', raw_data)
                 if raw_data == "None" and set_to_empty is not None:
                     test_data = None
                     data = "None"
@@ -7753,14 +7791,21 @@ def index(action_argument=None, refer=None):
                 continue
             elif known_datatypes[orig_key] in docassemble.base.functions.custom_types:
                 info = docassemble.base.functions.custom_types[known_datatypes[orig_key]]
+                if info['is_object']:
+                    is_object = True
                 if set_to_empty:
                     if info['skip_if_empty']:
                         continue
                     test_data = info['class'].empty()
-                    data = repr(test_data)
+                    if is_object:
+                        user_dict['__DANEWOBJECT'] = raw_data
+                        data = '__DANEWOBJECT'
+                    else:
+                        data = repr(test_data)
                 else:
+                    key_tr = sub_indices(key, user_dict)
                     try:
-                        if not info['class'].validate(raw_data):
+                        if not info['class'].call_validate(raw_data, key_tr):
                             raise DAValidationError(word("You need to enter a valid value."))
                     except DAValidationError as err:
                         validated = False
@@ -7770,13 +7815,29 @@ def index(action_argument=None, refer=None):
                             field_error[orig_key] = word(str(err))
                         new_values[key] = repr(raw_data)
                         continue
-                    test_data = info['class'].transform(raw_data)
-                    data = repr(test_data)
+                    test_data = info['class'].call_transform(raw_data, key_tr)
+                    if is_object:
+                        user_dict['__DANEWOBJECT'] = test_data
+                        data = '__DANEWOBJECT'
+                    else:
+                        data = repr(test_data)
+            elif known_datatypes[orig_key] == 'raw':
+                if raw_data == "None" and set_to_empty is not None:
+                    test_data = None
+                    data = "None"
+                else:
+                    test_data = raw_data
+                    data = repr(raw_data)
             else:
                 if isinstance(raw_data, str):
-                    raw_data = raw_data.strip()
-                test_data = raw_data
-                data = repr(raw_data)
+                    raw_data = BeautifulSoup(raw_data.strip(), "html.parser").get_text('\n')
+                    raw_data = re.sub(r'\\', '', raw_data)
+                if raw_data == "None" and set_to_empty is not None:
+                    test_data = None
+                    data = "None"
+                else:
+                    test_data = raw_data
+                    data = repr(raw_data)
         elif key == "_multiple_choice":
             data = "int(" + repr(raw_data) + ")"
         else:
@@ -7983,7 +8044,8 @@ def index(action_argument=None, refer=None):
                                         break
                                 temp_file.write(codecs.decode(bytearray(the_file['content'][start_index:], encoding='utf-8'), 'base64'))
                                 temp_file.close()
-                                filename = secure_filename(the_file['name'])
+                                safe_filename = secure_filename(the_file['name'])
+                                filename = secure_filename_unicode_ok(the_file['name'])
                                 extension, mimetype = get_ext_and_mimetype(filename)
                                 try:
                                     img = Image.open(temp_file.name)
@@ -7995,7 +8057,7 @@ def index(action_argument=None, refer=None):
                                 if the_format != extension:
                                     filename = re.sub(r'\.[^\.]+$', '', filename) + '.' + the_format
                                     extension, mimetype = get_ext_and_mimetype(filename)
-                                file_number = get_new_file_number(user_code, filename, yaml_file_name=yaml_filename)
+                                file_number = get_new_file_number(user_code, safe_filename, yaml_file_name=yaml_filename)
                                 saved_file = SavedFile(file_number, extension=extension, fix=True, should_not_exist=True)
                                 process_file(saved_file, temp_file.name, mimetype, extension)
                                 files_to_process.append((filename, file_number, mimetype, extension))
@@ -8131,8 +8193,9 @@ def index(action_argument=None, refer=None):
                             for the_file in the_files:
                                 if is_ajax:
                                     return_fake_html = True
-                                filename = secure_filename(the_file.filename)
-                                file_number = get_new_file_number(user_code, filename, yaml_file_name=yaml_filename)
+                                safe_filename = secure_filename(the_file.filename)
+                                filename = secure_filename_unicode_ok(the_file.filename)
+                                file_number = get_new_file_number(user_code, safe_filename, yaml_file_name=yaml_filename)
                                 extension, mimetype = get_ext_and_mimetype(filename)
                                 saved_file = SavedFile(file_number, extension=extension, fix=True, should_not_exist=True)
                                 temp_file = tempfile.NamedTemporaryFile(prefix="datemp", suffix='.' + extension, delete=False)
@@ -8506,6 +8569,10 @@ def index(action_argument=None, refer=None):
     if changed and interview.use_progress_bar and interview_status.question.progress is None and save_status == 'new':
         advance_progress(user_dict, interview)
     title_info = interview.get_title(user_dict, status=interview_status, converter=lambda content, part: title_converter(content, part, interview_status))
+    # Stash the values of the special_vars now, which is after
+    # .assemble() has been called and before save_user_dict is called,
+    # which would delete the values.
+    interview_status.special_vars = {var_name: user_dict[var_name] for var_name in ('x', 'i', 'j', 'k', 'l', 'm', 'n') if var_name in user_dict}
     if save_status != 'ignore':
         if save_status == 'overwrite':
             changed = False
@@ -8980,8 +9047,8 @@ def index(action_argument=None, refer=None):
             }
           }
         }
-        if ($(returnVal).hasClass('da-to-labelauty') && $(returnVal).parents('fieldset').length > 0){
-          var fieldSet = $(returnVal).parents('fieldset')[0];
+        if ($(returnVal).hasClass('da-to-labelauty') && $(returnVal).parents('div.da-field-group').length > 0){
+          var fieldSet = $(returnVal).parents('div.da-field-group')[0];
           if (!$(fieldSet).hasClass('da-field-checkbox') && !$(fieldSet).hasClass('da-field-checkboxes')){
             return fieldSet;
           }
@@ -9035,7 +9102,7 @@ def index(action_argument=None, refer=None):
           console.log('setField: reference to non-existent field ' + fieldName);
           return;
         }
-        if ($(elem).prop('tagName') == "FIELDSET" && $(elem).hasClass("da-field-radio")){
+        if ($(elem).prop('tagName') == "DIV" && $(elem).hasClass("da-field-group") && $(elem).hasClass("da-field-radio")){
           elem = $(elem).find('input')[0];
         }
         if ($(elem).attr('type') == "checkbox"){
@@ -9085,7 +9152,7 @@ def index(action_argument=None, refer=None):
             }
           }
         }
-        else if ($(elem).prop('tagName') == "FIELDSET" && $(elem).hasClass("da-field-checkboxes")){
+        else if ($(elem).prop('tagName') == "DIV" && $(elem).hasClass("da-field-group") && $(elem).hasClass("da-field-checkboxes")){
           if (!Array.isArray(theValue)){
             throw new Error('setField: value must be an array');
           }
@@ -9171,7 +9238,7 @@ def index(action_argument=None, refer=None):
         if (elem == null){
           return null;
         }
-        if ($(elem).prop('tagName') == "FIELDSET" && $(elem).hasClass("da-field-radio")){
+        if ($(elem).prop('tagName') == "DIV" && $(elem).hasClass("da-field-group") && $(elem).hasClass("da-field-radio")){
           elem = $(elem).find('input')[0];
         }
         if ($(elem).attr('type') == "checkbox"){
@@ -9200,7 +9267,7 @@ def index(action_argument=None, refer=None):
             }
           }
         }
-        else if ($(elem).prop('tagName') == "FIELDSET" && $(elem).hasClass("da-field-checkboxes")){
+        else if ($(elem).prop('tagName') == "DIV" && $(elem).hasClass("da-field-group") && $(elem).hasClass("da-field-checkboxes")){
           var cbSelected = [];
           $(elem).find('input').each(function(){
             if ($(this).attr('name').substr(0,7) === '_ignore'){
@@ -10864,12 +10931,12 @@ def index(action_argument=None, refer=None):
       }
       function daShowSpinner(){
         if ($("#daquestion").length > 0){
-          $('<div id="daSpinner" class="da-spinner-container da-top-for-navbar"><div class="container"><div class="row"><div class="col text-center"><span class="da-spinner"><i class="fas fa-spinner fa-spin"><\/i><\/span><\/div><\/div><\/div><\/div>').appendTo(daTargetDiv);
+          $('<div id="daSpinner" class="da-spinner-container da-top-for-navbar"><div class="container"><div class="row"><div class="col text-center"><span class="da-spinner"><i class="fa-solid fa-spinner fa-spin"><\/i><\/span><\/div><\/div><\/div><\/div>').appendTo(daTargetDiv);
         }
         else{
           var newSpan = document.createElement('span');
           var newI = document.createElement('i');
-          $(newI).addClass("fas fa-spinner fa-spin");
+          $(newI).addClass("fa-solid fa-spinner fa-spin");
           $(newI).appendTo(newSpan);
           $(newSpan).attr("id", "daSpinner");
           $(newSpan).addClass("da-sig-spinner da-top-for-navbar");
@@ -11211,15 +11278,15 @@ def index(action_argument=None, refer=None):
           e.preventDefault();
           if ($("#daform").valid()){
             var num = $(this).parent().parent().data('collectnum');
-            $('div[data-collectnum="' + num + '"]').show('fast');
-            $('div[data-collectnum="' + num + '"]').find('input, textarea, select').prop("disabled", false);
-            $('div[data-collectnum="' + num + '"]').find('input.combobox').each(function(){
+            $('[data-collectnum="' + num + '"]').show('fast');
+            $('[data-collectnum="' + num + '"]').find('input, textarea, select').prop("disabled", false);
+            $('[data-collectnum="' + num + '"]').find('input.combobox').each(function(){
                daComboBoxes[$(this).attr('id')].enable();
             });
-            $('div[data-collectnum="' + num + '"]').find('input.daslider').each(function(){
+            $('[data-collectnum="' + num + '"]').find('input.daslider').each(function(){
               $(this).slider('enable');
             });
-            $('div[data-collectnum="' + num + '"]').find('input.dafile').each(function(){
+            $('[data-collectnum="' + num + '"]').find('input.dafile').each(function(){
               $(this).data("fileinput").enable();
             });
             $(this).parent().find("button.dacollectremove").removeClass("dainvisible");
@@ -11227,7 +11294,7 @@ def index(action_argument=None, refer=None):
             $(this).addClass("dainvisible");
             $(".da-first-delete").removeClass("dainvisible");
             rationalizeListCollect();
-            var elem = $('div[data-collectnum="' + num + '"]').find('input, textarea, select').first();
+            var elem = $('[data-collectnum="' + num + '"]').find('input, textarea, select').first();
             if ($(elem).visible()){
               $(elem).focus();
             }
@@ -11238,15 +11305,15 @@ def index(action_argument=None, refer=None):
         $(".dacollectremove").on('click', function(e){
           e.preventDefault();
           var num = $(this).parent().parent().data('collectnum');
-          $('div[data-collectnum="' + num + '"]:not(.dacollectextraheader, .dacollectheader, .dacollectfirstheader)').hide('fast');
-          $('div[data-collectnum="' + num + '"]').find('input, textarea, select').prop("disabled", true);
-          $('div[data-collectnum="' + num + '"]').find('input.combobox').each(function(){
+          $('[data-collectnum="' + num + '"]:not(.dacollectextraheader, .dacollectheader, .dacollectfirstheader)').hide('fast');
+          $('[data-collectnum="' + num + '"]').find('input, textarea, select').prop("disabled", true);
+          $('[data-collectnum="' + num + '"]').find('input.combobox').each(function(){
             daComboBoxes[$(this).attr('id')].disable();
           });
-          $('div[data-collectnum="' + num + '"]').find('input.daslider').each(function(){
+          $('[data-collectnum="' + num + '"]').find('input.daslider').each(function(){
             $(this).slider('disable');
           });
-          $('div[data-collectnum="' + num + '"]').find('input.dafile').each(function(){
+          $('[data-collectnum="' + num + '"]').find('input.dafile').each(function(){
             $(this).data("fileinput").disable();
           });
           $(this).parent().find("button.dacollectadd").removeClass("dainvisible");
@@ -11258,15 +11325,15 @@ def index(action_argument=None, refer=None):
         $(".dacollectremoveexisting").on('click', function(e){
           e.preventDefault();
           var num = $(this).parent().parent().data('collectnum');
-          $('div[data-collectnum="' + num + '"]:not(.dacollectextraheader, .dacollectheader, .dacollectfirstheader)').hide('fast');
-          $('div[data-collectnum="' + num + '"]').find('input, textarea, select').prop("disabled", true);
-          $('div[data-collectnum="' + num + '"]').find('input.combobox').each(function(){
+          $('[data-collectnum="' + num + '"]:not(.dacollectextraheader, .dacollectheader, .dacollectfirstheader)').hide('fast');
+          $('[data-collectnum="' + num + '"]').find('input, textarea, select').prop("disabled", true);
+          $('[data-collectnum="' + num + '"]').find('input.combobox').each(function(){
             daComboBoxes[$(this).attr('id')].disable();
           });
-          $('div[data-collectnum="' + num + '"]').find('input.daslider').each(function(){
+          $('[data-collectnum="' + num + '"]').find('input.daslider').each(function(){
             $(this).slider('disable');
           });
-          $('div[data-collectnum="' + num + '"]').find('input.dafile').each(function(){
+          $('[data-collectnum="' + num + '"]').find('input.dafile').each(function(){
             $(this).data("fileinput").disable();
           });
           $(this).parent().find("button.dacollectunremove").removeClass("dainvisible");
@@ -11278,15 +11345,15 @@ def index(action_argument=None, refer=None):
         $(".dacollectunremove").on('click', function(e){
           e.preventDefault();
           var num = $(this).parent().parent().data('collectnum');
-          $('div[data-collectnum="' + num + '"]').show('fast');
-          $('div[data-collectnum="' + num + '"]').find('input, textarea, select').prop("disabled", false);
-          $('div[data-collectnum="' + num + '"]').find('input.combobox').each(function(){
+          $('[data-collectnum="' + num + '"]').show('fast');
+          $('[data-collectnum="' + num + '"]').find('input, textarea, select').prop("disabled", false);
+          $('[data-collectnum="' + num + '"]').find('input.combobox').each(function(){
             daComboBoxes[$(this).attr('id')].enable();
           });
-          $('div[data-collectnum="' + num + '"]').find('input.daslider').each(function(){
+          $('[data-collectnum="' + num + '"]').find('input.daslider').each(function(){
             $(this).slider('enable');
           });
-          $('div[data-collectnum="' + num + '"]').find('input.dafile').each(function(){
+          $('[data-collectnum="' + num + '"]').find('input.dafile').each(function(){
             $(this).data("fileinput").enable();
           });
           $(this).parent().find("button.dacollectremoveexisting").removeClass("dainvisible");
@@ -11328,7 +11395,7 @@ def index(action_argument=None, refer=None):
             daVarLookupSelect[key].push({'select': theSelect, 'option': this, 'value': theVal});
           });
         })
-        $('fieldset.da-field-checkboxes').each(function(){
+        $('div.da-field-group.da-field-checkboxes').each(function(){
           var isObject = $(this).hasClass('daobject');
           var varname = atou($(this).data('varname'));
           var cbList = [];
@@ -11426,7 +11493,7 @@ def index(action_argument=None, refer=None):
         $("input.daaota-checkbox").click(function(){
           var anyChanged = false;
           var firstEncountered = null;
-          $(this).parents('fieldset').find('input.danon-nota-checkbox').each(function(){
+          $(this).parents('div.da-field-group').find('input.danon-nota-checkbox').each(function(){
             if (firstEncountered === null){
               firstEncountered = this;
             }
@@ -11440,7 +11507,7 @@ def index(action_argument=None, refer=None):
           if (firstEncountered !== null && anyChanged === false){
             $(firstEncountered).trigger('change');
           }
-          $(this).parents('fieldset').find('input.danota-checkbox').each(function(){
+          $(this).parents('div.da-field-group').find('input.danota-checkbox').each(function(){
             var existing_val = $(this).prop('checked');
             $(this).prop('checked', false);
             if (existing_val != false){
@@ -11451,7 +11518,7 @@ def index(action_argument=None, refer=None):
         $("input.danota-checkbox").click(function(){
           var anyChanged = false;
           var firstEncountered = null;
-          $(this).parents('fieldset').find('input.danon-nota-checkbox').each(function(){
+          $(this).parents('div.da-field-group').find('input.danon-nota-checkbox').each(function(){
             if (firstEncountered === null){
               firstEncountered = this;
             }
@@ -11465,7 +11532,7 @@ def index(action_argument=None, refer=None):
           if (firstEncountered !== null && anyChanged === false){
             $(firstEncountered).trigger('change');
           }
-          $(this).parents('fieldset').find('input.daaota-checkbox').each(function(){
+          $(this).parents('div.da-field-group').find('input.daaota-checkbox').each(function(){
             var existing_val = $(this).prop('checked');
             $(this).prop('checked', false);
             if (existing_val != false){
@@ -11474,7 +11541,7 @@ def index(action_argument=None, refer=None):
           });
         });
         $("input.danon-nota-checkbox").click(function(){
-          $(this).parents('fieldset').find('input.danota-checkbox').each(function(){
+          $(this).parents('div.da-field-group').find('input.danota-checkbox').each(function(){
             var existing_val = $(this).prop('checked');
             $(this).prop('checked', false);
             if (existing_val != false){
@@ -11482,7 +11549,7 @@ def index(action_argument=None, refer=None):
             }
           });
           if (!$(this).prop('checked')){
-            $(this).parents('fieldset').find('input.daaota-checkbox').each(function(){
+            $(this).parents('div.da-field-group').find('input.daaota-checkbox').each(function(){
               var existing_val = $(this).prop('checked');
               $(this).prop('checked', false);
               if (existing_val != false){
@@ -11528,7 +11595,7 @@ def index(action_argument=None, refer=None):
         var daPopoverList = daPopoverTriggerList.map(function (daPopoverTriggerEl) {
           return new bootstrap.Popover(daPopoverTriggerEl, {trigger: """ + json.dumps(interview.options.get('popover trigger', 'focus')) + """, html: true});
         });
-        $('label a[data-bs-toggle="popover"]').on('click', function(event){
+        $('label a[data-bs-toggle="popover"], legend a[data-bs-toggle="popover"]').on('click', function(event){
           event.preventDefault();
           event.stopPropagation();
           var thePopover = bootstrap.Popover.getOrCreateInstance(this);
@@ -11626,12 +11693,12 @@ def index(action_argument=None, refer=None):
             var toggler;
             if ($(box).hasClass('danotshowing')){
               toggler = $('<a href="#" class="toggler" role="button" aria-pressed="false">');
-              $('<i class="fas fa-caret-right">').appendTo(toggler);
+              $('<i class="fa-solid fa-caret-right">').appendTo(toggler);
               $('<span class="visually-hidden">""" + word("Toggle") + """</span>').appendTo(toggler);
             }
             else{
               toggler = $('<a href="#" class="toggler" role="button" aria-pressed="true">');
-              $('<i class="fas fa-caret-down">').appendTo(toggler);
+              $('<i class="fa-solid fa-caret-down">').appendTo(toggler);
               $('<span class="visually-hidden">""" + word("Toggle") + """</span>').appendTo(toggler);
             }
             toggler.appendTo(prev);
@@ -12123,7 +12190,7 @@ def index(action_argument=None, refer=None):
           if (varName.endsWith('[nota]') || varName.endsWith('[aota]')){
             var signifier = varName.endsWith('[nota]') ? 'nota' : 'aota';
             var cbVarName = varName.replace(/\[[na]ota\]$/, '');
-            $('fieldset.da-field-checkboxes').each(function(){
+            $('div.da-field-group.da-field-checkboxes').each(function(){
               var thisVarName = atou($(this).data('varname'));
               if (thisVarName == cbVarName){
                 elem = $(this).find('input.da' + signifier + '-checkbox');
@@ -12519,6 +12586,11 @@ def index(action_argument=None, refer=None):
         errorPlacement: function(error, element) {
             $(error).addClass('invalid-feedback');
             var elementName = $(element).attr("name");
+            var idOfErrorSpan = $(element).attr("id") + "-error";
+            $("#" + idOfErrorSpan).remove();
+            $(error).attr("id", idOfErrorSpan);
+            $(element).attr("aria-invalid", "true");
+            $(element).attr("aria-errormessage", idOfErrorSpan);
             var lastInGroup = $.map(daValidationRules['groups'], function(thefields, thename){
               var fieldsArr;
               if (thefields.indexOf(elementName) >= 0) {
@@ -12569,7 +12641,7 @@ def index(action_argument=None, refer=None):
               }
             }
             else if (element.hasClass('danon-nota-checkbox')){
-              element.parents('fieldset').append(error);
+              element.parents('div.da-field-group').append(error);
             }
             else {
               error.insertAfter(element);
@@ -13709,7 +13781,7 @@ def do_serve_stored_file(uid, number, filename, extension, download=False):
         return ('File not found', 404)
     response = send_file(file_info['path'], mimetype=file_info['mimetype'], download_name=filename + '.' + extension)
     if download:
-        response.headers['Content-Disposition'] = 'attachment; filename=' + json.dumps(filename + '.' + extension)
+        response.headers['Content-Disposition'] = 'attachment; filename=' + json.dumps(urllibquote(filename + '.' + extension))
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
     return response
 
@@ -13737,7 +13809,7 @@ def do_serve_temporary_file(code, filename, extension, download=False):
     (extension, mimetype) = get_ext_and_mimetype(filename + '.' + extension)
     response = send_file(the_path, mimetype=mimetype, download_name=filename + '.' + extension)
     if download:
-        response.headers['Content-Disposition'] = 'attachment; filename=' + json.dumps(filename + '.' + extension)
+        response.headers['Content-Disposition'] = 'attachment; filename=' + json.dumps(urllibquote(filename + '.' + extension))
     return response
 
 
@@ -13762,7 +13834,7 @@ def download_zip_package():
         return ('File not found', 404)
     filename = re.sub(r'\.', '-', package_name) + '.zip'
     response = send_file(file_info['path'] + '.zip', mimetype='application/zip', download_name=filename)
-    response.headers['Content-Disposition'] = 'attachment; filename=' + json.dumps(filename)
+    response.headers['Content-Disposition'] = 'attachment; filename=' + json.dumps(urllibquote(filename))
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
     return response
 
@@ -13778,7 +13850,7 @@ def serve_uploaded_file_with_filename_and_extension_download(number, filename, e
 
 
 def do_serve_uploaded_file_with_filename_and_extension(number, filename, extension, download=False):
-    filename = secure_filename_spaces_ok(filename)
+    filename = secure_filename_unicode_ok(filename)
     extension = werkzeug.utils.secure_filename(extension)
     privileged = bool(current_user.is_authenticated and current_user.has_role('admin', 'advocate'))
     number = re.sub(r'[^0-9]', '', str(number))
@@ -13801,7 +13873,7 @@ def do_serve_uploaded_file_with_filename_and_extension(number, filename, extensi
         extension, mimetype = get_ext_and_mimetype(file_info['path'] + '.' + extension)
         response = send_file(file_info['path'] + '.' + extension, mimetype=mimetype, download_name=filename + '.' + extension)
         if download:
-            response.headers['Content-Disposition'] = 'attachment; filename=' + json.dumps(filename + '.' + extension)
+            response.headers['Content-Disposition'] = 'attachment; filename=' + json.dumps(urllibquote(filename + '.' + extension))
         response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
         return response
     if os.path.isfile(os.path.join(os.path.dirname(file_info['path']), filename + '.' + extension)):
@@ -13809,7 +13881,7 @@ def do_serve_uploaded_file_with_filename_and_extension(number, filename, extensi
         extension, mimetype = get_ext_and_mimetype(filename + '.' + extension)
         response = send_file(os.path.join(os.path.dirname(file_info['path']), filename + '.' + extension), mimetype=mimetype, download_name=filename + '.' + extension)
         if download:
-            response.headers['Content-Disposition'] = 'attachment; filename=' + json.dumps(filename + '.' + extension)
+            response.headers['Content-Disposition'] = 'attachment; filename=' + json.dumps(urllibquote(filename + '.' + extension))
         response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
         return response
     return ('File not found', 404)
@@ -13846,7 +13918,7 @@ def do_serve_uploaded_file_with_extension(number, extension, download=False):
         extension, mimetype = get_ext_and_mimetype(file_info['path'] + '.' + extension)
         response = send_file(file_info['path'] + '.' + extension, mimetype=mimetype, download_name=str(number) + '.' + extension)
         if download:
-            response.headers['Content-Disposition'] = 'attachment; filename=' + json.dumps(str(number) + '.' + extension)
+            response.headers['Content-Disposition'] = 'attachment; filename=' + json.dumps(urllibquote(str(number) + '.' + extension))
         response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
         return response
     return ('File not found', 404)
@@ -13870,7 +13942,7 @@ def do_serve_uploaded_file(number, download=False):
         return ('File not found', 404)
     response = send_file(file_info['path'], mimetype=file_info['mimetype'], download_name=os.path.basename(file_info['path']))
     if download:
-        response.headers['Content-Disposition'] = 'attachment; filename=' + json.dumps(os.path.basename(file_info['path']))
+        response.headers['Content-Disposition'] = 'attachment; filename=' + json.dumps(urllibquote(os.path.basename(file_info['path'])))
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
     return response
 
@@ -13923,7 +13995,7 @@ def do_serve_uploaded_page(number, page, download=False, size='page'):
     if os.path.isfile(filename):
         response = send_file(filename, mimetype='image/png', download_name=os.path.basename(filename))
         if download:
-            response.headers['Content-Disposition'] = 'attachment; filename=' + json.dumps(os.path.basename(filename))
+            response.headers['Content-Disposition'] = 'attachment; filename=' + json.dumps(urllibquote(os.path.basename(filename)))
         response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
         return response
     logmessage('do_serve_uploaded_page: path ' + filename + ' is not a file')
@@ -13999,12 +14071,12 @@ def observer():
       var daShowHideHappened = false;
       function daShowSpinner(){
         if ($("#daquestion").length > 0){
-          $('<div id="daSpinner" class="da-spinner-container da-top-for-navbar"><div class="container"><div class="row"><div class="col text-center"><span class="da-spinner"><i class="fas fa-spinner fa-spin"><\/i><\/span><\/div><\/div><\/div><\/div>').appendTo(daTargetDiv);
+          $('<div id="daSpinner" class="da-spinner-container da-top-for-navbar"><div class="container"><div class="row"><div class="col text-center"><span class="da-spinner"><i class="fa-solid fa-spinner fa-spin"><\/i><\/span><\/div><\/div><\/div><\/div>').appendTo(daTargetDiv);
         }
         else{
           var newSpan = document.createElement('span');
           var newI = document.createElement('i');
-          $(newI).addClass("fas fa-spinner fa-spin");
+          $(newI).addClass("fa-solid fa-spinner fa-spin");
           $(newI).appendTo(newSpan);
           $(newSpan).attr("id", "daSpinner");
           $(newSpan).addClass("da-sig-spinner da-top-for-navbar");
@@ -14325,8 +14397,8 @@ def observer():
             }
           }
         }
-        if ($(returnVal).hasClass('da-to-labelauty') && $(returnVal).parents('fieldset').length > 0){
-          var fieldSet = $(returnVal).parents('fieldset')[0];
+        if ($(returnVal).hasClass('da-to-labelauty') && $(returnVal).parents('div.da-field-group').length > 0){
+          var fieldSet = $(returnVal).parents('div.da-field-group')[0];
           if (!$(fieldSet).hasClass('da-field-checkbox') && !$(fieldSet).hasClass('da-field-checkboxes')){
             return fieldSet;
           }
@@ -14380,7 +14452,7 @@ def observer():
           console.log('setField: reference to non-existent field ' + fieldName);
           return;
         }
-        if ($(elem).prop('tagName') == "FIELDSET" && $(elem).hasClass("da-field-radio")){
+        if ($(elem).prop('tagName') == "DIV" && $(elem).hasClass("da-field-group") && $(elem).hasClass("da-field-radio")){
           elem = $(elem).find('input')[0];
         }
         if ($(elem).attr('type') == "checkbox"){
@@ -14430,7 +14502,7 @@ def observer():
             }
           }
         }
-        else if ($(elem).prop('tagName') == "FIELDSET" && $(elem).hasClass("da-field-checkboxes")){
+        else if ($(elem).prop('tagName') == "DIV" && $(elem).hasClass("da-field-group") && $(elem).hasClass("da-field-checkboxes")){
           if (!Array.isArray(theValue)){
             throw new Error('setField: value must be an array');
           }
@@ -14516,7 +14588,7 @@ def observer():
         if (elem == null){
           return null;
         }
-        if ($(elem).prop('tagName') == "FIELDSET" && $(elem).hasClass("da-field-radio")){
+        if ($(elem).prop('tagName') == "DIV" && $(elem).hasClass("da-field-group") && $(elem).hasClass("da-field-radio")){
           elem = $(elem).find('input')[0];
         }
         if ($(elem).attr('type') == "checkbox"){
@@ -14545,7 +14617,7 @@ def observer():
             }
           }
         }
-        else if ($(elem).prop('tagName') == "FIELDSET" && $(elem).hasClass("da-field-checkboxes")){
+        else if ($(elem).prop('tagName') == "DIV" && $(elem).hasClass("da-field-group") && $(elem).hasClass("da-field-checkboxes")){
           var cbSelected = [];
           $(elem).find('input').each(function(){
             if ($(this).attr('name').substr(0,7) === '_ignore'){
@@ -14956,7 +15028,7 @@ def observer():
         $("input.daaota-checkbox").click(function(){
           var anyChanged = false;
           var firstEncountered = null;
-          $(this).parents('fieldset').find('input.danon-nota-checkbox').each(function(){
+          $(this).parents('div.da-field-group').find('input.danon-nota-checkbox').each(function(){
             if (firstEncountered === null){
               firstEncountered = this;
             }
@@ -14970,7 +15042,7 @@ def observer():
           if (firstEncountered !== null && anyChanged === false){
             $(firstEncountered).trigger('change');
           }
-          $(this).parents('fieldset').find('input.danota-checkbox').each(function(){
+          $(this).parents('div.da-field-group').find('input.danota-checkbox').each(function(){
             var existing_val = $(this).prop('checked');
             $(this).prop('checked', false);
             if (existing_val != false){
@@ -14981,7 +15053,7 @@ def observer():
         $("input.danota-checkbox").click(function(){
           var anyChanged = false;
           var firstEncountered = null;
-          $(this).parents('fieldset').find('input.danon-nota-checkbox').each(function(){
+          $(this).parents('div.da-field-group').find('input.danon-nota-checkbox').each(function(){
             if (firstEncountered === null){
               firstEncountered = this;
             }
@@ -14995,7 +15067,7 @@ def observer():
           if (firstEncountered !== null && anyChanged === false){
             $(firstEncountered).trigger('change');
           }
-          $(this).parents('fieldset').find('input.daaota-checkbox').each(function(){
+          $(this).parents('div.da-field-group').find('input.daaota-checkbox').each(function(){
             var existing_val = $(this).prop('checked');
             $(this).prop('checked', false);
             if (existing_val != false){
@@ -15004,7 +15076,7 @@ def observer():
           });
         });
         $("input.danon-nota-checkbox").click(function(){
-          $(this).parents('fieldset').find('input.danota-checkbox').each(function(){
+          $(this).parents('div.da-field-group').find('input.danota-checkbox').each(function(){
             var existing_val = $(this).prop('checked');
             $(this).prop('checked', false);
             if (existing_val != false){
@@ -15012,7 +15084,7 @@ def observer():
             }
           });
           if (!$(this).prop('checked')){
-            $(this).parents('fieldset').find('input.daaota-checkbox').each(function(){
+            $(this).parents('div.da-field-group').find('input.daaota-checkbox').each(function(){
               var existing_val = $(this).prop('checked');
               $(this).prop('checked', false);
               if (existing_val != false){
@@ -15058,7 +15130,7 @@ def observer():
             daVarLookupSelect[key].push({'select': theSelect, 'option': this, 'value': theVal});
           });
         })
-        $('fieldset.da-field-checkboxes').each(function(){
+        $('div.da-field-group.da-field-checkboxes').each(function(){
           var isObject = $(this).hasClass('daobject');
           var varname = atou($(this).data('varname'));
           var cbList = [];
@@ -15279,7 +15351,7 @@ def observer():
           if (varName.endsWith('[nota]') || varName.endsWith('[aota]')){
             var signifier = varName.endsWith('[nota]') ? 'nota' : 'aota';
             var cbVarName = varName.replace(/\[[na]ota\]$/, '');
-            $('fieldset.da-field-checkboxes').each(function(){
+            $('div.da-field-group.da-field-checkboxes').each(function(){
               var thisVarName = atou($(this).data('varname'));
               if (thisVarName == cbVarName){
                 elem = $(this).find('input.da' + signifier + '-checkbox');
@@ -16087,7 +16159,7 @@ def monitor():
           var xButton = document.createElement('a');
           var xButtonIcon = document.createElement('i');
           $(xButton).addClass("dacorner-remove");
-          $(xButtonIcon).addClass("fas fa-times-circle");
+          $(xButtonIcon).addClass("fa-solid fa-times-circle");
           $(xButtonIcon).appendTo($(xButton));
           $("#listelement" + skey).addClass("list-group-item-danger");
           $("#session" + skey).find("a").remove();
@@ -16259,7 +16331,7 @@ def monitor():
           if (daUsePhone){
             var phoneButton = document.createElement('a');
             var phoneIcon = document.createElement('i');
-            $(phoneIcon).addClass("fas fa-phone");
+            $(phoneIcon).addClass("fa-solid fa-phone");
             $(phoneIcon).appendTo($(phoneButton));
             $(phoneButton).addClass("btn phone");
             $(phoneButton).data('name', 'phone');
@@ -17630,7 +17702,7 @@ def create_playground_package():
                 else:
                     the_timezone = get_default_timezone()
                 fix_ml_files(author_info['id'], current_project)
-                docassemble.webapp.files.make_package_dir(pkgname, info, author_info, directory=directory, current_project=current_project)
+                docassemble.webapp.files.make_package_dir(pkgname, info, author_info, directory=directory, current_project=current_project, include_gitignore=False)
                 if branch:
                     the_branch = branch
                 else:
@@ -17804,6 +17876,49 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
+        gitignore = """\
+__pycache__/
+*.py[cod]
+*$py.class
+.mypy_cache/
+.dmypy.json
+dmypy.json
+*.egg-info/
+.installed.cfg
+*.egg
+.vscode
+*~
+.#*
+en
+.history/
+.idea
+.dir-locals.el
+.flake8
+*.swp
+.DS_Store
+.envrc
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+"""
         readme = '# docassemble.' + str(pkgname) + "\n\nA docassemble extension.\n\n## Author\n\n" + name_of_user(current_user, include_email=True) + "\n"
         manifestin = """\
 include README.md
@@ -17964,6 +18079,8 @@ class Fruit(DAObject):
         os.makedirs(templatesdir, exist_ok=True)
         os.makedirs(staticdir, exist_ok=True)
         os.makedirs(sourcesdir, exist_ok=True)
+        with open(os.path.join(packagedir, '.gitignore'), 'w', encoding='utf-8') as the_file:
+            the_file.write(gitignore)
         with open(os.path.join(packagedir, 'README.md'), 'w', encoding='utf-8') as the_file:
             the_file.write(readme)
         with open(os.path.join(packagedir, 'LICENSE'), 'w', encoding='utf-8') as the_file:
@@ -19400,7 +19517,7 @@ def playground_static(current_project, userid, filename):
         extension, mimetype = get_ext_and_mimetype(filename)  # pylint: disable=unused-variable
         response = send_file(path, mimetype=str(mimetype), download_name=filename)
         if attach:
-            response.headers['Content-Disposition'] = 'attachment; filename=' + json.dumps(filename)
+            response.headers['Content-Disposition'] = 'attachment; filename=' + json.dumps(urllibquote(filename))
         return response
     return ('File not found', 404)
 
@@ -19428,7 +19545,7 @@ def playground_modules(current_project, userid, filename):
         extension, mimetype = get_ext_and_mimetype(filename)  # pylint: disable=unused-variable
         response = send_file(path, mimetype=str(mimetype), download_name=filename)
         if attach:
-            response.headers['Content-Disposition'] = 'attachment; filename=' + json.dumps(filename)
+            response.headers['Content-Disposition'] = 'attachment; filename=' + json.dumps(urllibquote(filename))
         response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
         return response
     return ('File not found', 404)
@@ -19458,7 +19575,7 @@ def playground_sources(current_project, userid, filename):
         extension, mimetype = get_ext_and_mimetype(filename)  # pylint: disable=unused-variable
         response = send_file(path, mimetype=str(mimetype), download_name=filename)
         if attach:
-            response.headers['Content-Disposition'] = 'attachment; filename=' + json.dumps(filename)
+            response.headers['Content-Disposition'] = 'attachment; filename=' + json.dumps(urllibquote(filename))
         response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
         return response
     return ('File not found', 404)
@@ -19487,7 +19604,7 @@ def playground_template(current_project, userid, filename):
         extension, mimetype = get_ext_and_mimetype(filename)  # pylint: disable=unused-variable
         response = send_file(path, mimetype=str(mimetype), download_name=filename)
         if attach:
-            response.headers['Content-Disposition'] = 'attachment; filename=' + json.dumps(filename)
+            response.headers['Content-Disposition'] = 'attachment; filename=' + json.dumps(urllibquote(filename))
         response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
         return response
     return ('File not found', 404)
@@ -19512,7 +19629,7 @@ def playground_download(current_project, userid, filename):
         extension, mimetype = get_ext_and_mimetype(path)  # pylint: disable=unused-variable
         response = send_file(path, mimetype=str(mimetype))
         response.headers['Content-type'] = 'text/plain; charset=utf-8'
-        response.headers['Content-Disposition'] = 'attachment; filename=' + json.dumps(filename)
+        response.headers['Content-Disposition'] = 'attachment; filename=' + json.dumps(urllibquote(filename))
         response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
         return response
     return ('File not found', 404)
@@ -19554,12 +19671,14 @@ def playground_office_addin():
     if not app.config['ENABLE_PLAYGROUND']:
         return ('File not found', 404)
     playground_user = get_playground_user()
-    current_project = get_current_project()
+    project_to_use = werkzeug.utils.secure_filename(request.args.get('project', get_current_project()))
     if request.args.get('fetchfiles', None):
         playground = SavedFile(playground_user.id, fix=True, section='playground')
-        the_directory = directory_for(playground, current_project)
+        the_directory = directory_for(playground, project_to_use)
+        if not os.path.isdir(the_directory):
+            return ('File not found', 404)
         files = sorted([f for f in os.listdir(the_directory) if os.path.isfile(os.path.join(the_directory, f)) and re.search(r'^[A-Za-z0-9]', f)])
-        return jsonify(success=True, files=files)
+        return jsonify(success=True, files=files, projects=get_list_of_projects(playground_user.id))
     pg_var_file = request.args.get('pgvars', None)
     # logmessage("playground_office_addin: YAML file is " + str(pg_var_file))
     use_html = request.args.get('html', False)
@@ -19588,30 +19707,30 @@ def playground_office_addin():
                 return jsonify({'success': True, 'variables_json': [], 'vocab_list': []})
     if pg_var_file is not None:
         playground = SavedFile(playground_user.id, fix=True, section='playground')
-        the_directory = directory_for(playground, current_project)
+        the_directory = directory_for(playground, project_to_use)
         files = sorted([f for f in os.listdir(the_directory) if os.path.isfile(os.path.join(the_directory, f)) and re.search(r'^[A-Za-z0-9]', f)])
         if pg_var_file in files:
             # logmessage("playground_office_addin: file " + str(pg_var_file) + " was found")
-            interview_source = docassemble.base.parse.interview_source_from_string('docassemble.playground' + str(playground_user.id) + project_name(current_project) + ':' + pg_var_file)
+            interview_source = docassemble.base.parse.interview_source_from_string('docassemble.playground' + str(playground_user.id) + project_name(project_to_use) + ':' + pg_var_file, raise_jinja_errors=False)
             interview_source.set_testing(True)
         else:
             # logmessage("playground_office_addin: file " + str(pg_var_file) + " was not found")
-            if pg_var_file == '' and current_project == 'default':
+            if pg_var_file == '' and project_to_use == 'default':
                 pg_var_file = 'test.yml'
             content = "modules:\n  - docassemble.base.util\n---\nmandatory: True\nquestion: hi"
-            interview_source = docassemble.base.parse.InterviewSourceString(content=content, directory=the_directory, package="docassemble.playground" + str(playground_user.id) + project_name(current_project), path="docassemble.playground" + str(playground_user.id) + project_name(current_project) + ":" + pg_var_file, testing=True)
+            interview_source = docassemble.base.parse.InterviewSourceString(content=content, directory=the_directory, package="docassemble.playground" + str(playground_user.id) + project_name(project_to_use), path="docassemble.playground" + str(playground_user.id) + project_name(project_to_use) + ":" + pg_var_file, testing=True)
         interview = interview_source.get_interview()
-        ensure_ml_file_exists(interview, pg_var_file, current_project)
-        the_current_info = current_info(yaml='docassemble.playground' + str(playground_user.id) + project_name(current_project) + ':' + pg_var_file, req=request, action=None, device_id=request.cookies.get('ds', None))
+        ensure_ml_file_exists(interview, pg_var_file, project_to_use)
+        the_current_info = current_info(yaml='docassemble.playground' + str(playground_user.id) + project_name(project_to_use) + ':' + pg_var_file, req=request, action=None, device_id=request.cookies.get('ds', None))
         docassemble.base.functions.this_thread.current_info = the_current_info
         interview_status = docassemble.base.parse.InterviewStatus(current_info=the_current_info)
         if use_html:
-            variables_html, vocab_list, vocab_dict = get_vars_in_use(interview, interview_status, debug_mode=False, show_messages=False, show_jinja_help=True, current_project=current_project)
-            return jsonify({'success': True, 'current_project': current_project, 'variables_html': variables_html, 'vocab_list': list(vocab_list), 'vocab_dict': vocab_dict})
-        variables_json, vocab_list, vocab_dict = get_vars_in_use(interview, interview_status, debug_mode=False, return_json=True, current_project=current_project)
+            variables_html, vocab_list, vocab_dict = get_vars_in_use(interview, interview_status, debug_mode=False, show_messages=False, show_jinja_help=True, current_project=project_to_use)
+            return jsonify({'success': True, 'current_project': project_to_use, 'variables_html': variables_html, 'vocab_list': list(vocab_list), 'vocab_dict': vocab_dict})
+        variables_json, vocab_list, vocab_dict = get_vars_in_use(interview, interview_status, debug_mode=False, return_json=True, current_project=project_to_use)
         return jsonify({'success': True, 'variables_json': variables_json, 'vocab_list': list(vocab_list)})
     parent_origin = re.sub(r'^(https?://[^/]+)/.*', r'\1', daconfig.get('office addin url', get_base_url()))
-    response = make_response(render_template('pages/officeaddin.html', current_project=current_project, page_title=word("Docassemble Office Add-in"), tab_title=word("Office Add-in"), parent_origin=parent_origin, form=uploadform), 200)
+    response = make_response(render_template('pages/officeaddin.html', current_project=project_to_use, page_title=word("Docassemble Office Add-in"), tab_title=word("Office Add-in"), parent_origin=parent_origin, form=uploadform), 200)
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
     return response
 
@@ -20184,7 +20303,7 @@ def playground_files():
         kbOpt = ''
         kbLoad = ''
     any_files = bool(len(editable_files) > 0)
-    back_button = Markup('<span class="navbar-brand navbar-nav dabackicon me-3"><a href="' + url_for('playground_page', project=current_project) + '" class="dabackbuttoncolor nav-link" title=' + json.dumps(word("Go back to the main Playground page")) + '><i class="fas fa-chevron-left"></i><span class="daback">' + word('Back') + '</span></a></span>')
+    back_button = Markup('<span class="navbar-brand navbar-nav dabackicon me-3"><a href="' + url_for('playground_page', project=current_project) + '" class="dabackbuttoncolor nav-link" title=' + json.dumps(word("Go back to the main Playground page")) + '><i class="fa-solid fa-chevron-left"></i><span class="daback">' + word('Back') + '</span></a></span>')
     cm_mode = ''
     if mode == 'null':
         modes = []
@@ -20786,9 +20905,10 @@ def playground_packages():
     if request.method == 'POST' and not (app.config['DEVELOPER_CAN_INSTALL'] or current_user.has_role('admin')):
         form.install_also.data = 'n'
         form.install.data = ''
-    if request.method == 'POST' and 'uploadfile' not in request.files and form.validate():
+    if request.method == 'POST' and 'uploadfile' not in request.files:
         the_file = form.file_name.data
-        validated = True
+        if form.validate():
+            validated = True
         # else:
         #     the_error = ''
         #     for attrib in ('original_file_name', 'file_name', 'license', 'description', 'author_name', 'author_email', 'version', 'url', 'dependencies', 'interview_files', 'template_files', 'module_files', 'static_files', 'sources_files', 'readme', 'github_branch', 'commit_message', 'submit', 'download', 'install', 'pypi', 'github', 'cancel', 'delete'):
@@ -21299,7 +21419,7 @@ def playground_packages():
         kbOpt = ''
         kbLoad = ''
     any_files = len(editable_files) > 0
-    back_button = Markup('<span class="navbar-brand navbar-nav dabackicon me-3"><a href="' + url_for('playground_page', project=current_project) + '" class="dabackbuttoncolor nav-link" title=' + json.dumps(word("Go back to the main Playground page")) + '><i class="fas fa-chevron-left"></i><span class="daback">' + word('Back') + '</span></a></span>')
+    back_button = Markup('<span class="navbar-brand navbar-nav dabackicon me-3"><a href="' + url_for('playground_page', project=current_project) + '" class="dabackbuttoncolor nav-link" title=' + json.dumps(word("Go back to the main Playground page")) + '><i class="fa-solid fa-chevron-left"></i><span class="daback">' + word('Back') + '</span></a></span>')
     if can_publish_to_pypi:
         if pypi_message is not None:
             pypi_message = Markup(pypi_message)
@@ -21854,7 +21974,7 @@ def variables_report():
         return jsonify(success=False, reason=1)
     if the_file is None or the_file not in files:
         return jsonify(success=False, reason=2)
-    interview_source = docassemble.base.parse.interview_source_from_string('docassemble.playground' + str(playground_user.id) + project_name(current_project) + ':' + the_file)
+    interview_source = docassemble.base.parse.interview_source_from_string('docassemble.playground' + str(playground_user.id) + project_name(current_project) + ':' + the_file, raise_jinja_errors=False)
     interview_source.set_testing(True)
     interview = interview_source.get_interview()
     ensure_ml_file_exists(interview, the_file, current_project)
@@ -21920,7 +22040,7 @@ def playground_variables():
         if post_data['variablefile'] in files:
             if 'changed' in post_data and int(post_data['changed']):
                 set_variable_file(current_project, active_file)
-            interview_source = docassemble.base.parse.interview_source_from_string('docassemble.playground' + str(playground_user.id) + project_name(current_project) + ':' + active_file)
+            interview_source = docassemble.base.parse.interview_source_from_string('docassemble.playground' + str(playground_user.id) + project_name(current_project) + ':' + active_file, raise_jinja_errors=False)
             interview_source.set_testing(True)
         else:
             if active_file == '' and current_project == 'default':
@@ -22113,7 +22233,7 @@ def playground_project():
         mode = 'standard'
         page_title = word("Projects")
         description = word("You can divide up your Playground into multiple separate areas, apart from your default Playground area.  Each Project has its own question files and Folders.")
-    back_button = Markup('<span class="navbar-brand navbar-nav dabackicon me-3"><a href="' + url_for('playground_page', project=current_project) + '" class="dabackbuttoncolor nav-link" title=' + json.dumps(word("Go back to the main Playground page")) + '><i class="fas fa-chevron-left"></i><span class="daback">' + word('Back') + '</span></a></span>')
+    back_button = Markup('<span class="navbar-brand navbar-nav dabackicon me-3"><a href="' + url_for('playground_page', project=current_project) + '" class="dabackbuttoncolor nav-link" title=' + json.dumps(word("Go back to the main Playground page")) + '><i class="fa-solid fa-chevron-left"></i><span class="daback">' + word('Back') + '</span></a></span>')
     response = make_response(render_template('pages/manage_projects.html', version_warning=None, bodyclass='daadminbody', back_button=back_button, tab_title=word("Projects"), description=description, page_title=page_title, projects=get_list_of_projects(playground_user.id), current_project=current_project, mode=mode, form=form), 200)
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
     return response
@@ -22234,7 +22354,7 @@ def playground_select():
     mode = 'standard'
     page_title = word("All Playgrounds")
     description = word("You can use the Playground of another user who has admin or developer privileges.")
-    back_button = Markup('<span class="navbar-brand navbar-nav dabackicon me-3"><a href="' + url_for('playground_page', project=current_project) + '" class="dabackbuttoncolor nav-link" title=' + json.dumps(word("Go back to the main Playground page")) + '><i class="fas fa-chevron-left"></i><span class="daback">' + word('Back') + '</span></a></span>')
+    back_button = Markup('<span class="navbar-brand navbar-nav dabackicon me-3"><a href="' + url_for('playground_page', project=current_project) + '" class="dabackbuttoncolor nav-link" title=' + json.dumps(word("Go back to the main Playground page")) + '><i class="fa-solid fa-chevron-left"></i><span class="daback">' + word('Back') + '</span></a></span>')
     response = make_response(render_template('pages/manage_playgrounds.html', version_warning=None, bodyclass='daadminbody', back_button=back_button, tab_title=word("All Playgrounds"), description=description, page_title=page_title, playgrounds=get_list_of_playgrounds(), current_project=current_project, mode=mode, form=form), 200)
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
     return response
@@ -22313,6 +22433,7 @@ def playground_page():
                         return redirect(url_for('playground_page', project=current_project))
                     playground.finalize()
                     r.incr('da:interviewsource:docassemble.playground' + str(playground_user.id) + project_name(current_project) + ':' + new_file)
+                    flash(word("Uploaded %s to the Playground.") % (os.path.basename(filename),), 'success')
                     return redirect(url_for('playground_page', project=current_project, file=os.path.basename(filename)))
                 except Exception as errMess:
                     flash("Error of type " + str(type(errMess)) + " processing upload: " + str(errMess), "error")
@@ -22445,11 +22566,14 @@ def playground_page():
                 pipe.expire(key, 12)
                 pipe.execute()
             try:
-                interview_source = docassemble.base.parse.interview_source_from_string(active_interview_string)
+                interview_source = docassemble.base.parse.interview_source_from_string(active_interview_string, raise_jinja_errors=False)
                 interview_source.set_testing(True)
                 interview = interview_source.get_interview()
                 ensure_ml_file_exists(interview, active_file, current_project)
-                the_current_info = current_info(yaml='docassemble.playground' + str(playground_user.id) + project_name(current_project) + ':' + active_file, req=request, action=None, device_id=request.cookies.get('ds', None))
+                yaml = 'docassemble.playground' + str(playground_user.id) + project_name(current_project) + ':' + active_file
+                session_id_to_use = uid_or_random(yaml)
+                the_current_info = current_info(yaml=yaml, req=request, action=None, device_id=request.cookies.get('ds', None), session_uid=session_id_to_use)
+                the_current_info['session'] = session_id_to_use
                 docassemble.base.functions.this_thread.current_info = the_current_info
                 interview_status = docassemble.base.parse.InterviewStatus(current_info=the_current_info)
                 variables_html, vocab_list, vocab_dict = get_vars_in_use(interview, interview_status, debug_mode=debug_mode, current_project=current_project)  # pylint: disable=unused-variable
@@ -22482,7 +22606,7 @@ def playground_page():
         if is_default:
             interview_source = docassemble.base.parse.InterviewSourceString(content=content, directory=the_directory, package="docassemble.playground" + str(playground_user.id) + project_name(current_project), path="docassemble.playground" + str(playground_user.id) + project_name(current_project) + ":" + active_file, testing=True)
         else:
-            interview_source = docassemble.base.parse.interview_source_from_string(interview_path)
+            interview_source = docassemble.base.parse.interview_source_from_string(interview_path, raise_jinja_errors=False)
             interview_source.set_testing(True)
     else:
         is_fictitious = True
@@ -22498,7 +22622,10 @@ def playground_page():
     interview = interview_source.get_interview()
     if hasattr(interview, 'mandatory_id_issue') and interview.mandatory_id_issue:
         console_messages.append(word("Note: it is a best practice to tag every mandatory block with an id."))
-    the_current_info = current_info(yaml='docassemble.playground' + str(playground_user.id) + project_name(current_project) + ':' + active_file, req=request, action=None, device_id=request.cookies.get('ds', None))
+    yaml = 'docassemble.playground' + str(playground_user.id) + project_name(current_project) + ':' + active_file
+    session_id_to_use = uid_or_random(yaml)
+    the_current_info = current_info(yaml='docassemble.playground' + str(playground_user.id) + project_name(current_project) + ':' + active_file, req=request, action=None, device_id=request.cookies.get('ds', None), session_uid=session_id_to_use)
+    the_current_info['session'] = session_id_to_use
     docassemble.base.functions.this_thread.current_info = the_current_info
     interview_status = docassemble.base.parse.InterviewStatus(current_info=the_current_info)
     variables_html, vocab_list, vocab_dict = get_vars_in_use(interview, interview_status, debug_mode=debug_mode, current_project=current_project)
@@ -23004,6 +23131,12 @@ $( document ).ready(function() {
   else{
     $("#playground_name").focus()
   }
+  setTimeout(function(){
+    $("#daflash .alert-success").hide(300, function(){
+      $(self).remove();
+    });
+  }, 3000);
+
   activateVariables();
   updateRunLink();
   origPosition = daCodeMirror.getCursor();
@@ -23450,7 +23583,7 @@ def package_static(package, filename):
     response = send_file(the_file, mimetype=str(mimetype), download_name=filename)
     if attach:
         filename = os.path.basename(filename)
-        response.headers['Content-Disposition'] = 'attachment; filename=' + json.dumps(filename)
+        response.headers['Content-Disposition'] = 'attachment; filename=' + json.dumps(urllibquote(filename))
     return response
 
 
@@ -24170,7 +24303,7 @@ def train():
     else:
         playground_package = None
     if the_package is None:
-        for record in db.session.execute(select(MachineLearning.group_id, db.func.count(MachineLearning.id).label('cnt')).where(show_cond).group_by(MachineLearning.group_id)):
+        for record in db.session.execute(select(MachineLearning.group_id, db.func.count(MachineLearning.id).label('cnt')).where(show_cond).group_by(MachineLearning.group_id)):  # pylint: disable=not-callable
             group_id = record.group_id
             parts = group_id.split(':')
             if is_package_ml(parts):
@@ -24201,7 +24334,7 @@ def train():
         the_package_display = the_package
     if the_file is None:
         file_list = {}
-        for record in db.session.execute(select(MachineLearning.group_id, db.func.count(MachineLearning.id).label('cnt')).where(and_(MachineLearning.group_id.like(the_package + ':%'), show_cond)).group_by(MachineLearning.group_id)):
+        for record in db.session.execute(select(MachineLearning.group_id, db.func.count(MachineLearning.id).label('cnt')).where(and_(MachineLearning.group_id.like(the_package + ':%'), show_cond)).group_by(MachineLearning.group_id)):  # pylint: disable=not-callable
             parts = record.group_id.split(':')
             # logmessage("Group id is " + str(parts))
             if not is_package_ml(parts):
@@ -24281,13 +24414,14 @@ def train():
             if len(output) > 0:
                 the_json_file = tempfile.NamedTemporaryFile(mode='w', prefix="datemp", suffix=".json", delete=False, encoding='utf-8')
                 json.dump(output, the_json_file, sort_keys=True, indent=2)
-                response = send_file(the_json_file, mimetype='application/json', as_attachment=True, download_name=json_filename)
+                the_json_file.close()
+                response = send_file(the_json_file.name, mimetype='application/json', as_attachment=True, download_name=json_filename)
                 response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
                 return response
             flash(word("No data existed in training set.  JSON file not created."), "error")
             return redirect(url_for('train', package=the_package, file=the_file, show_all=show_all))
         if the_package == '_global':
-            for record in db.session.execute(select(MachineLearning.group_id, db.func.count(MachineLearning.id).label('cnt')).where(show_cond).group_by(MachineLearning.group_id)):
+            for record in db.session.execute(select(MachineLearning.group_id, db.func.count(MachineLearning.id).label('cnt')).where(show_cond).group_by(MachineLearning.group_id)):  # pylint: disable=not-callable
                 if is_package_ml(record.group_id.split(':')):
                     continue
                 if record.group_id not in group_id_list:
@@ -24302,7 +24436,7 @@ def train():
         else:
             the_prefix = ml_prefix(the_package, the_file)
             # logmessage("My prefix is " + the_prefix)
-            for record in db.session.execute(select(MachineLearning.group_id, db.func.count(MachineLearning.id).label('cnt')).where(and_(MachineLearning.group_id.like(the_prefix + ':%'), show_cond)).group_by(MachineLearning.group_id)):
+            for record in db.session.execute(select(MachineLearning.group_id, db.func.count(MachineLearning.id).label('cnt')).where(and_(MachineLearning.group_id.like(the_prefix + ':%'), show_cond)).group_by(MachineLearning.group_id)):  # pylint: disable=not-callable
                 parts = record.group_id.split(':')
                 if not is_package_ml(parts):
                     continue
@@ -24417,7 +24551,7 @@ def train():
         sample_indep = entry_list[0]['independent']
     is_data = isinstance(sample_indep, (DADict, dict))
     choices = {}
-    for record in db.session.execute(select(MachineLearning.dependent, db.func.count(MachineLearning.id).label('cnt')).where(and_(MachineLearning.group_id == group_id_to_use)).group_by(MachineLearning.dependent)):
+    for record in db.session.execute(select(MachineLearning.dependent, db.func.count(MachineLearning.id).label('cnt')).where(and_(MachineLearning.group_id == group_id_to_use)).group_by(MachineLearning.dependent)):  # pylint: disable=not-callable
         # logmessage("There is a choice")
         if record.dependent is None:
             continue
@@ -24631,7 +24765,7 @@ def user_interviews(user_id=None, secret=None, exclude_invalid=True, action=None
                 subq_filter_elements.append(UserDictKeys.key == session)
             if start_id is not None:
                 subq_filter_elements.append(UserDict.indexno > start_id)
-            subq = select(UserDictKeys.filename, UserDictKeys.key, db.func.max(UserDict.indexno).label('indexno')).join(UserDict, and_(UserDictKeys.filename == UserDict.filename, UserDictKeys.key == UserDict.key))
+            subq = select(UserDictKeys.filename, UserDictKeys.key, db.func.max(UserDict.indexno).label('indexno')).join(UserDict, and_(UserDictKeys.filename == UserDict.filename, UserDictKeys.key == UserDict.key))  # pylint: disable=not-callable
             if len(subq_filter_elements) > 0:
                 subq = subq.where(and_(*subq_filter_elements))
             subq = subq.group_by(UserDictKeys.filename, UserDictKeys.key).subquery()
@@ -24652,7 +24786,7 @@ def user_interviews(user_id=None, secret=None, exclude_invalid=True, action=None
                 subq_filter_elements.append(UserDictKeys.key == session)
             if start_id is not None:
                 subq_filter_elements.append(UserDict.indexno > start_id)
-            subq = select(UserDictKeys.filename, UserDictKeys.key, db.func.max(UserDict.indexno).label('indexno')).join(UserDict, and_(UserDictKeys.filename == UserDict.filename, UserDictKeys.key == UserDict.key))
+            subq = select(UserDictKeys.filename, UserDictKeys.key, db.func.max(UserDict.indexno).label('indexno')).join(UserDict, and_(UserDictKeys.filename == UserDict.filename, UserDictKeys.key == UserDict.key))  # pylint: disable=not-callable
             if len(subq_filter_elements) > 0:
                 subq = subq.where(and_(*subq_filter_elements))
             subq = subq.group_by(UserDictKeys.filename, UserDictKeys.key).subquery()
@@ -24673,7 +24807,7 @@ def user_interviews(user_id=None, secret=None, exclude_invalid=True, action=None
                 subq_filter_elements.append(UserDict.key == session)
             if start_id is not None:
                 subq_filter_elements.append(UserDict.indexno > start_id)
-            subq = select(UserDict.filename, UserDict.key, db.func.max(UserDict.indexno).label('indexno'))
+            subq = select(UserDict.filename, UserDict.key, db.func.max(UserDict.indexno).label('indexno'))  # pylint: disable=not-callable
             if len(subq_filter_elements) > 0:
                 subq = subq.where(and_(*subq_filter_elements))
             subq = subq.group_by(UserDict.filename, UserDict.key).subquery()
@@ -25545,8 +25679,7 @@ def do_sms(form, base_url, url_root, config='default', save=True):
             if 'skip' in user_dict['_internal'] and len(user_dict['_internal']['skip']):
                 max_entry = -1
                 for the_entry in user_dict['_internal']['skip'].keys():
-                    if the_entry > max_entry:
-                        max_entry = the_entry
+                    max_entry = max(max_entry, the_entry)
                 if max_entry in user_dict['_internal']['skip']:
                     del user_dict['_internal']['skip'][max_entry]
                 if 'command_cache' in user_dict['_internal'] and max_entry in user_dict['_internal']['command_cache']:
@@ -26106,7 +26239,7 @@ def do_sms(form, base_url, url_root, config='default', save=True):
                                 break
                             if doc_format != 'pdf':
                                 continue
-                            url = url_for('serve_stored_file', _external=True, uid=sess_info['uid'], number=attachment['file'][doc_format], filename=attachment['filename'], extension=docassemble.base.parse.extension_of_doc_format[doc_format])
+                            url = url_for('serve_stored_file', _external=True, uid=sess_info['uid'], number=attachment['file'][doc_format], filename=attachment['filename'], extension=docassemble.base.parse.extension_of_doc_format.get(doc_format, doc_format))
                             m.media(url)
                             media_count += 1
             else:
@@ -26114,7 +26247,7 @@ def do_sms(form, base_url, url_root, config='default', save=True):
                     for doc_format in attachment['formats_to_use']:
                         if doc_format not in ('pdf', 'rtf', 'docx'):
                             continue
-                        qoutput += "\n" + url_for('serve_stored_file', _external=True, uid=sess_info['uid'], number=attachment['file'][doc_format], filename=attachment['filename'], extension=docassemble.base.parse.extension_of_doc_format[doc_format])
+                        qoutput += "\n" + url_for('serve_stored_file', _external=True, uid=sess_info['uid'], number=attachment['file'][doc_format], filename=attachment['filename'], extension=docassemble.base.parse.extension_of_doc_format.get(doc_format, doc_format))
                 resp.message(qoutput)
         else:
             resp.message(qoutput)
@@ -27294,8 +27427,8 @@ def get_privileges_list(admin=False):
     return role_names
 
 
-def get_permissions_of_privilege(privilege):
-    if not current_user.has_role_or_permission('admin', 'developer', permissions=['access_privileges']):
+def get_permissions_of_privilege(privilege, privileged=False):
+    if not privileged and not current_user.has_role_or_permission('admin', 'developer', permissions=['access_privileges']):
         raise DAException('You do not have sufficient privileges to inspect privileges.')
     if privilege == 'admin':
         return copy.copy(PERMISSIONS_LIST)
@@ -27863,8 +27996,9 @@ def api_session():
             files_to_process = []
             if the_files:
                 for the_file in the_files:
-                    filename = secure_filename(the_file.filename)
-                    file_number = get_new_file_number(session_id, filename, yaml_file_name=yaml_filename)
+                    safe_filename = secure_filename(the_file.filename)
+                    filename = secure_filename_unicode_ok(the_file.filename)
+                    file_number = get_new_file_number(session_id, safe_filename, yaml_file_name=yaml_filename)
                     extension, mimetype = get_ext_and_mimetype(filename)
                     saved_file = SavedFile(file_number, extension=extension, fix=True, should_not_exist=True)
                     temp_file = tempfile.NamedTemporaryFile(prefix="datemp", suffix='.' + extension, delete=False)
@@ -27925,7 +28059,7 @@ def api_file(file_number):
         else:
             return ('File not found', 404)
     elif 'filename' in request.args:
-        the_filename = secure_filename_spaces_ok(request.args['filename'])
+        the_filename = secure_filename_unicode_ok(request.args['filename'])
         if os.path.isfile(os.path.join(os.path.dirname(file_info['path']), the_filename)):
             the_path = os.path.join(os.path.dirname(file_info['path']), the_filename)
             extension, mimetype = get_ext_and_mimetype(the_filename)
@@ -27939,6 +28073,13 @@ def api_file(file_number):
     response = send_file(the_path, mimetype=mimetype)
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
     return response
+
+
+def uid_or_random(yaml_filename):
+    session_info = get_session(yaml_filename)
+    if session_info is not None:
+        return session_info['uid']
+    return random_alphanumeric(32)
 
 
 def get_session_variables(yaml_filename, session_id, secret=None, simplify=True, use_lock=False):
@@ -30210,7 +30351,7 @@ def manage_api():
         var new_button = $('<button>');
         var new_i = $('<i>');
         $(new_button).addClass('btn btn-outline-secondary');
-        $(new_i).addClass('fas fa-times');
+        $(new_i).addClass('fa-solid fa-times');
         $(new_button).append(new_i);
         $(new_button).on('click', function(){remove_constraint(this);});
         $(this).parent().append(new_button);
@@ -30235,7 +30376,7 @@ def manage_api():
       var new_button = $('<button>');
       var new_i = $('<i>');
       $(new_button).addClass('btn btn-outline-secondary');
-      $(new_i).addClass('fas fa-times');
+      $(new_i).addClass('fa-solid fa-times');
       $(new_button).append(new_i);
       $(new_button).on('click', function(){remove_constraint(this);});
       $(new_div).append(new_button);
@@ -31072,10 +31213,24 @@ def secure_filename_spaces_ok(filename):
     return filename
 
 
+def secure_filename_unicode_ok(the_filename):
+    for sep in (os.path.sep, os.path.altsep):
+        if sep:
+            the_filename = the_filename.replace(sep, "_")
+    the_filename = re.sub(r'[^\w_\.\- ]', '', the_filename, flags=re.UNICODE).strip("._ ")
+    return the_filename
+
+
 def secure_filename(filename):
-    filename = werkzeug.utils.secure_filename(filename)
-    extension, mimetype = get_ext_and_mimetype(filename)  # pylint: disable=unused-variable
-    filename = re.sub(r'\.[^\.]+$', '', filename) + '.' + extension
+    filename = werkzeug.utils.secure_filename(filename).strip("._ ")
+    if filename == '':
+        filename = 'file'
+    if '.' in filename:
+        extension, mimetype = get_ext_and_mimetype(filename)  # pylint: disable=unused-variable
+        filename = re.sub(r'\.[^\.]+$', '', filename).strip("._ ")
+        if filename == '':
+            filename = 'file'
+        filename = filename + '.' + extension
     return filename
 
 
@@ -31608,10 +31763,12 @@ docassemble.base.functions.update_server(url_finder=get_url_from_file_reference,
                                          retrieve_stashed_data=retrieve_stashed_data,
                                          secure_filename_spaces_ok=secure_filename_spaces_ok,
                                          secure_filename=secure_filename,
+                                         secure_filename_unicode_ok=secure_filename_unicode_ok,
                                          transform_json_variables=transform_json_variables,
                                          get_login_url=get_login_url,
                                          run_action_in_session=run_action_in_session,
-                                         invite_user=invite_user)
+                                         invite_user=invite_user,
+                                         get_url=get_request_url)
 
 # docassemble.base.util.set_user_id_function(user_id_dict)
 # docassemble.base.functions.set_generate_csrf(generate_csrf)

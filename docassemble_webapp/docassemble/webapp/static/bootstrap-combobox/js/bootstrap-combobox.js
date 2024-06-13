@@ -75,7 +75,7 @@
           '<button class="btn btn-outline-secondary dacomboboxtoggle" type="button" tabindex="-1" aria-label="' +
           this.options.buttonLabel +
           '" aria-expanded="false" aria-controls="id_controls">' +
-          '<span class="fas fa-caret-down"></span><span class="fas fa-xmark"></span>' +
+          '<span class="fa-solid fa-caret-down"></span><span class="fa-solid fa-xmark"></span>' +
           "</button> </div> </div> </div>"
         );
       }
@@ -172,6 +172,14 @@
       this.$element.attr("aria-owns", this.$menu.attr("id"));
       this.$button.attr("aria-controls", this.$menu.attr("id"));
       this.$button.attr("aria-label", this.$source.attr("aria-label"));
+      if (this.$source.attr("aria-labelledby")) {
+        this.$element.attr(
+          "aria-labelledby",
+          this.$source.attr("aria-labelledby"),
+        );
+      } else {
+        this.$source.attr("aria-labelledby", "daMainQuestion");
+      }
       this.$button.attr(
         "aria-labelledby",
         this.$source.attr("aria-labelledby"),

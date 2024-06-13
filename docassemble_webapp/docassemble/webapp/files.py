@@ -8,6 +8,7 @@ import subprocess
 # import sys
 import tempfile
 import zipfile
+import urllib.parse
 from packaging import version
 from flask import url_for
 from flask_login import current_user
@@ -358,7 +359,7 @@ class SavedFile:
                 break
         use_external = kwargs.get('_external', bool('jsembed' in docassemble.base.functions.this_thread.misc))
         url = url_for('rootindex', _external=use_external).rstrip('/')
-        url += '/tempfile' + suffix + '/' + code + '/' + path_to_key(kwargs.get('display_filename', filename))
+        url += '/tempfile' + suffix + '/' + code + '/' + urllib.parse.quote(path_to_key(kwargs.get('display_filename', filename)))
         return url
 
     def cloud_path(self, filename=None):
@@ -416,9 +417,9 @@ class SavedFile:
                 url += '/' + str(self.file_number) + '/' + str(page)
             else:
                 if re.search(r'\.', str(filename)):
-                    url = base_url + '/uploadedfile' + suffix + '/' + str(self.file_number) + '/' + path_to_key(filename)
+                    url = base_url + '/uploadedfile' + suffix + '/' + str(self.file_number) + '/' + urllib.parse.quote(path_to_key(filename))
                 elif extn != '':
-                    url = base_url + '/uploadedfile' + suffix + '/' + str(self.file_number) + '/' + path_to_key(filename) + extn
+                    url = base_url + '/uploadedfile' + suffix + '/' + str(self.file_number) + '/' + urllib.parse.quote(path_to_key(filename) + extn)
                 else:
                     url = base_url + '/uploadedfile' + suffix + '/' + str(self.file_number)
         else:
@@ -483,7 +484,7 @@ def get_ext_and_mimetype(filename):
 
 
 def publish_package(pkgname, info, author_info, current_project='default'):
-    directory = make_package_dir(pkgname, info, author_info, current_project=current_project)
+    directory = make_package_dir(pkgname, info, author_info, current_project=current_project, include_gitignore=False)
     packagedir = os.path.join(directory, 'docassemble-' + str(pkgname))
     output = "Publishing docassemble." + pkgname + " to PyPI . . .\n\n"
     try:
@@ -555,7 +556,7 @@ def get_version_suffix(package_name):
     return ''
 
 
-def make_package_dir(pkgname, info, author_info, directory=None, current_project='default'):
+def make_package_dir(pkgname, info, author_info, directory=None, current_project='default', include_gitignore=True):
     area = {}
     for sec in ['playground', 'playgroundtemplate', 'playgroundstatic', 'playgroundsources', 'playgroundmodules']:
         area[sec] = SavedFile(author_info['id'], fix=True, section=sec)
@@ -585,6 +586,49 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+"""
+    gitignore = """\
+__pycache__/
+*.py[cod]
+*$py.class
+.mypy_cache/
+.dmypy.json
+dmypy.json
+*.egg-info/
+.installed.cfg
+*.egg
+.vscode
+*~
+.#*
+en
+.history/
+.idea
+.dir-locals.el
+.flake8
+*.swp
+.DS_Store
+.envrc
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
 """
     if info['readme'] and re.search(r'[A-Za-z]', info['readme']):
         readme = str(info['readme'])
@@ -729,6 +773,9 @@ machine learning training files, and other source files.
             shutil.copy2(orig_file, os.path.join(sourcesdir, the_file))
         else:
             logmessage("failure on " + orig_file)
+    if include_gitignore:
+        with open(os.path.join(packagedir, '.gitignore'), 'w', encoding='utf-8') as the_file:
+            the_file.write(gitignore)
     with open(os.path.join(packagedir, 'README.md'), 'w', encoding='utf-8') as the_file:
         the_file.write(readme)
     os.utime(os.path.join(packagedir, 'README.md'), (info['modtime'], info['modtime']))

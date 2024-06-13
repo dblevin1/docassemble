@@ -217,6 +217,11 @@ i.da-chat-inactive:hover {
     margin-right: calc(var(--bs-gutter-x) * .5);
 }
 
+.da-grid-container.da-form-group-floating legend {
+    margin-left: calc(var(--bs-gutter-x) * .5);
+    margin-right: calc(var(--bs-gutter-x) * .5);
+}
+
 .da-grid-container {
     position: relative;
 }
@@ -235,6 +240,10 @@ i.da-chat-inactive:hover {
 
 [data-bs-theme=dark] .da-form-group.darequired .danolabel:before {
     color: var(--bs-red);
+}
+
+legend.da-top-label {
+    font-size: inherit;
 }
 
 .da-form-group.darequired .da-top-label {
@@ -760,6 +769,10 @@ div.dafieldpart > label:first-of-type {
     margin-top: 0px;
 }
 
+div.dafieldpart > legend:first-of-type {
+    margin-top: 0px;
+}
+
 div.datopcenter {
     position: fixed;
     top: 5px;
@@ -781,7 +794,9 @@ select.playground-select {
     border: 0;
     max-width: 8em;
     border-radius: 5px;
-    background: url(option-vertical.svg) no-repeat right #aad7ee;
+    background-image: url(option-vertical.svg);
+    background-repeat: no-repeat;
+    background-position: right;
     background-size: 1em 1em;
     padding: 2px 20px 2px 2px;
     outline: 0;
@@ -919,6 +934,10 @@ img.da-sig-spinner {
 }
 
 .dafullwidth + label {
+    width: 100%;
+}
+
+.dafullwidth + legend {
     width: 100%;
 }
 
@@ -1881,7 +1900,7 @@ a.dadisabled {
     }
 }
 
-div.da-field-container-datatype-range label.da-top-label {
+div.da-field-container-datatype-range .da-top-label {
     margin-bottom: 1.5rem;
 }
 
