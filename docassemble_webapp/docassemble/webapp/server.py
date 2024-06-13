@@ -5944,12 +5944,9 @@ def restart_session():
     docassemble.base.functions.this_thread.current_info = current_info(yaml=yaml_filename, req=request, interface='vars', device_id=request.cookies.get('ds', None), session_uid=temp_session_uid)
     try:
         steps, user_dict, is_encrypted = fetch_user_dict(session_id, yaml_filename, secret=secret)  # pylint: disable=unused-variable
+        url_args = user_dict['url_args']
     except:
         return redirect(url_for('index', i=yaml_filename))
-    if user_dict and 'url_args' in user_dict:
-        url_args = user_dict['url_args']
-    else:
-        url_args = {}
     url_args['reset'] = '1'
     url_args['i'] = yaml_filename
     return redirect(url_for('index', **url_args))
