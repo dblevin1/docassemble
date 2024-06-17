@@ -1,6 +1,15 @@
 # Change Log
 
 <!-- insertion marker -->
+## [1.4.107.2](https://github.com/dblevin1/docassemble/releases/tag/1.4.107.2) - 2024-06-17
+
+<small>[Compare with 1.4.107.1](https://github.com/dblevin1/docassemble/compare/1.4.107.1...1.4.107.2)</small>
+
+### Added
+
+- add docker-compose and push local script ([c1da008](https://github.com/dblevin1/docassemble/commit/c1da008d04075e817d5faabd3a61579ded647371) by Daniel Blevins).
+- add pushlocally script ([a29738c](https://github.com/dblevin1/docassemble/commit/a29738c74ef3afb176ad7b3e158cca8bdc13d20e) by Daniel Blevins).
+
 ## [1.4.107.1](https://github.com/dblevin1/docassemble/releases/tag/1.4.107.1) - 2024-06-13
 
 <small>[Compare with 1.4.102.4](https://github.com/dblevin1/docassemble/compare/1.4.102.4...1.4.107.1)</small>
