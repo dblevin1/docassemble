@@ -6189,6 +6189,10 @@ def checkin():
             obtain_lock(session_id, yaml_filename)
             # logmessage("checkin: fetch_user_dict2")
             steps, user_dict, is_encrypted = fetch_user_dict(session_id, yaml_filename, secret=secret)
+            if not user_dict or '_internal' not in user_dict:
+                release_lock(session_id, yaml_filename)
+                logmessage("Failed to get user_dict in checkin, reloading page.")
+                return jsonify_with_cache(action='reload')
             the_current_info['encrypted'] = is_encrypted
             interview = docassemble.base.interview_cache.get_interview(yaml_filename)
             interview_status = docassemble.base.parse.InterviewStatus(current_info=the_current_info)
