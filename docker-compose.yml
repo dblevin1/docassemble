@@ -38,8 +38,9 @@ services:
       - DBHOST=doc-db.docker # docker container name
       - DBPORT=5432
       - DBBACKUP=false
-    #depends_on:
-    #  - db
+    depends_on:
+      db:
+        condition: service_healthy
   db:
     hostname: doc-db.docker
     #network_mode: bridge
@@ -54,11 +55,11 @@ services:
       PGDATA: /var/lib/postgresql/data/pgdata
     ports:
       - 5432:5432
-    #healthcheck:
-    #  test: ["CMD-SHELL", "pg_isready"]
-    #  interval: 1s
-    #  timeout: 5s
-    #  retries: 10
+    healthcheck:
+      test: ["CMD-SHELL", "psql -h localhost -p 5432 -U postgres -v ON_ERROR_STOP=1 -c \"SELECT 1 FROM pg_database WHERE datname='docassemble'\" &> /dev/null"]
+      interval: 5s
+      timeout: 30s
+      retries: 20
     volumes:
       - ../docker-docassemble/volumes/db-mnt:/var/lib/postgresql/data
       - ../docker-docassemble/volumes/db-entrypoint:/docker-entrypoint-initdb.d
