@@ -1,6 +1,18 @@
 # Change Log
 
 <!-- insertion marker -->
+## [1.4.107.3](https://github.com/dblevin1/docassemble/releases/tag/1.4.107.3) - 2024-06-26
+
+<small>[Compare with 1.4.107.2](https://github.com/dblevin1/docassemble/compare/1.4.107.2...1.4.107.3)</small>
+
+### Added
+
+- add docker compose db healthcheck ([1981ee8](https://github.com/dblevin1/docassemble/commit/1981ee89860615806793b317d100dd84d955fcac) by Daniel Blevins).
+
+### Fixed
+
+- fix checkin on deleted session ([2cf5f8b](https://github.com/dblevin1/docassemble/commit/2cf5f8b455697f48032a59dc94aa117da5d01974) by Daniel Blevins).
+
 ## [1.4.107.2](https://github.com/dblevin1/docassemble/releases/tag/1.4.107.2) - 2024-06-17
 
 <small>[Compare with 1.4.107.1](https://github.com/dblevin1/docassemble/compare/1.4.107.1...1.4.107.2)</small>
