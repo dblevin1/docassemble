@@ -44,10 +44,12 @@ upload() {
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 cd $SCRIPT_DIR
 
-python_env_path=../venv_unix/bin/activate
-if [[ ! -f $python_env_path ]]; then
-    echo "$python_env_path does not exist"
-    exit
+python_env_path=../venv/bin/activate
+if [[ "$VIRTUAL_ENV" != "" ]]; then
+    echo "Already in virtual env not activating..."
+else
+    source $python_env_path
+    echo "Activated virtual env"
 fi
 source $python_env_path
 config_file_loc=~/.pypirc
