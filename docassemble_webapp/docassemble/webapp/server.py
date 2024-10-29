@@ -4734,7 +4734,7 @@ class GoogleSignIn(OAuthSignIn):
         csrf_body = post_data.get('g_csrf_token', None)
         token = post_data.get('credential', None)
         if token is None or csrf_cookie is None or csrf_cookie != csrf_body or not app.config['USE_GOOGLE_LOGIN']:
-            logmessage("Google authentication problem")
+            logmessage(f"Google authentication problem, {csrf_cookie=} {csrf_body=} {token is None=} {app.config['USE_GOOGLE_LOGIN']=}")
             return (None, None, None, None)
         try:
             idinfo = id_token.verify_oauth2_token(token, google_requests.Request(), app.config['OAUTH_CREDENTIALS']['google']['id'])
