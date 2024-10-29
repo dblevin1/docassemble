@@ -1,6 +1,10 @@
 # Change Log
 
 <!-- insertion marker -->
+## [1.4.107.5](https://github.com/dblevin1/docassemble/releases/tag/1.4.107.5) - 2024-10-28
+
+<small>[Compare with 1.4.107.4](https://github.com/dblevin1/docassemble/compare/1.4.107.4...1.4.107.5)</small>
+
 ## [1.4.107.4](https://github.com/dblevin1/docassemble/releases/tag/1.4.107.4) - 2024-10-28
 
 <small>[Compare with 1.4.107.3](https://github.com/dblevin1/docassemble/compare/1.4.107.3...1.4.107.4)</small>
