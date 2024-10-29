@@ -58,21 +58,21 @@ if [[ ! -f $config_file_loc ]]; then
     exit
 fi
 
-pip --version
-pip install ./docassemble
-cd docassemble
-python setup.py sdist 1>/dev/null
+# pip --version
+# pip install ./docassemble
+# cd docassemble
+# python setup.py sdist 1>/dev/null
 
-cd ../docassemble_base
-install
-cd ../docassemble_demo
-install
-cd ../docassemble_webapp
-install
+# cd ../docassemble_base
+# install
+# cd ../docassemble_demo
+# install
+# cd ../docassemble_webapp
+# install
 
 echo
 echo
-echo "----------Done installing starting upload------------"
+echo "----------Starting upload------------"
 read -p "Press enter to continue"
 cd ../docassemble
 upload
