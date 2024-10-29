@@ -1,6 +1,14 @@
 # Change Log
 
 <!-- insertion marker -->
+## [1.4.107.4](https://github.com/dblevin1/docassemble/releases/tag/1.4.107.4) - 2024-10-28
+
+<small>[Compare with 1.4.107.3](https://github.com/dblevin1/docassemble/compare/1.4.107.3...1.4.107.4)</small>
+
+### Added
+
+- add more detailed google auth problem log message ([c238ef5](https://github.com/dblevin1/docassemble/commit/c238ef50f4f2f3caa923a4e1379648e3412b8e95) by Daniel Blevins).
+
 ## [1.4.107.3](https://github.com/dblevin1/docassemble/releases/tag/1.4.107.3) - 2024-06-26
 
 <small>[Compare with 1.4.107.2](https://github.com/dblevin1/docassemble/compare/1.4.107.2...1.4.107.3)</small>
