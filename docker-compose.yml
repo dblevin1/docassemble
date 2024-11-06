@@ -12,7 +12,7 @@ services:
   docassemble:
     hostname: docassemble.docker
     #image: jhpyle/docassemble:latest
-    image: ghcr.io/dblevin1/docassemble:1.4.107.5
+    image: ghcr.io/dblevin1/docassemble:1.5.16
     volumes:
       - /etc/localtime:/etc/localtime
       - docassemblebackup:/usr/share/docassemble/backup
