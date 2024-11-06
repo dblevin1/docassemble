@@ -22,7 +22,6 @@ import time
 import types
 import zipfile
 import base64
-import pycurl  # pylint: disable=import-error
 import requests
 import yaml
 from requests_oauthlib import OAuth2Session
@@ -1811,24 +1810,31 @@ class DAList(DAObject):
             del kwargs['complete_attribute']
         if not hasattr(self, 'complete_attribute'):
             self.complete_attribute = None
-        if 'ask_object_type' in kwargs and kwargs['ask_object_type']:
-            self.ask_object_type = True
+        if 'ask_object_type' in kwargs:
+            if kwargs['ask_object_type']:
+                self.ask_object_type = True
+                self.object_type = None
+                self.object_type_parameters = {}
+            else:
+                self.ask_object_type = False
             del kwargs['ask_object_type']
         if not hasattr(self, 'ask_object_type'):
             self.ask_object_type = False
         super().init(*pargs, **kwargs)
 
     def initializeObject(self, *pargs, **kwargs):
-        """Creates a new object and creates an entry in the list for it.
-        The first argument is the index to set.
-        Takes an optional second argument, which is the type of object
-        the new object should be.  If no object type is provided, the
-        object type given by .object_type is used, and if that is not
-        set, DAObject is used.
+        """Creates a new object and creates an entry in the list for
+        it. The first argument is the index to set. Takes an optional
+        second argument, which is the type of object the new object
+        should be. If no object type is provided, the object type
+        given by .object_type is used. If .ask_object_type is used,
+        the .new_object_type is sought. Otherwise, DAObject is used.
 
         """
         objectFunction = None
         pargs = list(pargs)
+        if len(pargs) == 0 or not isinstance(pargs[0], int) or pargs[0] < 0:
+            raise DAError("initializeObject: first parameter must be an integer (0 or greater)")
         index = pargs.pop(0)
         if len(pargs) > 0:
             objectFunction = pargs.pop(0)
@@ -1838,7 +1844,15 @@ class DAList(DAObject):
                 new_obj_parameters[key] = val
             objectFunction = objectFunction.object_type
         if objectFunction is None:
-            if self.object_type is not None:
+            if self.ask_object_type:
+                if isinstance(self.new_object_type, DAObjectPlusParameters):
+                    objectFunction = self.new_object_type.object_type
+                    new_obj_parameters = self.new_object_type.parameters
+                elif isinstance(self.new_object_type, type):
+                    objectFunction = self.new_object_type
+                else:
+                    raise DAError("new_object_type must be an object type")
+            elif self.object_type is not None:
                 objectFunction = self.object_type
                 for key, val in self.object_type_parameters.items():
                     new_obj_parameters[key] = val
@@ -1847,10 +1861,12 @@ class DAList(DAObject):
         for key, val in kwargs.items():
             new_obj_parameters[key] = val
         newobject = objectFunction(self.instanceName + '[' + repr(index) + ']', *pargs, **new_obj_parameters)
-        for pre_index in range(index):  # pylint: disable=unused-variable
+        for pre_index in range(len(self.elements), index):  # pylint: disable=unused-variable
             self.elements.append(None)
         self[index] = newobject
         self.there_are_any = True
+        if objectFunction is None and self.ask_object_type and hasattr(self, 'new_object_type'):
+            delattr(self, 'new_object_type')
         return newobject
 
     def set_object_type(self, object_type):
@@ -1861,6 +1877,24 @@ class DAList(DAObject):
         else:
             self.object_type = object_type
             self.object_type_parameters = {}
+
+    def cancel_add_or_edit(self):
+        unique_id = docassemble.base.functions.this_thread.current_info['user']['session_uid']
+        if 'event_stack' in docassemble.base.functions.this_thread.internal and unique_id in docassemble.base.functions.this_thread.internal['event_stack']:
+            new_stack = []
+            for item in docassemble.base.functions.this_thread.internal['event_stack'][unique_id]:
+                if 'arguments' in item:
+                    if 'list' in item['arguments'] and item['arguments']['list'] == self.instanceName:
+                        continue
+                    if 'group' in item['arguments'] and item['arguments']['group'] == self.instanceName:
+                        continue
+                if 'action' in item and item['action'].startswith(self.instanceName + '['):
+                    continue
+                new_stack.append(item)
+            docassemble.base.functions.this_thread.internal['event_stack'][unique_id] = new_stack
+        if self.complete_elements().number() != self.number_gathered():
+            self.pop()
+        self.delattr('doing_gathered_and_complete', '_necessary_length', 'there_is_one_other')
 
     def gathered_and_complete(self):
         """Ensures all items in the list are complete and then returns True."""
@@ -2106,7 +2140,15 @@ class DAList(DAObject):
             objectFunction = pargs.pop(0)
         new_obj_parameters = {}
         if objectFunction is None:
-            if self.object_type is not None:
+            if self.ask_object_type:
+                if isinstance(self.new_object_type, DAObjectPlusParameters):
+                    objectFunction = self.new_object_type.object_type
+                    new_obj_parameters = self.new_object_type.parameters
+                elif isinstance(self.new_object_type, type):
+                    objectFunction = self.new_object_type
+                else:
+                    raise DAError("new_object_type must be an object type")
+            elif self.object_type is not None:
                 objectFunction = self.object_type
                 for key, val in self.object_type_parameters.items():
                     new_obj_parameters[key] = val
@@ -2117,6 +2159,8 @@ class DAList(DAObject):
         newobject = objectFunction(self.instanceName + '[' + str(len(self.elements)) + ']', *pargs, **new_obj_parameters)
         self.elements.append(newobject)
         self.there_are_any = True
+        if objectFunction is None and self.ask_object_type and hasattr(self, 'new_object_type'):
+            delattr(self, 'new_object_type')
         return newobject
 
     def append(self, *pargs, **kwargs):
@@ -2534,7 +2578,7 @@ class DAList(DAObject):
                 del self.gathered
             else:
                 return True
-        if item_object_type is None and self.object_type is not None:
+        if item_object_type is None and self.object_type is not None and not self.ask_object_type:
             item_object_type = self.object_type
             item_object_parameters = self.object_type_parameters
         elif isinstance(item_object_type, DAObjectPlusParameters):
@@ -2664,7 +2708,7 @@ class DAList(DAObject):
             if num_to_add > 10:
                 raise DAError("Attempt to fill up more than 10 items")
             for i in range(0, num_to_add):  # pylint: disable=unused-variable
-                if self.object_type is None:
+                if self.object_type is None or self.ask_object_type:
                     self.elements.append(None)
                 else:
                     self.appendObject(self.object_type, **self.object_type_parameters)
@@ -2673,7 +2717,7 @@ class DAList(DAObject):
             if num_to_add > 10:
                 raise DAError("Attempt to fill up more than 10 items")
             for i in range(0, num_to_add):
-                if self.object_type is None:
+                if self.object_type is None or self.ask_object_type:
                     self.elements.append(None)
                 else:
                     self.appendObject(self.object_type, **self.object_type_parameters)
@@ -2985,6 +3029,10 @@ class DADict(DAObject):
         if 'ask_object_type' in kwargs:
             if kwargs['ask_object_type']:
                 self.ask_object_type = True
+                self.object_type = None
+                self.object_type_parameters = {}
+            else:
+                self.ask_object_type = False
             del kwargs['ask_object_type']
         if not hasattr(self, 'ask_object_type'):
             self.ask_object_type = False
@@ -3164,9 +3212,10 @@ class DADict(DAObject):
         """Creates a new object and creates an entry in the dictionary for it.
         The first argument is the name of the dictionary key to set.
         Takes an optional second argument, which is the type of object
-        the new object should be.  If no object type is provided, the
-        object type given by .object_type is used, and if that is not
-        set, DAObject is used.
+        the new object should be. If no object type is provided, the
+        object type given by .object_type is used. If .ask_object_type is
+        used, a .new_object_type will be asked for and used. Otherwise,
+        DAObject is used.
 
         """
         objectFunction = None
@@ -3180,7 +3229,15 @@ class DADict(DAObject):
                 new_obj_parameters[key] = val
             objectFunction = objectFunction.object_type
         if objectFunction is None:
-            if self.object_type is not None:
+            if self.ask_object_type:
+                if isinstance(self.new_object_type, DAObjectPlusParameters):
+                    objectFunction = self.new_object_type.object_type
+                    new_obj_parameters = self.new_object_type.parameters
+                elif isinstance(self.new_object_type, type):
+                    objectFunction = self.new_object_type
+                else:
+                    raise DAError("new_object_type must be an object type")
+            elif self.object_type is not None:
                 objectFunction = self.object_type
                 for key, val in self.object_type_parameters.items():
                     new_obj_parameters[key] = val
@@ -3191,6 +3248,8 @@ class DADict(DAObject):
         newobject = objectFunction(self.instanceName + '[' + repr(entry) + ']', *pargs, **new_obj_parameters)
         self.elements[entry] = newobject
         self.there_are_any = True
+        if objectFunction is None and self.ask_object_type and hasattr(self, 'new_object_type'):
+            delattr(self, 'new_object_type')
         return newobject
 
     def new(self, *pargs, **kwargs):
@@ -3205,6 +3264,10 @@ class DADict(DAObject):
                     self.new(item, **kwargs)
             else:
                 new_obj_parameters = {}
+                if self.ask_object_type:
+                    if parg not in self.elements:
+                        self[parg] = None
+                    continue
                 if self.object_type is not None:
                     item_object_type = self.object_type
                     for key, val in self.object_type_parameters.items():
@@ -3619,7 +3682,7 @@ class DADict(DAObject):
                 return True
         if not self.auto_gather:
             return self.gathered
-        if item_object_type is None and self.object_type is not None:
+        if item_object_type is None and self.object_type is not None and not self.ask_object_type:
             item_object_type = self.object_type
             new_item_parameters = self.object_type_parameters
         elif isinstance(item_object_type, DAObjectPlusParameters):
@@ -3711,7 +3774,7 @@ class DADict(DAObject):
         if hasattr(self, 'new_item_value'):
             delattr(self, 'new_item_value')
         for elem in self._sorted_elements_values():
-            if self.object_type is not None and self.complete_attribute is not None:
+            if (self.object_type is not None or self.ask_object_type) and self.complete_attribute is not None:
                 for attrib in self._complete_attributes():
                     complex_getattr(elem, attrib)
             else:
@@ -3728,10 +3791,13 @@ class DADict(DAObject):
 
     def __getitem__(self, index):
         if index not in self.elements:
-            if self.object_type is None or docassemble.base.functions.this_thread.probing:
+            if (self.object_type is None and not self.ask_object_type) or docassemble.base.functions.this_thread.probing:
                 var_name = object.__getattribute__(self, 'instanceName') + "[" + repr(index) + "]"
                 raise DAIndexError("name '" + var_name + "' is not defined")
-            self.initializeObject(index, self.object_type, **self.object_type_parameters)
+            if self.ask_object_type:
+                self.elements[index] = None
+            else:
+                self.initializeObject(index, self.object_type, **self.object_type_parameters)
             return self.elements[index]
         return self.elements[index]
 
@@ -5242,20 +5308,14 @@ class DAFile(DAObject):
     def from_url(self, url):
         """Makes the contents of the file the contents of the given URL."""
         self.retrieve()
-        cookiefile = tempfile.NamedTemporaryFile(suffix='.txt')
-        the_path = self.file_info['path']
-        with open(the_path, 'wb') as f:
-            c = pycurl.Curl()  # pylint: disable=c-extension-no-member
-            c.setopt(c.URL, url)
-            c.setopt(c.FOLLOWLOCATION, True)
-            c.setopt(c.WRITEDATA, f)
-            c.setopt(pycurl.USERAGENT, server.daconfig.get('user agent', 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Googlebot/2.1; +http://www.google.com/bot.html) Safari/537.36'))  # pylint: disable=c-extension-no-member
-            c.setopt(pycurl.COOKIEFILE, cookiefile.name)  # pylint: disable=c-extension-no-member
-            c.perform()
-            status_code = c.getinfo(pycurl.HTTP_CODE)  # pylint: disable=c-extension-no-member
-            c.close()
-        if status_code >= 400:
-            raise DAError("from_url: Error %s" % (status_code,))
+        try:
+            with requests.get(url, stream=True, timeout=60) as r:
+                r.raise_for_status()
+                with open(self.file_info['path'], 'wb') as fp:
+                    for chunk in r.iter_content(8192):
+                        fp.write(chunk)
+        except requests.exceptions.HTTPError as err:
+            raise DAError("from_url: Error %s" % (str(err),))
         self.retrieve()
 
     def uses_acroform(self):
@@ -7506,10 +7566,8 @@ def interview_default(the_part, default_value, language):
     if the_part in this_thread.internal and this_thread.internal[the_part] is not None:
         return this_thread.internal[the_part]
     for lang in (language, get_language(), '*'):
-        if lang is not None:
-            if lang in this_thread.interview.default_title:
-                if the_part in this_thread.interview.default_title[lang]:
-                    return this_thread.interview.default_title[lang][the_part]
+        if lang is not None and this_thread.interview is not None and lang in this_thread.interview.default_title and the_part in this_thread.interview.default_title[lang]:
+            return this_thread.interview.default_title[lang][the_part]
     return default_value
 
 
@@ -8780,8 +8838,20 @@ class Individual(Person):
         birth_date = as_datetime(self.birthdate)
         rd = dateutil.relativedelta.relativedelta(comparator, birth_date)
         if decimals:
-            return float(rd.years)
+            return float(rd.years + rd.months/12.0 + rd.days/365.0 + rd.hours/(365.0*24.0) + rd.minutes/(365.0*24.0*60.0))
         return int(rd.years)
+
+    def age_in_months(self, decimals=False, as_of=None):
+        """Returns the individual's age in months, based on self.birthdate."""
+        if as_of is None:
+            comparator = current_datetime()
+        else:
+            comparator = as_datetime(as_of)
+        birth_date = as_datetime(self.birthdate)
+        rd = dateutil.relativedelta.relativedelta(comparator, birth_date)
+        if decimals:
+            return float(rd.years*12.0 + rd.months + 12.0*(rd.days/365.0 + rd.hours/(365.0*24.0) + rd.minutes/(365.0*24.0*60.0)))
+        return int(rd.years*12.0 + rd.months)
 
     def first_name_hint(self):
         """If the individual is the user and the user is logged in and
@@ -9593,7 +9663,8 @@ def google_ocr_file(image_file, raw_result=False):
                         output.append(the_response)
                     else:
                         for item in the_response['responses']:
-                            output += item['fullTextAnnotation']['text'] + "\n"
+                            if 'fullTextAnnotation' in item and 'text' in item['fullTextAnnotation']:
+                                output += item['fullTextAnnotation']['text'] + "\n"
                 for blob in blob_list:
                     blob.delete()
             else:
@@ -9629,6 +9700,7 @@ def ocr_file(image_file, language=None, psm=6, f=None, l=None, x=None, y=None, W
     ocr_resolution = get_config("ocr dpi")
     if ocr_resolution is None:
         ocr_resolution = '300'
+    ocr_resolution = str(int(float(ocr_resolution)*11.0))
     lang = get_ocr_language(language)
     if isinstance(image_file, DAFile):
         image_file = [image_file]
@@ -9643,7 +9715,7 @@ def ocr_file(image_file, language=None, psm=6, f=None, l=None, x=None, y=None, W
                 directory = tempfile.mkdtemp(prefix='SavedFile')
                 temp_directory_list.append(directory)
                 prefix = os.path.join(directory, 'page')
-                args = [pdf_to_ppm, '-r', str(ocr_resolution)]
+                args = [pdf_to_ppm, '-scale-to', str(ocr_resolution)]
                 if f is not None:
                     args.extend(['-f', str(f)])
                 if l is not None:
@@ -9658,7 +9730,7 @@ def ocr_file(image_file, language=None, psm=6, f=None, l=None, x=None, y=None, W
                     args.extend(['-H', str(H)])
                 args.extend(['-png', path, prefix])
                 try:
-                    result = subprocess.run(args, timeout=3600, check=False).returncode
+                    result = subprocess.run(args, timeout=3600, check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode
                 except subprocess.TimeoutExpired:
                     result = 1
                     logmessage("ocr_file: call to pdftoppm took too long")
@@ -9705,6 +9777,7 @@ def read_qr(image_file, f=None, l=None, x=None, y=None, W=None, H=None):  # noqa
     ocr_resolution = get_config("ocr dpi")
     if ocr_resolution is None:
         ocr_resolution = '300'
+    ocr_resolution = str(int(float(ocr_resolution)*11.0))
     file_list = []
     temp_directory_list = []
     for doc in image_file:
@@ -9716,7 +9789,7 @@ def read_qr(image_file, f=None, l=None, x=None, y=None, W=None, H=None):  # noqa
                 directory = tempfile.mkdtemp(prefix='SavedFile')
                 temp_directory_list.append(directory)
                 prefix = os.path.join(directory, 'page')
-                args = [pdf_to_ppm, '-r', str(ocr_resolution)]
+                args = [pdf_to_ppm, '-scale-to', str(ocr_resolution)]
                 if f is not None:
                     args.extend(['-f', str(f)])
                 if l is not None:
@@ -9731,7 +9804,7 @@ def read_qr(image_file, f=None, l=None, x=None, y=None, W=None, H=None):  # noqa
                     args.extend(['-H', str(H)])
                 args.extend(['-png', path, prefix])
                 try:
-                    result = subprocess.run(args, timeout=3600, check=False).returncode
+                    result = subprocess.run(args, timeout=3600, check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode
                 except subprocess.TimeoutExpired:
                     result = 1
                     logmessage("read_qr: call to pdftoppm took too long")
@@ -10306,9 +10379,11 @@ def assemble_docx(input_file, fields=None, output_path=None, output_format='docx
     docassemble.base.functions.reset_context()
     if output_format == 'docx':
         docx_template.save(output_path)
+        docassemble.base.file_docx.fix_docx(output_path)
     elif output_format == 'pdf':
         temp_file = tempfile.NamedTemporaryFile()
         docx_template.save(temp_file.name)
+        docassemble.base.file_docx.fix_docx(temp_file.name)
         if not isinstance(pdf_options, dict):
             pdf_options = {}
         result = docassemble.base.pandoc.word_to_pdf(temp_file.name, 'docx', output_path, pdfa=pdf_options.get('pdfa', False), password=pdf_options.get('password', None), owner_password=pdf_options.get('owner_password', None), update_refs=pdf_options.get('update_refs', False), tagged=pdf_options.get('tagged', False), filename=filename)
@@ -10317,6 +10392,7 @@ def assemble_docx(input_file, fields=None, output_path=None, output_format='docx
     elif output_format == 'md':
         temp_file = tempfile.NamedTemporaryFile()
         docx_template.save(temp_file.name)
+        docassemble.base.file_docx.fix_docx(temp_file.name)
         result = docassemble.base.pandoc.word_to_markdown(temp_file.name, 'docx')
         if not result:
             raise DAError("Unable to convert docx to Markdown")
@@ -10840,6 +10916,7 @@ def ocr_page_tasks(image_file, language=None, psm=6, f=None, l=None, x=None, y=N
     ocr_resolution = get_config("ocr dpi")
     if ocr_resolution is None:
         ocr_resolution = '300'
+    ocr_resolution = str(int(float(ocr_resolution)*11.0))
     langs = get_available_languages()
     if language is None:
         language = get_language()
@@ -10913,14 +10990,19 @@ def make_png_for_pdf_path(path, prefix, resolution, pdf_to_ppm, page=None):
     test_path = basefile + prefix + '-in-progress'
     with open(test_path, 'a', encoding='utf-8'):
         os.utime(test_path, None)
+    if prefix == 'page':
+        flag = '-scale-to'
+        resolution = int(float(resolution)*11.0)
+    else:
+        flag = '-r'
     if page is None:
         try:
-            result = subprocess.run([str(pdf_to_ppm), '-r', str(resolution), '-png', str(path), str(basefile + prefix)], timeout=3600, check=False).returncode
+            result = subprocess.run([str(pdf_to_ppm), flag, str(resolution), '-png', str(path), str(basefile + prefix)], timeout=3600, check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode
         except subprocess.TimeoutExpired:
             result = 1
     else:
         try:
-            result = subprocess.run([str(pdf_to_ppm), '-f', str(page), '-l', str(page), '-r', str(resolution), '-png', str(path), str(basefile + prefix)], timeout=3600, check=False).returncode
+            result = subprocess.run([str(pdf_to_ppm), '-f', str(page), '-l', str(page), flag, str(resolution), '-png', str(path), str(basefile + prefix)], timeout=3600, check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode
         except subprocess.TimeoutExpired:
             result = 1
     if os.path.isfile(test_path):
@@ -11057,7 +11139,7 @@ def ocr_page(indexno, doc=None, lang=None, pdf_to_ppm='pdf_to_ppm', ocr_resoluti
                 args.extend(['-H', str(H)])
             args.extend(['-singlefile', '-png', str(path), str(output_file.name)])
             try:
-                result = subprocess.run(args, timeout=120, check=False).returncode
+                result = subprocess.run(args, timeout=120, check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode
             except subprocess.TimeoutExpired:
                 result = 1
             if result > 0:

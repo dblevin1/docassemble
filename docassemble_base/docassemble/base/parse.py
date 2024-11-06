@@ -636,7 +636,14 @@ class InterviewStatus:
                             else:
                                 checkboxes[safeid(from_safeid(field.saveas) + "[R" + myb64quote(repr(pair['key'])) + "]")] = 'False'
                     elif not self.extras['required'][field.number]:
-                        checkboxes[field.saveas] = 'None'
+                        if field.datatype == 'text':
+                            checkboxes[field.saveas] = ''
+                        elif field.datatype == 'integer':
+                            checkboxes[field.saveas] = '0'
+                        elif field.datatype in ('number', 'float', 'currency', 'range'):
+                            checkboxes[field.saveas] = '0.0'
+                        else:
+                            checkboxes[field.saveas] = 'None'
                 if field.datatype in ('object_multiselect', 'object_checkboxes'):
                     datatypes[safeid(from_safeid(field.saveas) + ".gathered")] = 'boolean'
             if self.extras.get('list_collect_is_final', False):
@@ -787,9 +794,9 @@ class InterviewStatus:
         self.continueLabel = question_result['continue_label']
         self.decorations = question_result['decorations']
         self.audiovideo = question_result['audiovideo']
-        self.helpText = question_result['help_text']
-        self.interviewHelpText = question_result['interview_help_text']
-        self.attachments = question_result['attachments']
+        self.helpText = question_result['help_text'] or []
+        self.interviewHelpText = question_result['interview_help_text'] or []
+        self.attachments = question_result['attachments'] or []
         self.selectcompute = question_result['selectcompute']
         self.defaults = question_result['defaults']
         self.other_defaults = {}
@@ -867,18 +874,18 @@ class InterviewStatus:
                 the_help['audio'] = [{'url': x[0], 'mime_type': x[1]} for x in audio_result]
             if len(video_result) > 0:
                 the_help['video'] = [{'url': x[0], 'mime_type': x[1]} for x in video_result]
-        if 'content' in help_text and help_text['content'] is not None:
-            the_help['content'] = docassemble.base.filter.markdown_to_html(help_text['content'].rstrip(), status=self, verbatim=(not encode))
-            if debug:
-                if 'help' not in the_help:
-                    the_help['help'] = ''
-                the_help['help'] += the_help['content']
         if 'heading' in help_text and help_text['heading'] is not None:
             the_help['heading'] = help_text['heading'].rstrip()
             if debug:
                 if 'help' not in the_help:
                     the_help['help'] = ''
                 the_help['help'] += '<p>' + the_help['heading'] + '</p>'
+        if 'content' in help_text and help_text['content'] is not None:
+            the_help['content'] = docassemble.base.filter.markdown_to_html(help_text['content'].rstrip(), status=self, verbatim=(not encode))
+            if debug:
+                if 'help' not in the_help:
+                    the_help['help'] = ''
+                the_help['help'] += '<p>' + the_help['content'] + '</p>'
         # elif len(self.helpText) > 1:
         #    the_help['heading'] = word('Help with this question')
         return the_help
@@ -932,7 +939,7 @@ class InterviewStatus:
             if hasattr(self, param) and getattr(self, param) is not None:
                 result[param] = docassemble.base.filter.markdown_to_html(getattr(self, param).rstrip(), trim=True, status=self, verbatim=(not encode))
                 if debug:
-                    output['question'] += result[param]
+                    output['question'] += '<p>' + result[param] + '</p>'
         if debug:
             if hasattr(self, 'breadcrumb') and self.breadcrumb is not None:
                 output['breadcrumb label'] = self.breadcrumb
@@ -1026,10 +1033,22 @@ class InterviewStatus:
                 result['help']['label'] = self.question.help()
             result['help']['title'] = word("Help is available for this question")
             result['help']['specific'] = self.question.helptext is not None
+            if debug:
+                for item in result['helpText']:
+                    output['help'] += '<div>'
+                    if 'label' in item:
+                        output['help'] += '<p>' + item['label'] + '</p>'
+                    if 'help' in item:
+                        output['help'] += '<div>' + item['help'] + '</div>'
+                    output['help'] += '</div>'
         if hasattr(self, 'interviewHelpText') and len(self.interviewHelpText) > 0:
             result['interviewHelpText'] = []
             for help_text in self.interviewHelpText:
                 result['interviewHelpText'].append(self.convert_help(help_text, encode, debug))
+            if debug:
+                for item in result['interviewHelpText']:
+                    if 'help' in item:
+                        output['help'] += '<div>' + item['help'] + '</div>'
             if 'help' not in result:
                 result['help'] = {}
             if self.interviewHelpText[0]['label']:
@@ -1040,7 +1059,7 @@ class InterviewStatus:
             if not (hasattr(self, 'helpText') and len(self.helpText) > 0):
                 result['help']['specific'] = False
         if 'questionText' not in result and self.question.question_type == "signature":
-            result['questionText'] = word('Sign Your Name')
+            result['questionText'] = '<p>' + word('Sign Your Name') + '</p>'
             if debug:
                 output['question'] += '<p>' + result['questionText'] + '</p>'
         result['questionType'] = self.question.question_type
@@ -1075,6 +1094,8 @@ class InterviewStatus:
                         if 'extension' in filename and filename['extension'] == 'svg' and 'width' in filename:
                             if filename['width'] and filename['height']:
                                 height = str(width_value * (filename['height']/filename['width'])) + str(width_units)
+                            else:
+                                height = 'auto'
                         else:
                             height = 'auto'
                         if the_url is not None:
@@ -1104,7 +1125,7 @@ class InterviewStatus:
                     if attachment['description']:
                         the_attachment['description'] = docassemble.base.filter.markdown_to_html(attachment['description'], status=self, verbatim=(not encode))
                         if debug:
-                            output['question'] += the_attachment['description']
+                            output['question'] += '<p>' + the_attachment['description'] + '</p>'
                 for key in ('valid_formats', 'filename', 'content', 'markdown', 'raw'):
                     if key in attachment:
                         if attachment[key]:
@@ -1279,6 +1300,10 @@ class InterviewStatus:
                 the_default = None
             if self.question.question_type == 'multiple_choice' or hasattr(field, 'choicetype') or (hasattr(field, 'datatype') and field.datatype in ('object', 'multiselect', 'object_multiselect', 'checkboxes', 'object_checkboxes', 'object_radio')):
                 the_field['choices'] = self.get_choices_data(field, the_default, the_user_dict, encode=encode)
+                if debug:
+                    for item in the_field['choices']:
+                        if 'label' in item:
+                            output['question'] += '<p>' + item['label'] + '</p>'
             if hasattr(field, 'aota'):
                 the_field['all_of_the_above'] = docassemble.base.filter.markdown_to_html(self.extras['aota'][field.number], do_terms=False, status=self, verbatim=(not encode))
             if hasattr(field, 'nota'):
@@ -1335,7 +1360,7 @@ class InterviewStatus:
             if field.number in self.helptexts:
                 the_field['helptext'] = docassemble.base.filter.markdown_to_html(self.helptexts[field.number], status=self, verbatim=(not encode))
                 if debug:
-                    output['question'] += the_field['helptext']
+                    output['question'] += '<p>' + the_field['helptext'] + '</p>'
             if self.question.question_type in ("yesno", "yesnomaybe"):
                 the_field['true_label'] = docassemble.base.filter.markdown_to_html(self.question.yes(), trim=True, do_terms=False, status=self, verbatim=(not encode))
                 the_field['false_label'] = docassemble.base.filter.markdown_to_html(self.question.no(), trim=True, do_terms=False, status=self, verbatim=(not encode))
@@ -1365,7 +1390,7 @@ class InterviewStatus:
             for question_type in ('question', 'help'):
                 if question_type not in output:
                     continue
-                phrase = docassemble.base.functions.server.to_text(output[question_type])  # pylint: disable=assignment-from-none
+                phrase = docassemble.base.functions.server.to_text('<div>' + output[question_type] + '</div>')  # pylint: disable=assignment-from-none
                 if (not phrase) or len(phrase) < 10:
                     phrase = "The sky is blue."
                 phrase = re.sub(r'[^A-Za-z 0-9\.\,\?\#\!\%\&\(\)]', r' ', phrase)
@@ -2256,6 +2281,19 @@ class Question:
                 self.interview.options['checkin interval'] = data['features']['checkin interval']
             if 'hide corner interface' in data['features']:
                 self.interview.options['hide corner interface'] = data['features']['hide corner interface']
+            if 'auto jinja filter' in data['features']:
+                if isinstance(data['features']['auto jinja filter'], list):
+                    the_list = data['features']['auto jinja filter']
+                elif not isinstance(data['features']['auto jinja filter'], str):
+                    raise DASourceError("A features section auto jinja filter entry must be a list or plain text." + self.idebug(data))
+                else:
+                    the_list = [data['features']['auto jinja filter']]
+                if 'auto jinja filter' not in self.interview.options:
+                    self.interview.options['auto jinja filter'] = []
+                for expression in the_list:
+                    if not isinstance(expression, str):
+                        raise DASourceError("A features section auto jinja filter entry must be plain text." + self.idebug(data))
+                    self.interview.options['auto jinja filter'].append(compile(expression, '<auto jinja filter>', 'eval'))
             for key in ('javascript', 'css'):
                 if key in data['features']:
                     if isinstance(data['features'][key], list):
@@ -4631,6 +4669,10 @@ class Question:
                         if 'extras' not in field_info:
                             field_info['extras'] = {}
                         field_info['extras'][key] = TextObject(definitions + str(field[key]), question=self)
+                    elif key == 'css class':
+                        if 'extras' not in field_info:
+                            field_info['extras'] = {}
+                        field_info['extras'][key] = TextObject(definitions + str(field[key]), question=self)
                     elif key == 'show if':
                         if not isinstance(field[key], list):
                             field_list = [field[key]]
@@ -6050,7 +6092,7 @@ class Question:
                                 continue
                         else:
                             extras['field metadata'][field.number] = recursive_eval_textobject_or_primitive(field.extras['field metadata'], user_dict)
-                    for key in ('note', 'html', 'raw html', 'min', 'max', 'minlength', 'maxlength', 'step', 'scale', 'inline', 'inline width', 'currency symbol', 'pen color', 'file css class'):  # 'script', 'css',
+                    for key in ('note', 'html', 'raw html', 'css class'):
                         if key in field.extras:
                             if key not in extras:
                                 extras[key] = {}
@@ -6896,7 +6938,10 @@ class Question:
                     if not uses_value_label:
                         result_dict['label'] = TextObject(key, question=self)
                     self.embeds = True
-                    result_dict['key'] = Question(value, self.interview, register_target=register_target, source=self.from_source, package=self.package, source_code=prettyyaml.dump_to_string(value))
+                    try:
+                        result_dict['key'] = Question(value, self.interview, register_target=register_target, source=self.from_source, package=self.package, source_code=prettyyaml.dump_to_string(value))
+                    except TypeError:
+                        result_dict['key'] = Question(value, self.interview, register_target=register_target, source=self.from_source, package=self.package, source_code='')
                 elif isinstance(value, str):
                     if value in ('exit', 'logout', 'exit_logout', 'leave') and 'url' in the_dict:
                         self.embeds = True
@@ -7058,6 +7103,10 @@ class Question:
                                 result['template'].current_rendering_part = result['template'].docx._part
                             docassemble.base.functions.set_context('docx', template=result['template'])
                             docassemble.base.functions.this_thread.misc['docx_subdocs'] = []
+                            docassemble.base.functions.this_thread.misc['auto jinja filter'] = []
+                            if 'auto jinja filter' in self.interview.options:
+                                for item in self.interview.options['auto jinja filter']:
+                                    docassemble.base.functions.this_thread.misc['auto jinja filter'].append(eval(item, the_user_dict))
                             try:
                                 the_template = result['template']
                                 template_loop_count = 0
@@ -7100,6 +7149,7 @@ class Question:
                             docassemble.base.functions.reset_context()
                             with tempfile.NamedTemporaryFile(prefix="datemp", mode="wb", suffix=".docx", delete=False) as docx_file:
                                 the_template.save(docx_file.name)
+                                docassemble.base.file_docx.fix_docx(docx_file.name)
                                 if result['update_references']:
                                     docassemble.base.pandoc.update_references(docx_file.name)
                                 if 'pdf' in result['formats_to_use']:
@@ -7179,9 +7229,9 @@ class Question:
                 the_string = variable_name + " = DAFileCollection(" + repr(variable_name) + ")"
                 exec(the_string, the_user_dict)
                 the_name = attachment['name'].text(the_user_dict).strip()
-                the_filename = attachment['filename'].text(the_user_dict).strip()
+                the_filename = docassemble.base.functions.secure_filename_unicode_ok(attachment['filename'].text(the_user_dict).strip())
                 if the_filename == '':
-                    the_filename = docassemble.base.functions.space_to_underscore(the_name)
+                    the_filename = docassemble.base.functions.secure_filename_unicode_ok(docassemble.base.functions.space_to_underscore(the_name))
                 the_user_dict['_attachment_info'] = {'name': the_name, 'filename': the_filename, 'description': attachment['description'].text(the_user_dict), 'valid_formats': result['valid_formats'], 'formats': result['formats_to_use'], 'attachment': {'name': attachment['question_name'], 'number': attachment['indexno']}, 'extension': result.get('extension', {}), 'mimetype': result.get('mimetype', {}), 'content': result.get('content', {}), 'markdown': result.get('markdown', {}), 'metadata': result.get('metadata', {}), 'convert_to_pdf_a': result.get('convert_to_pdf_a', False), 'convert_to_tagged_pdf': result.get('convert_to_tagged_pdf', False), 'orig_variable_name': result.get('orig_variable_name', None), 'raw': result['raw'], 'permissions': result.get('permissions', None)}
                 if len(manual_files) > 0:
                     the_user_dict['_attachment_info']['manual_formats'] = result['manual_formats']
@@ -7319,7 +7369,7 @@ class Question:
             if attachment['raw']:
                 if '.' in the_filename:
                     m = re.search(r'(.*)(\..*)', the_filename)
-                    result['filename'] = m.group(1)
+                    result['filename'] = docassemble.base.functions.secure_filename_unicode_ok(m.group(1))
                     actual_extension = m.group(2)
                 result['raw'] = actual_extension
                 result['formats_to_use'] = ['raw']
@@ -7457,7 +7507,10 @@ class Question:
                                         if isinstance(item, dict):
                                             new_field_data.update(item)
                                     the_field_data = new_field_data
-                                result['field_data'] = copy.deepcopy(pickleable_objects(the_user_dict))
+                                # result['field_data'] = copy.copy(pickleable_objects(the_user_dict))
+                                result['field_data'] = {}
+                                for var_name, var_value in pickleable_objects(the_user_dict).items():
+                                    result['field_data'][var_name] = var_value
                                 self.interview.populate_non_pickleable(result['field_data'])
                                 if 'alpha' not in result['field_data']:
                                     raise DAError("problem with field data")
@@ -8323,11 +8376,14 @@ class Interview:
             if has_roles is not None:
                 return len(set(roles).intersection(set(has_roles))) > 0
         if is_anonymous:
+            unique_sessions = False
             require_login = False
             for metadata in self.metadata:
                 if 'require login' in metadata:
                     require_login = bool(metadata['require login'])
-            if require_login:
+                if 'sessions are unique' in metadata:
+                    unique_sessions = bool(metadata['sessions are unique'])
+            if require_login or unique_sessions:
                 return False
         return True
 
@@ -8389,11 +8445,14 @@ class Interview:
             if has_roles is not None:
                 return len(set(roles).intersection(set(has_roles))) > 0
         if is_anonymous:
+            unique_sessions = False
             require_login = False
             for metadata in self.metadata:
                 if 'require login' in metadata:
                     require_login = bool(metadata['require login'])
-            if require_login:
+                if 'sessions are unique' in metadata:
+                    unique_sessions = bool(metadata['sessions are unique'])
+            if require_login or unique_sessions:
                 return False
         return True
 
@@ -9416,7 +9475,7 @@ class Interview:
                                 except:
                                     pass
                                 user_dict["__object_type"] = eval(object_type_name, user_dict)
-                                if re.search(r"\.", variable):
+                                if re.search(r"\.([^\[]+)$", variable):
                                     m = re.search(r"(.*)\.(.*)", variable)
                                     variable = m.group(1)
                                     attribute = m.group(2)
@@ -10261,9 +10320,9 @@ def ensure_object_exists(saveas, datatype, the_user_dict, commands=None):
     elif method == 'index':
         index_name = parse_result['final_parts'][1][1:-1]
         if datatype in ('multiselect', 'checkboxes'):
-            commands.append(parse_result['final_parts'][0] + ".initializeObject(" + repr(index_name) + ", DADict, auto_gather=False)")
+            commands.append(parse_result['final_parts'][0] + ".initializeObject(" + index_name + ", DADict, auto_gather=False)")
         elif datatype in ('object_multiselect', 'object_checkboxes'):
-            commands.append(parse_result['final_parts'][0] + ".initializeObject(" + repr(index_name) + ", DAList, auto_gather=False)")
+            commands.append(parse_result['final_parts'][0] + ".initializeObject(" + index_name + ", DAList, auto_gather=False)")
     else:
         if datatype in ('multiselect', 'checkboxes'):
             commands.append(saveas + ' = DADict(' + repr(saveas) + ', auto_gather=False)')
@@ -10279,9 +10338,6 @@ def invalid_variable_name(varname):
     if not isinstance(varname, str):
         return True
     if re.search(r'[\n\r\(\)\{\}\*\^\#]', varname):
-        return True
-    varname = re.sub(r'[\.\[].*', '', varname)
-    if not valid_variable_match.match(varname):
         return True
     return illegal_variable_name(varname)
 
@@ -10452,7 +10508,7 @@ class DAEnvironment(Environment):
 def ampersand_filter(value):
     if value.__class__.__name__ in ('DAFile', 'DALink', 'DAStaticFile', 'DAFileCollection', 'DAFileList'):
         return value
-    if value.__class__.__name__ in ('InlineImage', 'RichText', 'Listing', 'Document', 'Subdoc', 'DALazyTemplate'):
+    if value.__class__.__name__ in ('InlineImage', 'RichText', 'Listing', 'Document', 'Subdoc', 'DALazyTemplate', 'Markup'):
         return str(value)
     if isinstance(value, (int, bool, float, NoneType)):
         return value
@@ -10461,6 +10517,8 @@ def ampersand_filter(value):
     value = docassemble.base.file_docx.sanitize_xml(value)
     if '<w:r>' in value or '</w:t>' in value:
         return re.sub(r'&(?!#?[0-9A-Za-z]+;)', '&amp;', value)
+    for auto_filter in docassemble.base.functions.this_thread.misc.get('auto jinja filter', []):
+        value = auto_filter(value)
     return re.sub(r'>', '&gt;', re.sub(r'<', '&lt;', re.sub(r'&(?!#?[0-9A-Za-z]+;)', '&amp;', value)))
 
 

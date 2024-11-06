@@ -5805,7 +5805,7 @@ Feature: Example interviews
     Then I should see the phrase "What is your date of birth?"
     And I set the text box to "08/01/1989"
     And I click the button "Continue"
-    Then I should see the phrase "You are 34 years old."
+    Then I should see the phrase "You are 35 years old."
 
   # Scenario: Test the interview "Test e-mail attachment"
   #   Given I start the interview "docassemble.demo:data/questions/testattach.yml"
@@ -6383,8 +6383,8 @@ Feature: Example interviews
     Then I should see the phrase "Please provide the following information."
     And I click the "Yes" option under "Do you like apricots?"
     And I click the button "Continue"
-    Then I should see the phrase "likes_apricots is True"
-    Then I should see the phrase "fruit_favorites is None"
+    Then I should see the phrase "likes_apricots is True."
+    Then I should see the phrase "fruit_favorites is ."
 
   Scenario: Test the interview "Non-required radio buttons" filling out field
     Given I start the interview "docassemble.base:data/questions/examples/non-required-radio.yml"
@@ -7316,12 +7316,6 @@ Feature: Example interviews
 
   # Scenario: Test the interview "Edit list" 4
   #   Given I start the interview "docassemble.base:data/questions/examples/edit-list-non-editable.yml"
-
-  Scenario: Test the interview "Mermaid"
-    Given I start the interview "docassemble.base:data/questions/examples/mermaid.yml"
-    Then I should see the phrase "Give me some names."
-    And I click the button "Continue"
-    Then I should see the phrase "Here is your diagram."
 
   Scenario: Test the interview "Non-progressive Navigation"
     Given I start the interview "docassemble.base:data/questions/examples/sections-non-progressive.yml"

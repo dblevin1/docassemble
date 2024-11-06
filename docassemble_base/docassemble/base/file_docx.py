@@ -6,6 +6,8 @@ import stat
 import mimetypes
 import tempfile
 import string
+import shutil
+import zipfile
 from collections import deque
 from copy import deepcopy
 from xml.sax.saxutils import escape as html_escape
@@ -137,14 +139,12 @@ def include_docx_template(template_file, **kwargs):
         template_path = package_template_filename(template_file, package=this_thread.current_package)
     sd = this_thread.misc['docx_template'].new_subdoc()
     sd.subdocx = docx.Document(template_path)
-    if not use_jinja:
-        return sanitize_xml(str(sd))
+    change_numbering = bool(kwargs.pop('change_numbering', True))
     if '_inline' in kwargs:
         single_paragraph = True
         del kwargs['_inline']
     else:
         single_paragraph = False
-    change_numbering = bool(kwargs.pop('change_numbering', True))
 
     # We need to keep a copy of the subdocs so we can fix up the master template in the end (in parse.py)
     # Given we're half way through processing the template, we can't fix the master template here
@@ -157,6 +157,12 @@ def include_docx_template(template_file, **kwargs):
     fix_subdoc(this_thread.misc['docx_template'], {'subdoc': sd.subdocx, 'change_numbering': change_numbering})
 
     first_paragraph = sd.subdocx.paragraphs[0]
+
+    if not use_jinja:
+        if single_paragraph:
+            return re.sub(r'<w:p[^>]*>\s*(.*)</w:p>\s*', r'\1', sanitize_xml(str(first_paragraph._p.xml)), flags=re.DOTALL)
+        return sanitize_xml(str(sd))
+
     for key, val in kwargs.items():
         if hasattr(val, 'instanceName'):
             the_repr = val.instanceName
@@ -747,3 +753,19 @@ def concatenate_files(path_list):
 
 def sanitize_xml(text):
     return re.sub(r'{([{%#])', '{' + zerowidth + r'\1', re.sub(r'([}%#])}', r'\1' + zerowidth + '}', text))
+
+
+def fix_docx(path):
+    seen = set()
+    problem_present = False
+    with tempfile.NamedTemporaryFile(prefix="datemp", mode="wb", suffix=".docx") as new_docx_file:
+        with zipfile.ZipFile(path, mode='r') as doc:
+            with zipfile.ZipFile(new_docx_file.name, compression=zipfile.ZIP_DEFLATED, mode='w') as zf:
+                for item in doc.infolist():
+                    if item.filename in seen:
+                        problem_present = True
+                        continue
+                    seen.add(item.filename)
+                    zf.writestr(item, doc.read(item))
+        if problem_present:
+            shutil.copyfile(new_docx_file.name, path)

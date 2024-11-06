@@ -17,7 +17,6 @@ try:
 except ImportError:
     from backports import zoneinfo
 import requests
-import pycurl  # pylint: disable=import-error
 from docassemble.base.config import daconfig
 from docassemble.base.error import DAError
 from docassemble.base.generate_key import random_alphanumeric
@@ -29,6 +28,50 @@ import docassemble.webapp.cloud
 cloud = docassemble.webapp.cloud.get_cloud()
 
 UPLOAD_DIRECTORY = daconfig.get('uploads', '/usr/share/docassemble/files')
+
+DEFAULT_GITIGNORE = """\
+__pycache__/
+*.py[cod]
+*$py.class
+.mypy_cache/
+.dmypy.json
+dmypy.json
+*.egg-info/
+.installed.cfg
+*.egg
+.vscode
+*~
+.#*
+en
+.history/
+.idea
+.dir-locals.el
+.flake8
+*.swp
+.DS_Store
+.envrc
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+"""
 
 
 def listfiles(directory):
@@ -230,17 +273,14 @@ class SavedFile:
     def fetch_url(self, url, **kwargs):
         filename = kwargs.get('filename', self.filename)
         self.fix()
-        cookiefile = tempfile.NamedTemporaryFile(suffix='.txt')
-        f = open(os.path.join(self.directory, filename), 'wb')
-        c = pycurl.Curl()  # pylint: disable=c-extension-no-member
-        c.setopt(c.URL, url)
-        c.setopt(c.FOLLOWLOCATION, True)
-        c.setopt(c.WRITEDATA, f)
-        c.setopt(pycurl.USERAGENT, 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Googlebot/2.1; +http://www.google.com/bot.html) Safari/537.36')  # pylint: disable=c-extension-no-member
-        c.setopt(pycurl.COOKIEFILE, cookiefile.name)  # pylint: disable=c-extension-no-member
-        c.perform()
-        c.close()
-        cookiefile.close()
+        try:
+            with requests.get(url, stream=True, timeout=60) as r:
+                r.raise_for_status()
+                with open(os.path.join(self.directory, filename), 'wb') as fp:
+                    for chunk in r.iter_content(8192):
+                        fp.write(chunk)
+        except requests.exceptions.HTTPError as err:
+            raise DAError("from_url: Error %s" % (str(err),))
         self.save()
 
     def fetch_url_post(self, url, post_args, **kwargs):
@@ -250,7 +290,7 @@ class SavedFile:
         if r.status_code != 200:
             raise DAError('fetch_url_post: retrieval from ' + url + 'failed')
         with open(os.path.join(self.directory, filename), 'wb') as fp:
-            for block in r.iter_content(1024):
+            for block in r.iter_content(8192):
                 fp.write(block)
         self.save()
 
@@ -313,11 +353,12 @@ class SavedFile:
     def write_content(self, content, **kwargs):
         filename = kwargs.get('filename', self.filename)
         self.fix()
+        the_directory = directory_for(self, kwargs.get('project', 'default'))
         if kwargs.get('binary', False):
-            with open(os.path.join(self.directory, filename), 'wb') as ifile:
+            with open(os.path.join(the_directory, filename), 'wb') as ifile:
                 ifile.write(content)
         else:
-            with open(os.path.join(self.directory, filename), 'w', encoding='utf-8') as ifile:
+            with open(os.path.join(the_directory, filename), 'w', encoding='utf-8') as ifile:
                 ifile.write(content)
         if kwargs.get('save', True):
             self.save()
@@ -325,8 +366,9 @@ class SavedFile:
     def write_as_json(self, obj, **kwargs):
         filename = kwargs.get('filename', self.filename)
         self.fix()
+        the_directory = directory_for(self, kwargs.get('project', 'default'))
         # logmessage("write_as_json: writing to " + os.path.join(self.directory, filename))
-        with open(os.path.join(self.directory, filename), 'w', encoding='utf-8') as ifile:
+        with open(os.path.join(the_directory, filename), 'w', encoding='utf-8') as ifile:
             json.dump(obj, ifile, sort_keys=True, indent=2)
         if kwargs.get('save', True):
             self.save()
@@ -484,7 +526,7 @@ def get_ext_and_mimetype(filename):
 
 
 def publish_package(pkgname, info, author_info, current_project='default'):
-    directory = make_package_dir(pkgname, info, author_info, current_project=current_project, include_gitignore=False)
+    directory = make_package_dir(pkgname, info, author_info, current_project=current_project)
     packagedir = os.path.join(directory, 'docassemble-' + str(pkgname))
     output = "Publishing docassemble." + pkgname + " to PyPI . . .\n\n"
     try:
@@ -556,7 +598,7 @@ def get_version_suffix(package_name):
     return ''
 
 
-def make_package_dir(pkgname, info, author_info, directory=None, current_project='default', include_gitignore=True):
+def make_package_dir(pkgname, info, author_info, directory=None, current_project='default'):
     area = {}
     for sec in ['playground', 'playgroundtemplate', 'playgroundstatic', 'playgroundsources', 'playgroundmodules']:
         area[sec] = SavedFile(author_info['id'], fix=True, section=sec)
@@ -587,53 +629,17 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
-    gitignore = """\
-__pycache__/
-*.py[cod]
-*$py.class
-.mypy_cache/
-.dmypy.json
-dmypy.json
-*.egg-info/
-.installed.cfg
-*.egg
-.vscode
-*~
-.#*
-en
-.history/
-.idea
-.dir-locals.el
-.flake8
-*.swp
-.DS_Store
-.envrc
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-share/python-wheels/
-"""
-    if info['readme'] and re.search(r'[A-Za-z]', info['readme']):
+    using_default = {'gitignore': False, 'readme': False}
+    if info.get('gitignore') and re.search(r'[A-Za-z]', info['gitignore']):
+        gitignore = str(info['gitignore'])
+    else:
+        gitignore = daconfig.get('default gitignore', DEFAULT_GITIGNORE)
+        using_default['gitignore'] = True
+    if info.get('readme') and re.search(r'[A-Za-z]', info['readme']):
         readme = str(info['readme'])
     else:
         readme = '# docassemble.' + str(pkgname) + "\n\n" + info['description'] + "\n\n## Author\n\n" + author_info['author name and email'] + "\n\n"
+        using_default['readme'] = True
     manifestin = """\
 include README.md
 """
@@ -773,12 +779,14 @@ machine learning training files, and other source files.
             shutil.copy2(orig_file, os.path.join(sourcesdir, the_file))
         else:
             logmessage("failure on " + orig_file)
-    if include_gitignore:
+    if not using_default['gitignore'] or not os.path.isfile(os.path.join(packagedir, '.gitignore')):
         with open(os.path.join(packagedir, '.gitignore'), 'w', encoding='utf-8') as the_file:
             the_file.write(gitignore)
-    with open(os.path.join(packagedir, 'README.md'), 'w', encoding='utf-8') as the_file:
-        the_file.write(readme)
-    os.utime(os.path.join(packagedir, 'README.md'), (info['modtime'], info['modtime']))
+        os.utime(os.path.join(packagedir, '.gitignore'), (info['modtime'], info['modtime']))
+    if not using_default['readme'] or not os.path.isfile(os.path.join(packagedir, 'README.md')):
+        with open(os.path.join(packagedir, 'README.md'), 'w', encoding='utf-8') as the_file:
+            the_file.write(readme)
+        os.utime(os.path.join(packagedir, 'README.md'), (info['modtime'], info['modtime']))
     with open(os.path.join(packagedir, 'LICENSE'), 'w', encoding='utf-8') as the_file:
         the_file.write(licensetext)
     os.utime(os.path.join(packagedir, 'LICENSE'), (info['modtime'], info['modtime']))

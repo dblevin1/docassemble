@@ -100,7 +100,7 @@ def cleanup_filename(filename):
 
 
 def delete_environment():
-    for var in ('DBSSLMODE', 'DBSSLCERT', 'DBSSLKEY', 'DBSSLROOTCERT', 'DBTYPE', 'DBPREFIX', 'DBNAME', 'DBUSER', 'DBPASSWORD', 'DBHOST', 'DBPORT', 'DBTABLEPREFIX', 'DBBACKUP', 'DASECRETKEY', 'DABACKUPDAYS', 'ENVIRONMENT_TAKES_PRECEDENCE', 'DASTABLEVERSION', 'DASSLPROTOCOLS', 'SERVERADMIN', 'REDIS', 'REDISCLI', 'RABBITMQ', 'DACELERYWORKERS', 'S3ENABLE', 'S3ACCESSKEY', 'S3SECRETACCESSKEY', 'S3BUCKET', 'S3REGION', 'S3ENDPOINTURL', 'S3_SSE_ALGORITHM', 'S3_SSE_CUSTOMER_ALGORITHM', 'S3_SSE_CUSTOMER_KEY', 'S3_SSE_KMS_KEY_ID', 'AZUREENABLE', 'AZUREACCOUNTKEY', 'AZUREACCOUNTNAME', 'AZURECONTAINER', 'AZURECONNECTIONSTRING', 'EC2', 'COLLECTSTATISTICS', 'KUBERNETES', 'LOGSERVER', 'USECLOUDURLS', 'USEMINIO', 'USEHTTPS', 'USELETSENCRYPT', 'LETSENCRYPTEMAIL', 'BEHINDHTTPSLOADBALANCER', 'XSENDFILE', 'DAUPDATEONSTART', 'URLROOT', 'DAHOSTNAME', 'DAEXPOSEWEBSOCKETS', 'DAWEBSOCKETSIP', 'DAWEBSOCKETSPORT', 'POSTURLROOT', 'DAWEBSERVER', 'DASQLPING', 'PORT', 'OTHERLOCALES', 'DAMAXCONTENTLENGTH', 'DACELERYWORKERS', 'PACKAGES', 'PYTHONPACKAGES', 'DAALLOWUPDATES', 'AWS_SECRET_ACCESS_KEY', 'AWS_ACCESS_KEY_ID', 'AWS_DEFAULT_REGION', 'S4CMD_OPTS', 'WSGIROOT', 'DATIMEOUT', 'PIPINDEXURL', 'PIPEXTRAINDEXURLS', 'DAALLOWCONFIGURATIONEDITING', 'DADEBUG', 'DAENABLEPLAYGROUND', 'DAALLOWLOGVIEWING', 'DAROOTOWNED', 'DAREADONLYFILESYSTEM', 'DASUPERVISORUSERNAME', 'DASUPERVISORPASSWORD'):
+    for var in ('AWS_ACCESS_KEY_ID', 'AWS_DEFAULT_REGION', 'AWS_SECRET_ACCESS_KEY', 'AZUREACCOUNTKEY', 'AZUREACCOUNTNAME', 'AZURECONNECTIONSTRING', 'AZURECONTAINER', 'AZUREENABLE', 'BEHINDHTTPSLOADBALANCER', 'COLLECTSTATISTICS', 'DAALLOWCONFIGURATIONEDITING', 'DAALLOWLOGVIEWING', 'DAALLOWUPDATES', 'DABACKUPDAYS', 'DACELERYWORKERS', 'DADEBUG', 'DAENABLEPLAYGROUND', 'DAEXPOSEWEBSOCKETS', 'DAHOSTNAME', 'DAMAXCELERYWORKERS', 'DAMAXCONTENTLENGTH', 'DAREADONLYFILESYSTEM', 'DAROOTOWNED', 'DASECRETKEY', 'DASQLPING', 'DASSLPROTOCOLS', 'DASTABLEVERSION', 'DASUPERVISORPASSWORD', 'DASUPERVISORUSERNAME', 'DATIMEOUT', 'DAUPDATEONSTART', 'DAWEBSERVER', 'DAWEBSOCKETSIP', 'DAWEBSOCKETSPORT', 'DBBACKUP', 'DBHOST', 'DBNAME', 'DBPASSWORD', 'DBPORT', 'DBPREFIX', 'DBSSLCERT', 'DBSSLKEY', 'DBSSLMODE', 'DBSSLROOTCERT', 'DBTABLEPREFIX', 'DBTYPE', 'DBUSER', 'EC2', 'ENVIRONMENT_TAKES_PRECEDENCE', 'KUBERNETES', 'LETSENCRYPTEMAIL', 'LOGSERVER', 'OTHERLOCALES', 'PACKAGES', 'PIPEXTRAINDEXURLS', 'PIPINDEXURL', 'PORT', 'POSTURLROOT', 'PYTHONPACKAGES', 'RABBITMQ', 'REDIS', 'REDISCLI', 'S3ACCESSKEY', 'S3BUCKET', 'S3ENABLE', 'S3ENDPOINTURL', 'S3REGION', 'S3SECRETACCESSKEY', 'S3_SSE_ALGORITHM', 'S3_SSE_CUSTOMER_ALGORITHM', 'S3_SSE_CUSTOMER_KEY', 'S3_SSE_KMS_KEY_ID', 'S4CMD_OPTS', 'SERVERADMIN', 'URLROOT', 'USECLOUDURLS', 'USEHTTPS', 'USELETSENCRYPT', 'USEMINIO', 'WSGIROOT', 'XSENDFILE'):
         if var in os.environ:
             del os.environ[var]
 
@@ -617,12 +617,15 @@ def load(**kwargs):
                         else:
                             new_item['roles'] = None
                         new_item['require_login'] = bool(item.get('require login', False))
+                        new_item['unique_sessions'] = bool(item.get('sessions are unique', False))
                         new_admin_interviews.append(new_item)
                     else:
                         config_error("Unrecognized item in administrative interviews.")
             daconfig['administrative interviews'] = new_admin_interviews
         else:
             del daconfig['administrative interviews']
+    if 'single server' in daconfig:
+        daconfig['single server'] = bool(daconfig['single server'])
     if 'session lifetime seconds' in daconfig:
         try:
             daconfig['session lifetime seconds'] = int(daconfig['session lifetime seconds'])
@@ -743,6 +746,9 @@ def load(**kwargs):
         config_error('For security, delete the default admin account directive, which is no longer needed')
     if 'ocr languages' not in daconfig:
         daconfig['ocr languages'] = {}
+    if 'default gitignore' in daconfig and not isinstance(daconfig['default gitignore'], str):
+        config_error('default gitignore must be a string')
+        del daconfig['default gitignore']
     if not isinstance(daconfig['ocr languages'], dict):
         config_error('ocr languages must be a dict')
         daconfig['ocr languages'] = {}
@@ -1016,6 +1022,8 @@ def load(**kwargs):
             override_config(daconfig, messages, 'rabbitmq', 'RABBITMQ')
         if env_exists('DACELERYWORKERS'):
             override_config(daconfig, messages, 'celery processes', 'DACELERYWORKERS')
+        if env_exists('DAMAXCELERYWORKERS'):
+            override_config(daconfig, messages, 'max celery processes', 'DAMAXCELERYWORKERS')
         if env_exists('PIPINDEXURL'):
             override_config(daconfig, messages, 'pip index url', 'PIPINDEXURL')
         if env_exists('PIPEXTRAINDEXURLS'):

@@ -9,12 +9,11 @@ body.dabody {
     padding-bottom: 40px;
 }
 
-.daconfigform .CodeMirror {
+.daconfigform .cm-editor {
     height: 75vh;
 }
 
 .pgmain {
-    height: 75vh;
     display: flex;
     flex-flow: column;
     align-items: stretch;
@@ -32,12 +31,15 @@ body.dabody {
     display: flex;
     flex-flow: column;
     align-items: stretch;
-    overflow: hidden;
+    padding: 1px;
 }
 
-.pgmain .pgform .CodeMirror {
-    flex: 1;
-    overflow: hidden;
+.pgmain .pgform .cm-editor {
+    height: 65vh;
+}
+
+.pgreadme .cm-editor {
+    height: 65vh;
 }
 
 .pgright .playgroundbox {
@@ -503,6 +505,11 @@ img.da-example-screenshot {
     background-color: white;
 }
 
+[data-bs-theme=dark] img.da-example-screenshot {
+    border-color: #333333;
+    background-color: #212529;
+}
+
 .da-example-link {
     cursor: pointer;
 }
@@ -551,6 +558,11 @@ div.da-example-source-col div.highlight {
 div.dahighlight {
     border-radius: 10px;
     padding: 10px;
+    background-color: rgb(248, 249, 250);
+}
+
+[data-bs-theme=dark] div.dahighlight {
+    background-color: #282c34;
 }
 
 div.dahighlight pre {
@@ -611,11 +623,19 @@ table.daplaygroundtable td table td {
 }
 
 #da-example-source-before pre {
-    background-color: #e7e7e7;
+    background-color: rgb(248, 249, 250);
+}
+
+[data-bs-theme=dark] #da-example-source-before pre {
+    background-color: #282c34;
 }
 
 #da-example-source-after pre {
-    background-color: #e7e7e7;
+    background-color: rgb(248, 249, 250);
+}
+
+[data-bs-theme=dark] #da-example-source-after pre {
+    background-color: #282c34;
 }
 
 a.da-review-action {
@@ -945,11 +965,25 @@ img.da-sig-spinner {
     max-height: none !important;
 }
 
-.CodeMirror {
-    border-width: 1px;
-    border-color: #dddddd;
-    border-style: solid;
+.cm-editor {
     font-size: 14px;
+}
+
+.cm-full-screen > .cm-editor {
+    position: fixed !important;
+    margin-top: 0px;
+    height: inherit !important;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10000;
+    overflow: auto;
+    background-color: #fff;
+}
+
+[data-bs-theme=dark] .cm-full-screen > .cm-editor {
+    background-color: #282c34;
 }
 
 .da-search-error {
@@ -1712,10 +1746,6 @@ tr:first-child .datableup, tr:last-child .databledown {
           box-shadow: inset 0 1px 1px rgba(0,0,0,.075), 0 0 16px rgba(102, 102, 102, .6);
 }
 
-.CodeMirror-fullscreen {
-  margin-top: 55px;
-}
-
 .danavbar-title {
     max-width: 45%;
     overflow: hidden;
@@ -1930,4 +1960,34 @@ div.da-grid-container > div.dafieldpart > fieldset.da-field-checkboxes {
 
 [data-bs-theme=dark] #dasigcanvas {
     background-color: #777;
+}
+
+.da-paper-stack {
+    position: relative;
+    display: inline-block;
+    margin-right: 10px;
+    margin-bottom: 10px;
+}
+.da-paper {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-color: white;
+    border: 1px solid #ddd;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+.da-paper:nth-child(1) {
+    z-index: 10;
+}
+.da-paper:nth-child(2) {
+    transform: translate(5px, 5px);
+    z-index: 9;
+}
+.da-paper:nth-child(3) {
+    transform: translate(10px, 10px);
+    z-index: 8;
+}
+.da-paper:nth-child(4) {
+    transform: translate(15px, 15px);
+    z-index: 7;
 }

@@ -2765,6 +2765,14 @@ def comma_and_list_es(*pargs, **kwargs):
     return comma_and_list_en(*pargs, **kwargs)
 
 
+def comma_and_list_de(*pargs, **kwargs):
+    if 'and_string' not in kwargs:
+        kwargs['and_string'] = 'und'
+    if 'oxford' not in kwargs:
+        kwargs['oxford'] = False
+    return comma_and_list_en(*pargs, **kwargs)
+
+
 def comma_and_list_en(*pargs, **kwargs):
     """Returns an English-language listing of the arguments.  If the first argument is a list,
     that list is used.  Otherwise, the arguments are treated as individual items in the list.
@@ -3823,7 +3831,8 @@ language_functions = {
     },
     'comma_and_list': {
         'en': comma_and_list_en,
-        'es': comma_and_list_es
+        'es': comma_and_list_es,
+        'de': comma_and_list_de
     },
     'comma_list': {
         'en': comma_list_en
@@ -4115,11 +4124,16 @@ def force_ask(*pargs, **kwargs):
         if 'event_stack' in this_thread.internal and unique_id in this_thread.internal['event_stack']:
             this_thread.internal['event_stack'][unique_id] = []
     if kwargs.get('persistent', True):
+        for item in the_pargs:
+            if isinstance(item, str) and illegal_variable_name(item):
+                raise DAError("Illegal variable name")
         raise ForcedNameError(*the_pargs, user_dict=get_user_dict(), evaluate=kwargs.get('evaluate', False))
     force_ask_nameerror(the_pargs[0])
 
 
 def force_ask_nameerror(variable_name, priority=False):
+    if illegal_variable_name(variable_name):
+        raise DAError("Illegal variable name")
     raise DANameError("name '" + str(variable_name) + "' is not defined")
 
 
@@ -4151,6 +4165,8 @@ def force_gather(*pargs, forget_prior=False, evaluate=False):
             this_thread.internal['gather'].append({'var': variable_name, 'context': the_context})
         last_variable_name = variable_name
     if last_variable_name is not None:
+        if illegal_variable_name(last_variable_name):
+            raise DAError("Illegal variable name")
         raise ForcedNameError(last_variable_name, gathering=True, user_dict=the_user_dict)
 
 
@@ -4237,7 +4253,7 @@ def package_template_filename(the_file, **kwargs):
         if package is not None:
             parts = [package, the_file]
     if len(parts) == 2:
-        m = re.search(r'^docassemble.playground([0-9]+)([A-Za-z]?[A-Za-z0-9]*)$', parts[0])
+        m = re.search(r'^docassemble\.playground([0-9]+)([A-Za-z]?[A-Za-z0-9]*)$', parts[0])
         if m:
             parts[1] = re.sub(r'^data/templates/', '', parts[1])
             abs_file = server.absolute_filename("/playgroundtemplate/" + m.group(1) + '/' + (m.group(2) or 'default') + '/' + re.sub(r'[^A-Za-z0-9\-\_\. ]', '', parts[1]))  # pylint: disable=assignment-from-none
@@ -4283,7 +4299,7 @@ def package_data_filename(the_file, return_nonexistent=False):
     if len(parts) == 2:
         if filename_invalid(parts[1]) or package_name_invalid(parts[0]):
             return None
-        m = re.search(r'^docassemble.playground([0-9]+)([A-Za-z]?[A-Za-z0-9]*)$', parts[0])
+        m = re.search(r'^docassemble\.playground([0-9]+)([A-Za-z]?[A-Za-z0-9]*)$', parts[0])
         if m:
             if re.search(r'^data/sources/', parts[1]):
                 parts[1] = re.sub(r'^data/sources/', '', parts[1])
@@ -4541,6 +4557,7 @@ def process_action():
             this_thread.misc['forgive_missing_question'] = this_thread.current_info['arguments']['items'][0]['follow up']
         force_ask(*this_thread.current_info['arguments']['items'])
     if the_action in ('_da_list_ensure_complete', '_da_dict_ensure_complete') and 'group' in this_thread.current_info['arguments']:
+        # logmessage("the_action is " + the_action)
         group_name = this_thread.current_info['arguments']['group']
         if illegal_variable_name(group_name):
             raise DAError("Illegal variable name")
@@ -4863,6 +4880,8 @@ def dispatch(var):
     """Shows a menu screen."""
     if not isinstance(var, str):
         raise DAError("dispatch() must be given a string")
+    if illegal_variable_name(var):
+        raise DAError("Illegal variable name")
     while value(var) != 'None':
         value(value(var))
         undefine(value(var))
@@ -5620,11 +5639,9 @@ def manage_privileges(*pargs):
 
 def get_user_info(user_id=None, email=None):
     """Returns information about the given user, or the current user, if no user ID or e-mail is provided."""
-    if this_thread.current_info['user']['is_authenticated']:
-        if user_id is None and email is None:
-            user_id = this_thread.current_info['user']['the_user_id']
-        return server.get_user_info(user_id=user_id, email=email)
-    return None
+    if this_thread.current_info['user']['is_authenticated'] and user_id is None and email is None:
+        user_id = this_thread.current_info['user']['the_user_id']
+    return server.get_user_info(user_id=user_id, email=email)
 
 
 def set_user_info(**kwargs):

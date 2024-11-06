@@ -1,18 +1,17 @@
 <!DOCTYPE html>
-<html lang="{{ current_language }}">
+<html lang="{{ current_language }}"{% if color_scheme %} data-bs-theme="dark"{% endif%}>
   <head>
     <meta charset="utf-8">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-{{ extra_meta }}
+    <meta name="viewport" content="width=device-width, initial-scale=1">{{ extra_meta }}
     <title>{% if tab_title %}{{ tab_title }}{% else %}{{ config['APP_NAME'] }}{% endif %}</title>
 {%- for key in config['SOCIAL'] %}
 {%- if key not in ('og', 'twitter', 'fb') %}
     <meta name="{{ key }}" content="{{ config['SOCIAL'][key] }}">
 {%- endif %}
 {%- endfor %}
-    <meta itemprop="name" content="{% if page_title %}{{ config['BRAND_NAME'] }}: {{ page_title }}{% else %}{{ config['BRAND_NAME'] }}{% endif %}">
+    <meta itemprop="name" content="{% if page_title %}{{ config['BRAND_NAME'] }}: {{ page_title | striptags | e }}{% else %}{{ config['BRAND_NAME'] }}{% endif %}">
 {%- if 'description' in config['SOCIAL'] %}
     <meta itemprop="description" content="{{ config['SOCIAL']['description'] }}">
 {%- endif %}
@@ -27,9 +26,9 @@
     <meta name="twitter:{{ key }}" content="{{ config['SOCIAL']['twitter'][key] }}">
 {%- endif %}
 {%- endfor %}
-    <meta name="twitter:title" content="{% if page_title %}{{ config['BRAND_NAME'] }}: {{ page_title }}{% else %}{{ config['BRAND_NAME'] }}{% endif %}">
+    <meta name="twitter:title" content="{% if page_title %}{{ config['BRAND_NAME'] }}: {{ page_title | striptags | e  }}{% else %}{{ config['BRAND_NAME'] }}{% endif %}">
 {%- if 'image' in config['SOCIAL']['og'] %}
-    <meta name="og:title" content="{% if page_title %}{{ config['BRAND_NAME'] }}: {{ page_title }}{% else %}{{ config['BRAND_NAME'] }}{% endif %}">
+    <meta name="og:title" content="{% if page_title %}{{ config['BRAND_NAME'] }}: {{ page_title | striptags | e  }}{% else %}{{ config['BRAND_NAME'] }}{% endif %}">
 {%- for key in config['SOCIAL']['og'] %}
 {%- if key not in ('locale', 'url') %}
     <meta name="og:{{ key }}" content="{{ config['SOCIAL']['og'][key] }}">
@@ -181,9 +180,32 @@
 
     <script src="{{ url_for('static', filename='app/adminbundle.js', v=config['DA_VERSION']) }}"></script>
     <script>
-      {%- if config['AUTO_COLOR_SCHEME'] %}
+      {%- if config['AUTO_COLOR_SCHEME'] and color_scheme < 2 %}
+      var daCurrentColorScheme = {{ color_scheme }};
+      var daDesiredColorScheme;
       if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        document.documentElement.setAttribute('data-bs-theme', 'dark');
+        daDesiredColorScheme = 1;
+      }
+      else {
+        daDesiredColorScheme = 0;
+      }
+      if (daCurrentColorScheme != daDesiredColorScheme){
+        document.documentElement.setAttribute('data-bs-theme', daDesiredColorScheme ? 'dark' : 'light');
+        $.ajax({
+          type: "PATCH",
+          url: "{{ url_for('change_color_scheme') }}",
+          xhrFields: {
+            withCredentials: true
+          },
+          data: 'scheme=' + daDesiredColorScheme,
+          success: function(data){
+            daCurrentColorScheme = data.scheme;
+          },
+          error: function(xhr, status, error){
+            console.log("Unable to change desired color scheme.")
+          },
+          dataType: 'json'
+        });
       }
       {%- endif %}
       var daWhichButton = null;

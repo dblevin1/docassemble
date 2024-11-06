@@ -5,7 +5,6 @@ import json
 import math
 import os
 import pickle
-import platform
 import re
 import sys
 import time
@@ -47,8 +46,7 @@ import docassemble.webapp.machinelearning
 import docassemble.webapp.setup
 import docassemble.webapp.user_database
 import docassemble.webapp.worker
-if platform.machine() == 'x86_64':
-    import docassemble.webapp.google_api
+import docassemble.webapp.google_api
 
 if DEBUG_BOOT:
     boot_log("backend: starting")
@@ -164,7 +162,7 @@ def write_ml_source(playground, playground_number, current_project, filename, fi
                 the_entry['key'] = record.key
             output[parts[2]].append(the_entry)
         if len(output) > 0:
-            playground.write_as_json(output, filename=os.path.join(directory_for(playground, current_project), filename))
+            playground.write_as_json(output, filename=filename, project=current_project)
             if finalize:
                 playground.finalize()
             return True
@@ -183,7 +181,7 @@ def user_is_developer(user_id):
 
 
 def absolute_filename(the_file):
-    match = re.match(r'^docassemble.playground([0-9]+)([A-Za-z]?[A-Za-z0-9]*):(.*)', the_file)
+    match = re.match(r'^docassemble\.playground([0-9]+)([A-Za-z]?[A-Za-z0-9]*):(.*)', the_file)
     # logmessage("absolute_filename call: " + the_file)
     if match:
         if not user_is_developer(match.group(1)):
@@ -626,8 +624,7 @@ def cloud_custom(provider, config):
 docassemble.base.functions.update_server(cloud=cloud,
                                          cloud_custom=cloud_custom)
 
-if platform.machine() == 'x86_64':
-    docassemble.base.functions.update_server(google_api=docassemble.webapp.google_api)
+docassemble.base.functions.update_server(google_api=docassemble.webapp.google_api)
 
 if DEBUG_BOOT:
     boot_log("backend: finished obtaining cloud object")
