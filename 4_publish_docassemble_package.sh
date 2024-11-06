@@ -22,14 +22,15 @@ install() {
         echo -e "${RED}Exiting pip install failed${NC}"
         exit $ret
     fi
+}
+upload() {
+    echo "------Building $(pwd)--------"
     python setup.py sdist 1>/dev/null
     ret=$?
     if [ $ret -ne 0 ]; then
         echo -e "${RED}Exiting python setup failed${NC}"
         exit $ret
     fi
-}
-upload() {
     echo "------Uploading $(pwd)--------"
     twine upload --config-file "$config_file_loc" --non-interactive dist/*
     ret=$?
@@ -74,7 +75,7 @@ echo
 echo
 echo "----------Starting upload------------"
 read -p "Press enter to continue"
-cd ../docassemble
+cd docassemble
 upload
 cd ../docassemble_base
 upload
