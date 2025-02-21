@@ -606,9 +606,9 @@ PAGINATION_LIMIT_PLUS_ONE = PAGINATION_LIMIT + 1
 
 # PLAYGROUND_MODULES_DIRECTORY = daconfig.get('playground_modules', )
 
-init_py_file = """
-__import__('pkg_resources').declare_namespace(__name__)
-"""
+# init_py_file = """
+# __import__('pkg_resources').declare_namespace(__name__)
+# """
 
 # if not os.path.isfile(os.path.join(PLAYGROUND_MODULES_DIRECTORY, 'docassemble', '__init__.py')):
 #     with open(os.path.join(PLAYGROUND_MODULES_DIRECTORY, 'docassemble', '__init__.py'), 'a') as the_file:
@@ -901,7 +901,9 @@ def custom_register():
             return redirect(safe_reg_next)
 
         # Auto-login after register or redirect to login page
-        if 'reg_next' in request.args:
+        if register_form.next.data:
+            safe_reg_next = user_manager.make_safe_url_function(register_form.next.data)
+        elif register_form.reg_next.data:
             safe_reg_next = user_manager.make_safe_url_function(register_form.reg_next.data)
         else:
             safe_reg_next = _endpoint_url(user_manager.after_confirm_endpoint)
@@ -2234,8 +2236,8 @@ def copy_playground_modules():
             for f in [f for f in os.listdir(mod_directory) if re.search(r'^[A-Za-z].*\.py$', f)]:
                 shutil.copyfile(os.path.join(mod_directory, f), os.path.join(local_dir, f))
             # shutil.copytree(mod_dir.directory, local_dir)
-            with open(os.path.join(local_dir, '__init__.py'), 'w', encoding='utf-8') as the_file:
-                the_file.write(init_py_file)
+            # with open(os.path.join(local_dir, '__init__.py'), 'w', encoding='utf-8') as the_file:
+            #     the_file.write(init_py_file)
 
 
 def proc_example_list(example_list, package, directory, examples):
@@ -17958,10 +17960,6 @@ def create_package():
     form = CreatePackageForm(request.form)
     if request.method == 'POST' and form.validate():
         pkgname = re.sub(r'^docassemble-', r'', form.name.data)
-        initpy = """\
-__import__('pkg_resources').declare_namespace(__name__)
-
-"""
         licensetext = """\
 The MIT License (MIT)
 
@@ -17998,7 +17996,7 @@ description_file = README
         setuppy = """\
 import os
 import sys
-from setuptools import setup, find_packages
+from setuptools import setup, find_namespace_packages
 from fnmatch import fnmatchcase
 from distutils2.util import convert_path
 
@@ -18050,8 +18048,7 @@ def find_package_data(where='.', package='', exclude=standard_exclude, exclude_d
       author_email=""" + repr(str(current_user.email)) + """,
       license='MIT',
       url='https://docassemble.org',
-      packages=find_packages(),
-      namespace_packages = ['docassemble'],
+      packages=find_namespace_packages(),
       zip_safe = False,
       package_data=find_package_data(where=os.path.join('docassemble', '""" + str(pkgname) + """', ''), package='docassemble.""" + str(pkgname) + """'),
      )
@@ -18159,8 +18156,6 @@ class Fruit(DAObject):
             the_file.write(setupcfg)
         with open(os.path.join(packagedir, 'MANIFEST.in'), 'w', encoding='utf-8') as the_file:
             the_file.write(manifestin)
-        with open(os.path.join(packagedir, 'docassemble', '__init__.py'), 'w', encoding='utf-8') as the_file:
-            the_file.write(initpy)
         with open(os.path.join(packagedir, 'docassemble', pkgname, '__init__.py'), 'w', encoding='utf-8') as the_file:
             the_file.write('__version__ = "0.0.1"')
         with open(os.path.join(packagedir, 'docassemble', pkgname, 'objects.py'), 'w', encoding='utf-8') as the_file:
@@ -22534,7 +22529,7 @@ def playground_page():
                 variables_html = None
                 flash_message = flash_as_html(word('Saved at') + ' ' + the_time + '.  ' + word('Problem detected.'), message_type='error', is_ajax=is_ajax)
             if is_ajax:
-                return jsonify(variables_html=variables_html, vocab_list=vocab_list, ac_list=ac_list, flash_message=flash_message, current_project=current_project, console_messages=console_messages, active_file=active_file, active_interview_url=url_for('index', i=active_interview_string))
+                return jsonify(variables_html=variables_html, vocab_list=vocab_list, ac_list=ac_list, flash_message=flash_message, current_project=current_project, console_messages=console_messages, active_file=active_file, active_interview_url=url_for('index', i=active_interview_string, _external=True))
         else:
             flash(word('Playground not saved.  There was an error.'), 'error')
     interview_path = None

@@ -1,7 +1,6 @@
 import os
 from fnmatch import fnmatchcase
-from distutils.util import convert_path
-from setuptools import setup, find_packages
+from setuptools import setup, find_namespace_packages
 
 
 def read(fname):
@@ -13,7 +12,7 @@ standard_exclude_directories = ('.*', 'CVS', '_darcs', os.path.join('.', 'build'
 
 def find_package_data(where='.', package='', exclude=standard_exclude, exclude_directories=standard_exclude_directories):
     out = {}
-    stack = [(convert_path(where), '', package)]
+    stack = [(os.path.normpath(where), '', package)]
     while stack:
         where, prefix, package = stack.pop(0)
         for name in os.listdir(where):
@@ -46,7 +45,7 @@ def find_package_data(where='.', package='', exclude=standard_exclude, exclude_d
     return out
 
 setup(name='docassemble.demo',
-      version='1.5.16.1',
+      version='1.6.3',
       python_requires='>=3.9',
       description=('A demonstration package for docassemble.'),
       long_description=read("README.md"),
@@ -55,14 +54,12 @@ setup(name='docassemble.demo',
       author_email='jhpyle@gmail.com',
       license='MIT',
       url='https://docassemble.org',
-      packages=find_packages(),
-      namespace_packages=['docassemble'],
+      packages=find_namespace_packages(include=['docassemble.*']),
       install_requires=[
-          'docassemble==1.5.16.1',
-          'docassemble.base==1.5.16.1',
+          'docassemble.base==1.6.3',
           "googledrivedownloader==0.4",
           "ics==0.7.2",
-          "matplotlib==3.9.1.post1"
+          "matplotlib==3.9.3"
       ],
       zip_safe=False,
       package_data=find_package_data(where=os.path.join('docassemble', 'demo', ''), package='docassemble.demo')

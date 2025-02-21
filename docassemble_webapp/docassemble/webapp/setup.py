@@ -4,7 +4,7 @@ import importlib
 from docassemble.webapp.app_object import app
 from docassemble.base.config import daconfig
 import docassemble.webapp.database
-da_version = '1.5.16.1'
+da_version = '1.6.3'
 app.config['DA_VERSION'] = da_version
 app.config['APP_NAME'] = daconfig.get('appname', 'docassemble')
 app.config['BRAND_NAME'] = daconfig.get('brandname', daconfig.get('appname', 'docassemble'))
@@ -85,6 +85,7 @@ app.config['FAVICON_THEME_COLOR'] = daconfig.get('favicon theme color', '#83b3dd
 if not daconfig.get('allow registration', True):
     app.config['USER_REQUIRE_INVITATION'] = True
 app.config['MAX_CONTENT_LENGTH'] = daconfig.get('maximum content length', 16 * 1024 * 1024)
+app.config['MAX_FORM_MEMORY_SIZE'] = app.config['MAX_CONTENT_LENGTH']
 app.config['USE_X_SENDFILE'] = daconfig.get('xsendfile', True) if daconfig.get('web server', 'nginx') == 'apache' else False
 # if daconfig.get('behind https load balancer', False):
 #     app.config['PREFERRED_URL_SCHEME'] = 'https'

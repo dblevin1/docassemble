@@ -568,18 +568,23 @@ def help_wrap(content, helptext, status):
 
 def field_item(field, grid_info, pre=None, row=True, floating=False, classes=None, hidden_message=None, label_for=None, label_classes=None, label_content=None, grid_type=None, content_classes=None, content=None, side_note=None, under_text=None, use_fieldset=0, required=False):
     if use_fieldset:
-        enclosing_type = 'fieldset'
-        label_type = 'legend'
+        enclosing_type = 'div'
+        label_type = 'div'
         if required:
             aria_req = 'aria-required="true" '
         else:
             aria_req = ''
         if use_fieldset == 1:
             aria_req += 'role="radiogroup" '
+        id_for_label = f'da-label-{field.number}'
+        aria_lb = f' aria-labeledby="{id_for_label}" '
+        label_id = f' id="{id_for_label}"'
     else:
         enclosing_type = 'div'
         label_type = 'label'
         aria_req = ''
+        aria_lb = ' '
+        label_id = ''
     if grid_info['_enabled']:
         grid_number = grid_info[field.number]['grid']
     else:
@@ -587,6 +592,8 @@ def field_item(field, grid_info, pre=None, row=True, floating=False, classes=Non
     if grid_number:
         if label_content is not None:
             all_label_classes = []
+            if use_fieldset:
+                all_label_classes.append('da-legend')
             if grid_type == 'horizontal':
                 label_width_number = grid_info[field.number].get('label width', None) or daconfig['grid classes']['label grid number']
                 label_width = 100.0 * (label_width_number/(label_width_number + grid_number))
@@ -596,7 +603,7 @@ def field_item(field, grid_info, pre=None, row=True, floating=False, classes=Non
                 label_style = ''
             if label_classes:
                 all_label_classes.append(label_classes)
-            label_text = '\n                  <' + label_type + label_style
+            label_text = '\n                  <' + label_type + label_id + label_style
             if label_for:
                 label_text += label_for
             if len(all_label_classes) > 0:
@@ -611,10 +618,12 @@ def field_item(field, grid_info, pre=None, row=True, floating=False, classes=Non
                 label_text = None
         grid_label_above = label_text and not floating and not row and grid_type is None
         # update_parent_classes(fieldlist, grid_info[field.number]['index'], classes)
-        output = '                <' + enclosing_type + ' ' + aria_req
+        output = '                <' + enclosing_type + aria_lb + aria_req
         if pre:
             output += pre
         all_classes = ['da-grid-container']
+        if use_fieldset:
+            all_classes.append('da-fieldset')
         all_content_classes = []
         content_styles = {}
         if 'breakpoint' in grid_info[field.number]:
@@ -695,11 +704,13 @@ def field_item(field, grid_info, pre=None, row=True, floating=False, classes=Non
     else:
         if label_content:
             all_label_classes = []
+            if use_fieldset:
+                all_label_classes.append('da-legend')
             if grid_type == 'horizontal':
                 all_label_classes.append('col-' + daconfig['grid classes']['label width'] + ' col-form-label da-form-label datext-right')
             if label_classes:
                 all_label_classes.append(label_classes)
-            label_text = '\n                  <' + label_type
+            label_text = '\n                  <' + label_type + label_id
             if label_for:
                 label_text += label_for
             if len(all_label_classes) > 0:
@@ -712,10 +723,12 @@ def field_item(field, grid_info, pre=None, row=True, floating=False, classes=Non
                 label_text = '<legend class="visually-hidden">' + str(hidden_message) + '</legend>'
             else:
                 label_text = None
-        output = '                <' + enclosing_type + ' ' + aria_req
+        output = '                <' + enclosing_type + aria_lb + aria_req
         if pre:
             output += pre
         all_classes = ['da-container']
+        if use_fieldset:
+            all_classes.append('da-fieldset')
         if not floating:
             all_classes.append('da-form-group')
         if row:
@@ -1827,7 +1840,7 @@ def as_html(status, debug, root, validation_rules, field_error, the_progress_bar
                             # logmessage("field is " + repr(field.number) + " and floating_label is " + repr(floating_label))
                             fieldlist.append(field_item(field, grid_info, pre=style_def + data_def, row=False, floating=True, classes=side_note_parent + req_tag + field_class + class_def, content=input_for(status, field, floating_label=strip_quote(to_text(floating_label, {}, []).strip())), side_note=side_note, label_for=label_for, label_content=floating_label, under_text=under_text, use_fieldset=use_fieldset, required=is_required))
                             # fieldlist.append('                <div ' + style_def + data_def + 'class="da-form-group-floating form-floating mb-3' + side_note_parent + req_tag + field_class + class_def + '">\n                  ' + input_for(status, field, floating_label=strip_quote(to_text(floating_label, {}, []).strip())) + side_note + '\n                  <label ' + label_for + '>' + floating_label + '</label>\n                </div>\n')
-                elif labels_above or (hasattr(field, 'label_above_field') and status.extras['label_above_field'][field.number]):
+                elif (labels_above and not (hasattr(field, 'label_above_field') and not status.extras['label_above_field'][field.number])) or (hasattr(field, 'label_above_field') and status.extras['label_above_field'][field.number]):
                     if hasattr(field, 'inputtype') and field.inputtype in ['yesno', 'noyes']:
                         fieldlist.append(field_item(field, grid_info, pre=style_def + data_def, row=False, classes='dayesnospacing' + side_note_parent + field_class + ' da-field-container-nolabel' + class_def, hidden_message=word("Check if applicable"), content_classes='dafieldpart', content=input_for(status, field), side_note=side_note, under_text=under_text, use_fieldset=use_fieldset, required=is_required))
                         # fieldlist.append('                <div ' + style_def + data_def + 'class="da-form-group dayesnospacing' + side_note_parent + field_class + ' da-field-container-nolabel' + class_def + '">\n                  <span class="visually-hidden">' + word("Check if applicable") + '</span>\n                  <div class="dafieldpart">' + input_for(status, field) + side_note + '</div>\n                </div>\n')
