@@ -1,6 +1,26 @@
 # Change Log
 
 <!-- insertion marker -->
+## [1.6.3.1](https://github.com/dblevin1/docassemble/releases/tag/1.6.3.1) - 2025-02-21
+
+<small>[Compare with 1.5.16.1](https://github.com/dblevin1/docassemble/compare/1.5.16.1...1.6.3.1)</small>
+
+### Added
+
+- add version control to docker compose file ([ecd634f](https://github.com/dblevin1/docassemble/commit/ecd634f51c9bea14ad70815c11fd5a6839de8ed3) by Daniel Blevins).
+
+### Fixed
+
+- fixed tests to avoid timing issue ([37fd38c](https://github.com/dblevin1/docassemble/commit/37fd38c9f1114b57b85c178f8615e69f98ab9b45) by Jonathan Pyle).
+
+### Merged
+
+- Merge branch 'upstream-latest' ([951f7d6](https://github.com/dblevin1/docassemble/commit/951f7d67cc56c46e6115e5888e1365094cd279a6) by Daniel Blevins).
+- Merge branch 'master' of github.com:jhpyle/docassemble ([ced2237](https://github.com/dblevin1/docassemble/commit/ced2237aacc14844acc4c678374ec59ab6e8e474) by Jonathan Pyle).
+- Merge pull request #807 from staffanm/master ([536cb01](https://github.com/dblevin1/docassemble/commit/536cb013765e91b17a9c34a1ec3c67081c3ae518) by Jonathan Pyle).
+- Merge pull request #800 from jhpyle/dependabot/pip/docassemble_base/aiohttp-3.10.11 ([bca7208](https://github.com/dblevin1/docassemble/commit/bca72088e8e2fedb8035aa0eddd0f2bc023c0ade) by Jonathan Pyle).
+- Merge pull request #799 from jhpyle/dependabot/pip/docassemble_base/werkzeug-3.0.6 ([0c614cc](https://github.com/dblevin1/docassemble/commit/0c614cc993441fd466cf6980cae48ec2f9f1b10d) by Jonathan Pyle).
+
 ## [1.5.16.1](https://github.com/dblevin1/docassemble/releases/tag/1.5.16.1) - 2024-11-06
 
 <small>[Compare with 1.4.107.5](https://github.com/dblevin1/docassemble/compare/1.4.107.5...1.5.16.1)</small>
