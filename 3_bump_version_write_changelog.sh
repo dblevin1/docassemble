@@ -41,8 +41,12 @@ if [ -z "$VERSION" ]; then
     exit
 fi
 
+echo "Changing docker compose image version"
+# $(cat docker-compose.yml | grep "ghcr.io/dblevin1/docassemble:" | sed "s/.*ghcr\.io\/dblevin1\/docassemble\://")
+sed -i "s/\(.*ghcr\.io\/dblevin1\/docassemble\:\).*$/\1$VERSION/" docker-compose.yml
+
 echo "Bumping version"
-bumpversion --no-commit --no-tag $VERSIONPART
+bumpversion --allow-dirty --no-commit --no-tag $VERSIONPART
 ret=$?
 if [ $ret -ne 0 ]; then
     echo -e "${RED}Exiting bumpversion failed${NC}"
