@@ -63,3 +63,6 @@ settings.json
 .dir-locals.el
 .flake8
 mypy.ini
+docassemble_webapp/docassemble/__init__.py
+docassemble_base/docassemble/__init__.py
+volumes/*
