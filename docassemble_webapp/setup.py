@@ -6,8 +6,8 @@ def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname), encoding='utf-8').read()
 
 install_requires = [
-    'docassemble.base==1.6.3.2',
-    'docassemble.demo==1.6.3.2',
+    'docassemble.base==1.6.5',
+    'docassemble.demo==1.6.5',
     "3to2==1.1.1",
     "acme==3.0.1",
     "aiohappyeyeballs==2.4.3",
@@ -70,7 +70,7 @@ install_requires = [
     "contourpy==1.3.1",
     "convertapi==2.0.0",
     "crayons==0.4.0",
-    "cryptography==44.0.0",
+    "cryptography==44.0.1",
     "cssselect2==0.7.0",
     "cycler==0.12.1",
     "defusedxml==0.7.1",
@@ -144,7 +144,7 @@ install_requires = [
     "jdcal==1.4.1",
     "jeepney==0.8.0",
     "jellyfish==1.1.0",
-    "Jinja2==3.1.4",
+    "Jinja2==3.1.5",
     "jmespath==1.0.1",
     "joblib==1.4.2",
     "josepy==1.14.0",
@@ -308,7 +308,7 @@ install_requires = [
 ]
 
 setup(name='docassemble.webapp',
-      version='1.6.3.2',
+      version='1.6.5',
       python_requires='>=3.9',
       description=('The web application components of the docassemble system.'),
       long_description=read("README.md"),

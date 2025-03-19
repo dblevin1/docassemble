@@ -82,7 +82,7 @@ install_requires = [
     "colorama==0.4.6",
     "commonmark==0.9.1",
     "convertapi==2.0.0",
-    "cryptography==44.0.0",
+    "cryptography==44.0.1",
     "cssselect2==0.7.0",
     "defusedxml==0.7.1",
     "Deprecated==1.2.15",
@@ -133,7 +133,7 @@ install_requires = [
     "jdcal==1.4.1",
     "jeepney==0.8.0",
     "jellyfish==1.1.0",
-    "Jinja2==3.1.4",
+    "Jinja2==3.1.5",
     "jmespath==1.0.1",
     "joblib==1.4.2",
     "keyring==25.5.0",
@@ -242,7 +242,7 @@ install_requires = [
 ]
 
 setup(name='docassemble.base',
-      version='1.6.3.2',
+      version='1.6.5',
       python_requires='>=3.9',
       description=('The base components of the docassemble system.'),
       long_description=read("README.md"),
