@@ -6,7 +6,7 @@ services:
       - ./docassemble:/usr/share/docassemble/backup
   docassemble:
     hostname: docassemble.docker
-    image: ghcr.io/dblevin1/docassemble:1.6.3.2
+    image: ghcr.io/dblevin1/docassemble:1.6.5.1
     volumes:
       - /etc/localtime:/etc/localtime
       - ./volumes/docassemble:/usr/share/docassemble/backup

@@ -1,6 +1,19 @@
 # Change Log
 
 <!-- insertion marker -->
+## [1.6.5.1](https://github.com/dblevin1/docassemble/releases/tag/1.6.5.1) - 2025-03-19
+
+<small>[Compare with 1.6.3.2](https://github.com/dblevin1/docassemble/compare/1.6.3.2...1.6.5.1)</small>
+
+### Merged
+
+- Merge branch 'upstream-latest' ([0330301](https://github.com/dblevin1/docassemble/commit/0330301101a9814ec1e5be9cacb45dcf8b53705f) by Daniel Blevins).
+- Merge branch 'master' of github.com:jhpyle/docassemble ([d51ffc7](https://github.com/dblevin1/docassemble/commit/d51ffc7edf54302130728c3433ee71e82b6a905b) by Jonathan Pyle).
+- Merge pull request #817 from jhpyle/dependabot/pip/docassemble_base/jinja2-3.1.5 ([2875c07](https://github.com/dblevin1/docassemble/commit/2875c07135feded45835e683599640a004e93a85) by Jonathan Pyle).
+- Merge pull request #815 from andsj073/swedish_fix ([2ee6a95](https://github.com/dblevin1/docassemble/commit/2ee6a95b50d9d89c217d433a827258a470f7f136) by Jonathan Pyle).
+- Merge pull request #812 from jhpyle/dependabot/pip/docassemble_webapp/cryptography-44.0.1 ([c48c755](https://github.com/dblevin1/docassemble/commit/c48c755372b7af0bb34fb5e018d8d558a815c9b3) by Jonathan Pyle).
+- Merge pull request #813 from jhpyle/dependabot/pip/docassemble_webapp/jinja2-3.1.5 ([7525f31](https://github.com/dblevin1/docassemble/commit/7525f310c7cd460ffb38467921f041e2c6326cf4) by Jonathan Pyle).
+
 ## [1.6.3.2](https://github.com/dblevin1/docassemble/releases/tag/1.6.3.2) - 2025-03-19
 
 <small>[Compare with 1.6.3.1](https://github.com/dblevin1/docassemble/compare/1.6.3.1...1.6.3.2)</small>
