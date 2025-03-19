@@ -1,52 +1,44 @@
 services:
-  docassemblesetup:
+  da-dev-cleaner:
     image: ubuntu:22.04
-    entrypoint:
-      [
-        "bash",
-        "-c",
-        "rm -r /usr/share/docassemble/backup/files/000/"
-      ]
+    entrypoint: [ "bash", "-c", "rm -r /usr/share/docassemble/backup/files/000/" ]
     volumes:
-      - docassemblebackup:/usr/share/docassemble/backup
+      - ./docassemble:/usr/share/docassemble/backup
   docassemble:
     hostname: docassemble.docker
-    #image: jhpyle/docassemble:latest
     image: ghcr.io/dblevin1/docassemble:1.6.3.1
     volumes:
       - /etc/localtime:/etc/localtime
-      - docassemblebackup:/usr/share/docassemble/backup
+      - ./volumes/docassemble:/usr/share/docassemble/backup
       - /mnt:/mnt/ro:ro
-      - pip-conf:/var/www/.pip
+      - ./volumes/pip_conf:/var/www/.pip
       - /mnt/fakeMnt:/mnt/fakeMnt
-      - ../docker-docassemble/volumes/live-config/config.yml:/usr/share/docassemble/config/config.yml
-      - ../docker-docassemble/volumes/crontab:/usr/share/docassemble/cron/crontab
+      - ./volumes/live-config/config.yml:/usr/share/docassemble/config/config.yml
     stop_grace_period: 1m
     privileged: true
     cap_add:
       - SYS_ADMIN
     ports:
       - 80:80
-      - 6379:6379 # Redis
+      # - 6379:6379 # Redis
+      # - 5432:5432 # Postgres
       - 5672:5672 # RabbitMQ
     environment:
-      - CONTAINERROLE=web:celery:cron:redis:rabbitmq:log:mail # :sql
+      - CONTAINERROLE=web:celery:cron:rabbitmq:log:mail # :sql:redis
       - TIMEZONE=America/Phoenix
-      # - DAUPDATEONSTART=false
-      - DBHOST=doc-db.docker # docker container name
+      - DBHOST=da-db.docker
       - DBPORT=5432
       - DBBACKUP=false
+      - REDIS=redis://da-redis.docker:6379
     depends_on:
       db:
         condition: service_healthy
-
+      redis:
+        condition: service_healthy
   db:
-    hostname: doc-db.docker
-    #network_mode: bridge
+    hostname: da-db.docker
     image: postgres
     restart: always
-    # set shared memory limit when using docker-compose
-    # shm_size: 128mb
     environment:
       POSTGRES_USER: postgres
       POSTGRES_DB: postgres
@@ -55,24 +47,24 @@ services:
     ports:
       - 5432:5432
     healthcheck:
-      test: ["CMD-SHELL", "psql -h localhost -p 5432 -U postgres -v ON_ERROR_STOP=1 -c \"SELECT 1 FROM pg_database WHERE datname='docassemble'\" &> /dev/null"]
+      test: [ "CMD-SHELL", "psql -h localhost -p 5432 -U postgres -v ON_ERROR_STOP=1 -c \"SELECT 1 FROM pg_database WHERE datname='docassemble'\" &> /dev/null" ]
       interval: 5s
       timeout: 30s
       retries: 20
     volumes:
-      - ../docker-docassemble/volumes/db-mnt:/var/lib/postgresql/data
-      - ../docker-docassemble/volumes/db-entrypoint:/docker-entrypoint-initdb.d
-
-volumes:
-  pip-conf:
-    driver: local
-    driver_opts:
-      type: 'none'
-      o: 'bind'
-      device: '../docker-docassemble/volumes/pip_conf'
-  docassemblebackup:
-    driver: local
-    driver_opts:
-      type: 'none'
-      o: 'bind'
-      device: '../docker-docassemble/volumes/docassemble'
+      - ./volumes/db-mnt:/var/lib/postgresql/data
+      - ./volumes/db-entrypoint:/docker-entrypoint-initdb.d
+  redis:
+    hostname: da-redis.docker
+    image: redis
+    ports:
+      - 6379:6379
+    restart: always
+    command: redis-server --save 20 1 --loglevel warning
+    healthcheck:
+      test: [ "CMD-SHELL", "redis-cli ping | grep PONG" ]
+      interval: 1s
+      timeout: 3s
+      retries: 5
+    volumes:
+      - ./volumes/redis:/data
