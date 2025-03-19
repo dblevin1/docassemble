@@ -13154,7 +13154,8 @@ def index(action_argument=None, refer=None):
         the_nav_bar = ''
         interview_status.using_navigation = False
     content = as_html(interview_status, debug_mode, url_for('index', **index_params), validation_rules, the_field_errors, the_progress_bar, steps - user_dict['_internal']['steps_offset'])
-    if debug_mode:
+    readability_report = ''
+    if debug_mode and daconfig.get('readability report', False):
         readability = {}
         for question_type in ('question', 'help'):
             if question_type not in interview_status.screen_reader_text:
@@ -13172,7 +13173,6 @@ def index(action_argument=None, refer=None):
                                           ('Linsear Write Formula', textstat.linsear_write_formula(phrase)),
                                           ('Dale-Chall Readability Score', textstat.dale_chall_readability_score(phrase)),
                                           ('Readability Consensus', textstat.text_standard(phrase))]
-        readability_report = ''
         for question_type in ('question', 'help'):
             if question_type in readability:
                 readability_report += '          <div id="dareadability-' + question_type + '"' + (' style="display: none;"' if question_type == 'help' else '') + '>\n'
