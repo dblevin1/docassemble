@@ -1,6 +1,19 @@
 # Change Log
 
 <!-- insertion marker -->
+## [1.6.3.2](https://github.com/dblevin1/docassemble/releases/tag/1.6.3.2) - 2025-03-19
+
+<small>[Compare with 1.6.3.1](https://github.com/dblevin1/docassemble/compare/1.6.3.1...1.6.3.2)</small>
+
+### Added
+
+- add files to ignore for local development ([b203a22](https://github.com/dblevin1/docassemble/commit/b203a22a56bd56a453c6e501adb14329039f69c1) by Daniel Blevins).
+- add config option readability report ([9ff2428](https://github.com/dblevin1/docassemble/commit/9ff24289bdca942e907aae848f48f1732bc94eab) by Daniel Blevins).
+
+### Changed
+
+- change docker dev volumes location, add redis container ([1427799](https://github.com/dblevin1/docassemble/commit/142779964960504af9c349c7019bd04e6a201409) by Daniel Blevins).
+
 ## [1.6.3.1](https://github.com/dblevin1/docassemble/releases/tag/1.6.3.1) - 2025-02-21
 
 <small>[Compare with 1.5.16.1](https://github.com/dblevin1/docassemble/compare/1.5.16.1...1.6.3.1)</small>
