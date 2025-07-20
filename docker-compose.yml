@@ -14,6 +14,7 @@ services:
       - ./volumes/pip_conf:/var/www/.pip
       - /mnt/fakeMnt:/mnt/fakeMnt
       - ./volumes/live-config/config.yml:/usr/share/docassemble/config/config.yml
+      - ./volumes/noop:/etc/cron.daily/docassemble:ro
     stop_grace_period: 1m
     privileged: true
     cap_add:
