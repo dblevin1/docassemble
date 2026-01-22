@@ -35,14 +35,14 @@ if [ ! -z "$(git status -s)" ]; then
     exit
 fi
 
-VERSION=$(cat docassemble/setup.py | grep "version='" | sed "s/.*version='//" | sed "s/',//")
+#VERSION=$(cat docassemble/setup.py | grep "version='" | sed "s/.*version='//" | sed "s/',//")
+VERSION=$(cat Docker/VERSION)
 if [ -z "$VERSION" ]; then
     echo "Exiting could not get current docassemble version"
     exit
 fi
 
 echo "Changing docker compose image version"
-# $(cat docker-compose.yml | grep "ghcr.io/dblevin1/docassemble:" | sed "s/.*ghcr\.io\/dblevin1\/docassemble\://")
 sed -i "s/\(.*ghcr\.io\/dblevin1\/docassemble\:\).*$/\1$VERSION/" docker-compose.yml
 
 echo "Bumping version"
@@ -55,7 +55,8 @@ fi
 
 git add *
 git add .bumpversion.cfg
-NEWVERSION=$(cat docassemble/setup.py | grep "version='" | sed "s/.*version='//" | sed "s/',//")
+#NEWVERSION=$(cat docassemble/setup.py | grep "version='" | sed "s/.*version='//" | sed "s/',//")
+NEWVERSION=$(cat Docker/VERSION)
 if [ -z "$NEWVERSION" ]; then
     echo -e "${RED}Exiting could not get new docassemble version${NC}"
     exit
