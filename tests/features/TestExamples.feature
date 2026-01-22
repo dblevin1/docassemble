@@ -13,6 +13,26 @@ Feature: Example interviews
   #   And I wait 2 seconds
   #   Then I should see the phrase "Here is the file you uploaded"
 
+  Scenario: Test the interview "Vocabulary" 1
+    Given I start the interview "docassemble.base:data/questions/examples/question-autoterms.yml"
+    Then I should see the phrase "Have you ever met a creeper?"
+    And I should see the phrase "If you have met a zombie pigman, you have almost certainly met a creeper."
+    And I click the link "creeper"
+    And I wait 1 second
+    Then I should see the phrase "A tall green creature that explodes if you get too close."
+    And I unfocus
+    And I wait 1 second
+    Then I should not see the phrase "A tall green creature that explodes if you get too close."
+    And I click the link "zombie pigman"
+    And I wait 1 second
+    Then I should see the phrase "A harmless creature who carries a gold sword."
+    And I unfocus
+    And I wait 1 second
+    Then I should not see the phrase "A harmless creature who carries a gold sword."
+    And I click the button "Yes"
+    Then I should see the phrase "Thank you for telling me about your creeper experience."
+    And I should see the phrase "You are not a noob!"
+
   Scenario: Test the interview "Displaying progress"
     Given I start the interview "docassemble.demo:data/questions/examples/background-tail.yml"
     Then I should see the phrase "How much shall I add to 553?"
@@ -26,6 +46,18 @@ Feature: Example interviews
     Then I should see the phrase "I did the hard work."
     And I wait 18 seconds
     Then I should see the phrase "Ok, I am done"
+    And I should see the phrase "The answer is 555."
+
+  Scenario: Test the interview "Return a value and show a message"
+    Given I start the interview "docassemble.base:data/questions/examples/background_action_flash.yml"
+    Then I should see the phrase "How much shall I add to 553?"
+    And I set "Number" to "2"
+    And I click the button "Continue"
+    Then I should see the phrase "Your answer will appear shortly."
+    And I wait 12 seconds
+    Then I should see the phrase "The answer is 555."
+    And I click the button "Continue"
+    Then I should see the phrase "All done."
     And I should see the phrase "The answer is 555."
 
   Scenario: Test the interview "Preview"
@@ -53,6 +85,69 @@ Feature: Example interviews
     Then I should see the phrase "Here is your document."
     And I should see the phrase "The following document has been created for you."
 
+  Scenario: Test the interview "Assemble a document in the background"
+    Given I start the interview "docassemble.base:data/questions/examples/assemble-in-background.yml"
+    Then I should see the phrase "What is the name of your sweetheart?"
+    And I set "Name" to "Olíve Oil"
+    And I click the button "Continue"
+    Then I should see the phrase "Please wait"
+    And I wait 12 seconds
+    Then I should see the phrase "Document created"
+    And I should see the phrase "The following document has been created for you."
+    And I click the link "Preview"
+    Then I should see the phrase "Olíve Oil, will you marry me?"
+
+  Scenario: Test the interview "Background error callback" with error
+    Given I start the interview "docassemble.base:data/questions/examples/background-error-action-demo.yml"
+    Then I should see the phrase "Give me some numbers."
+    And I set "Numerator" to "4"
+    And I set "Denominator" to "0"
+    And I click the button "Continue"
+    Then I should see the phrase "Waiting for result"
+    And I wait 12 seconds
+    Then I should see the phrase "There was an error."
+
+  Scenario: Test the interview "Background error callback" without error
+    Given I start the interview "docassemble.base:data/questions/examples/background-error-action-demo.yml"
+    Then I should see the phrase "Give me some numbers."
+    And I set "Numerator" to "8"
+    And I set "Denominator" to "2"
+    And I click the button "Continue"
+    Then I should see the phrase "Waiting for result"
+    And I wait 12 seconds
+    Then I should see the phrase "The result was 4.0."
+
+  Scenario: Test the interview "Background error callback"
+    Given I start the interview "docassemble.base:data/questions/examples/background-error-action.yml"
+    Then I should see the phrase "How much shall I add to 553?"
+    And I set "Number" to "2"
+    And I click the button "Continue"
+    Then I should see the phrase "Hang tight. Still waiting for an answer."
+    And I wait 20 seconds
+    Then I should see the phrase "The saved error message was Failure at the calculation stage due to a ZeroDivisionError error."
+    Then I should see the phrase "The value was handled_error."
+    Then I should see the phrase "The error was ZeroDivisionError."
+
+  Scenario: Test the interview "Return a value and populate fields"
+    Given I start the interview "docassemble.base:data/questions/examples/background_action_fields.yml"
+    Then I should see the phrase "How much shall I add to 553?"
+    And I set "Number" to "2"
+    And I click the button "Continue"
+    Then I should see the phrase "Your answer will appear shortly."
+    Then I should see the phrase "Wait for it!"
+    And I wait 12 seconds
+    And I click the button "Continue"
+    Then I should see the phrase "{‘the_number’: 555}"
+
+  Scenario: Test the interview "Return a value" 2
+    Given I start the interview "docassemble.base:data/questions/examples/background_action_test_timing.yml"
+    Then I should see the phrase "How much shall I add to 553?"
+    And I set "Number" to "2"
+    And I click the button "Continue"
+    Then I should see the phrase "Hang tight. Still waiting for an answer."
+    And I wait 12 seconds
+    Then I should see the phrase "The answer is 555."
+
   Scenario: Test the interview "Action with arguments"
     Given I start the interview "docassemble.base:data/questions/examples/actions-parameters.yml"
     And I click the link "Add blue fish"
@@ -74,7 +169,7 @@ Feature: Example interviews
     Then I should see the phrase "What is your date of birth?"
     And I set the text box to "03/31/1977"
     And I click the button "Continue"
-    Then I should see the phrase "You are 47 years old"
+    Then I should see the phrase "You are 48 years old"
 
   Scenario: Test the interview "Scheduled task"
     Given I start the interview "docassemble.base:data/questions/examples/alarm-clock.yml"
@@ -209,18 +304,6 @@ Feature: Example interviews
     Then I should see the phrase "A tall green creature that explodes if you get too close."
     And I click the button "No"
     Then I should see the phrase "You clearly need to play more Minecraft."
-
-  Scenario: Test the interview "Return a value and show a message"
-    Given I start the interview "docassemble.base:data/questions/examples/background_action_flash.yml"
-    Then I should see the phrase "How much shall I add to 553?"
-    And I set "Number" to "2"
-    And I click the button "Continue"
-    Then I should see the phrase "Your answer will appear shortly."
-    And I wait 12 seconds
-    Then I should see the phrase "The answer is 555."
-    And I click the button "Continue"
-    Then I should see the phrase "All done."
-    And I should see the phrase "The answer is 555."
 
   # Scenario: Test the interview "Return a value and run Javascript"
   #   Given I start the interview "docassemble.base:data/questions/examples/background_action_javascript.yml"
@@ -1059,9 +1142,9 @@ Feature: Example interviews
   Scenario: Test the interview "E-mail address"
     Given I start the interview "docassemble.base:data/questions/examples/email-field.yml"
     Then I should see the phrase "What is your e-mail address?"
-    And I set "E-mail" to "admin@admin.com"
+    And I set "E-mail" to "admin@example.com"
     And I click the button "Continue"
-    Then I should see the phrase "target_variable is: “admin@admin.com”"
+    Then I should see the phrase "target_variable is: “admin@example.com”"
 
   # Scenario: Test the interview "E-mailing the interview"
   #   Given I start the interview "docassemble.base:data/questions/examples/email-to-case-simple.yml"
@@ -1518,13 +1601,13 @@ Feature: Example interviews
   # Scenario: Test the interview "Combobox within fields"
   #   Given I start the interview "docassemble.base:data/questions/examples/fields-choices-combobox.yml"
 
-  Scenario: Test the interview "Multiple choice pulldown" 1
+  Scenario: Test the interview "Multiple choice dropdown" 1
     Given I start the interview "docassemble.base:data/questions/examples/fields-choices-dropdown.yml"
     And I select "Clogs" as the "Shoe Type"
     And I click the button "Continue"
     Then I should see the phrase "target_variable is: “Clogs”"
 
-  Scenario: Test the interview "Multiple choice pulldown" 2
+  Scenario: Test the interview "Multiple choice dropdown" 2
     Given I start the interview "docassemble.base:data/questions/examples/fields-choices.yml"
     And I select "Apples" as the "Fruit"
     And I click the button "Continue"
@@ -3379,7 +3462,7 @@ Feature: Example interviews
   # Scenario: Test the interview "Ordinal numbers"
   #   Given I start the interview "docassemble.base:data/questions/examples/ordinal-number.yml"
 
-  Scenario: Test the interview "Other field" with pull-down
+  Scenario: Test the interview "Other field" with drop-down
     Given I start the interview "docassemble.base:data/questions/examples/other.yml"
     Then I should see the phrase "What kind of car do you drive?"
     And I select "Toyota" as the "Make"
@@ -3644,8 +3727,8 @@ Feature: Example interviews
     Then I should see the phrase "Done with the interview."
     And I should see the phrase "I am glad you are doing well."
 
-  Scenario: Test the interview "Pulldown with code"
-    Given I start the interview "docassemble.base:data/questions/examples/pull-down-with-code.yml"
+  Scenario: Test the interview "Dropdown with code"
+    Given I start the interview "docassemble.base:data/questions/examples/drop-down-with-code.yml"
     Then I should see the phrase "Describe yourself."
     And I select "High School" as the "Level of education"
     And I select "Connecticut" as the "State of birth"
@@ -3655,8 +3738,8 @@ Feature: Example interviews
     And I should see the phrase "Dear Sir,"
     And I should see the phrase "You have a High School education and you were born in CT."
 
-  Scenario: Test the interview "Pulldown"
-    Given I start the interview "docassemble.base:data/questions/examples/pull-down.yml"
+  Scenario: Test the interview "Dropdown"
+    Given I start the interview "docassemble.base:data/questions/examples/drop-down.yml"
     Then I should see the phrase "Describe yourself."
     And I select "High School" as the "Level of education"
     And I select "Pear" as the "Favorite fruit"
@@ -3679,26 +3762,6 @@ Feature: Example interviews
   Scenario: Test the interview "Quantity of noun"
     Given I start the interview "docassemble.base:data/questions/examples/quantity-noun.yml"
     Then I should see the phrase "You have four apples."
-
-  Scenario: Test the interview "Vocabulary" 1
-    Given I start the interview "docassemble.base:data/questions/examples/question-autoterms.yml"
-    Then I should see the phrase "Have you ever met a creeper?"
-    And I should see the phrase "If you have met a zombie pigman, you have almost certainly met a creeper."
-    And I click the link "creeper"
-    And I wait 1 second
-    Then I should see the phrase "A tall green creature that explodes if you get too close."
-    And I unfocus
-    And I wait 1 second
-    Then I should not see the phrase "A tall green creature that explodes if you get too close."
-    And I click the link "zombie pigman"
-    And I wait 1 second
-    Then I should see the phrase "A harmless creature who carries a gold sword."
-    And I unfocus
-    And I wait 1 second
-    Then I should not see the phrase "A harmless creature who carries a gold sword."
-    And I click the button "Yes"
-    Then I should see the phrase "Thank you for telling me about your creeper experience."
-    And I should see the phrase "You are not a noob!"
 
   Scenario: Test the interview "Question text with markup"
     Given I start the interview "docassemble.base:data/questions/examples/question-markup.yml"
@@ -4104,10 +4167,10 @@ Feature: Example interviews
   Scenario: Test the interview "Sections as list"
     Given I start the interview "docassemble.base:data/questions/examples/sections-keywords-get-sections.yml"
     Then I should see the phrase "Welcome to the interview"
-    Then I should see the phrase "[{'intro': 'Introduction'}"
-    And I should see the phrase "'about': 'About you'"
-    And I should see the phrase "'subsections': [{'contact': 'Contact info'}, {'demographic': 'Demographics'}]"
-    And I should see the phrase "{'prefs': 'Preferences'}, {'conclusion': 'Conclusion'}"
+    Then I should see the phrase "Introduction"
+    And I should see the phrase "About you"
+    And I should see the phrase "subsections"
+    And I should see the phrase "Preferences"
 
   Scenario: Test the interview "Navigation with review pages"
     Given I start the interview "docassemble.base:data/questions/examples/sections-keywords-review.yml"
@@ -4731,6 +4794,14 @@ Feature: Example interviews
     And I click the link "Markdown"
     Then I should see the phrase "Hello, world!"
 
+  Scenario: Test the interview "Output formats code"
+    Given I start the interview "docassemble.base:data/questions/examples/valid-formats-code.yml"
+    Then I should see the phrase "Your document is ready."
+    And I should see the phrase "The following document has been created for you."
+    And I should not see the phrase "RTF"
+    And I click the link "Markdown"
+    Then I should see the phrase "Hello, world!"
+
   Scenario: Test the interview "Value of a variable"
     Given I start the interview "docassemble.base:data/questions/examples/value.yml"
     Then I should see the phrase "Tell me about your favorite fruit."
@@ -4983,69 +5054,6 @@ Feature: Example interviews
     And I wait 4 seconds
     And I click the button "Continue"
     Then I should see the phrase "The correct answer is 20.0."
-
-  Scenario: Test the interview "Assemble a document in the background"
-    Given I start the interview "docassemble.base:data/questions/examples/assemble-in-background.yml"
-    Then I should see the phrase "What is the name of your sweetheart?"
-    And I set "Name" to "Olíve Oil"
-    And I click the button "Continue"
-    Then I should see the phrase "Please wait"
-    And I wait 12 seconds
-    Then I should see the phrase "Document created"
-    And I should see the phrase "The following document has been created for you."
-    And I click the link "Preview"
-    Then I should see the phrase "Olíve Oil, will you marry me?"
-
-  Scenario: Test the interview "Background error callback" with error
-    Given I start the interview "docassemble.base:data/questions/examples/background-error-action-demo.yml"
-    Then I should see the phrase "Give me some numbers."
-    And I set "Numerator" to "4"
-    And I set "Denominator" to "0"
-    And I click the button "Continue"
-    Then I should see the phrase "Waiting for result"
-    And I wait 12 seconds
-    Then I should see the phrase "There was an error."
-
-  Scenario: Test the interview "Background error callback" without error
-    Given I start the interview "docassemble.base:data/questions/examples/background-error-action-demo.yml"
-    Then I should see the phrase "Give me some numbers."
-    And I set "Numerator" to "8"
-    And I set "Denominator" to "2"
-    And I click the button "Continue"
-    Then I should see the phrase "Waiting for result"
-    And I wait 12 seconds
-    Then I should see the phrase "The result was 4.0."
-
-  Scenario: Test the interview "Background error callback"
-    Given I start the interview "docassemble.base:data/questions/examples/background-error-action.yml"
-    Then I should see the phrase "How much shall I add to 553?"
-    And I set "Number" to "2"
-    And I click the button "Continue"
-    Then I should see the phrase "Hang tight. Still waiting for an answer."
-    And I wait 20 seconds
-    Then I should see the phrase "The saved error message was Failure at the calculation stage due to a ZeroDivisionError error."
-    Then I should see the phrase "The value was handled_error."
-    Then I should see the phrase "The error was ZeroDivisionError."
-
-  Scenario: Test the interview "Return a value and populate fields"
-    Given I start the interview "docassemble.base:data/questions/examples/background_action_fields.yml"
-    Then I should see the phrase "How much shall I add to 553?"
-    And I set "Number" to "2"
-    And I click the button "Continue"
-    Then I should see the phrase "Your answer will appear shortly."
-    Then I should see the phrase "Wait for it!"
-    And I wait 12 seconds
-    And I click the button "Continue"
-    Then I should see the phrase "{‘the_number’: 555}"
-
-  Scenario: Test the interview "Return a value" 2
-    Given I start the interview "docassemble.base:data/questions/examples/background_action_test_timing.yml"
-    Then I should see the phrase "How much shall I add to 553?"
-    And I set "Number" to "2"
-    And I click the button "Continue"
-    Then I should see the phrase "Hang tight. Still waiting for an answer."
-    And I wait 12 seconds
-    Then I should see the phrase "The answer is 555."
 
   Scenario: Test the interview "Object" 2
     Given I start the possibly error-producing interview "docassemble.base:data/questions/examples/branch-error.yml"
@@ -5383,7 +5391,7 @@ Feature: Example interviews
   Scenario: Test the interview "Missing mandatory"
     Given I start the possibly error-producing interview "docassemble.base:data/questions/examples/no-mandatory.yml"
     Then I should explicitly see the phrase "Error"
-    And I should explicitly see the phrase "Docassemble has finished executing all code blocks marked as initial or mandatory, and finished asking all questions marked as mandatory (if any). It is a best practice to end your interview with a question that says goodbye and offers an Exit button."
+    And I should explicitly see the phrase "Docassemble has finished executing all code blocks marked as initial or mandatory, and finished asking all questions marked as mandatory (if any). It is a best practice to end your interview with a question that says goodbye."
 
   Scenario: Test the interview "Number format"
     Given I start the interview "docassemble.base:data/questions/examples/number-formatting.yml"
@@ -5805,7 +5813,7 @@ Feature: Example interviews
     Then I should see the phrase "What is your date of birth?"
     And I set the text box to "08/01/1989"
     And I click the button "Continue"
-    Then I should see the phrase "You are 35 years old."
+    Then I should see the phrase "You are 36 years old."
 
   # Scenario: Test the interview "Test e-mail attachment"
   #   Given I start the interview "docassemble.demo:data/questions/testattach.yml"
@@ -5961,7 +5969,7 @@ Feature: Example interviews
   #   Given I start the interview "docassemble.demo:data/questions/testproblem.yml"
 
   # Scenario: Test the interview ""
-  #   Given I start the interview "docassemble.demo:data/questions/testpulldown.yml"
+  #   Given I start the interview "docassemble.demo:data/questions/testdropdown.yml"
 
   # Scenario: Test the interview ""
   #   Given I start the interview "docassemble.demo:data/questions/testqr.yml"
@@ -6912,7 +6920,7 @@ Feature: Example interviews
     Then I should see the phrase "Thanks for completing the interview!"
     And I should not see the phrase "Markdown"
 
-  Scenario: Test the interview "Multiple choice pulldown with explicit input type"
+  Scenario: Test the interview "Multiple choice dropdown with explicit input type"
     Given I start the interview "docassemble.base:data/questions/examples/fields-choices-dropdown-input-type.yml"
     And I select "Clogs" as the "Shoe Type"
     And I click the button "Continue"
@@ -8202,26 +8210,6 @@ Feature: Example interviews
     Given I start the interview "docassemble.base:data/questions/examples/document-file-code.yml"
     Then I should see the phrase "Your document is ready."
     And I should see the phrase "The following document has been created for you."
-
-  Scenario: Test the interview "Ajax Combobox"
-    Given I start the interview "docassemble.base:data/questions/examples/fields-ajax-list-collect.yml"
-    Then I should see the phrase "What is your first favorite word?"
-    And I set the combobox text to "friendly"
-    And I wait 1 second
-    And I select "friendly" from the combobox dropdown
-    And I unfocus
-    And I click the button "Continue"
-    Then I should see the phrase "Your favorite words are friendly."
-
-  Scenario: Test the interview "Ajax Combobox two"
-    Given I start the interview "docassemble.base:data/questions/examples/fields-ajax.yml"
-    Then I should see the phrase "What is your favorite word?"
-    And I set the combobox text to "friendly"
-    And I wait 1 second
-    And I select "friendly" from the combobox dropdown
-    And I unfocus
-    And I click the button "Continue"
-    Then I should see the phrase "Your favorite word is friendly."
 
   Scenario: Test the interview "Manual list"
     Given I start the interview "docassemble.base:data/questions/examples/list-table-manual-gather-simple.yml"
@@ -9979,13 +9967,6 @@ Feature: Example interviews
   # Scenario: Test the interview ""
   #   Given I start the interview "docassemble.demo:data/questions/examples/upload-handler.yml"
 
-  Scenario: Test the interview "List fonts"
-    Given I start the interview "docassemble.demo:data/questions/fontlist.yml"
-    Then I should see the phrase "Select a language to see the installed fonts for that language."
-    And I choose "Albanian"
-    And I click the button "Continue"
-    Then I should see the phrase "Maiden Orange"
-
   Scenario: Test the interview "Disabled field"
     Given I start the interview "docassemble.base:data/questions/examples/disabled-field-dummy.yml"
     Then I should see the phrase "What is your favorite vegetable?"
@@ -10282,6 +10263,7 @@ Feature: Example interviews
     And I set "Favorite dog" to "Dalmatian"
     And I should not see the phrase "Favorite fruit"
     And I click the button "Food"
+    And I wait 1 second
     Then I should see the phrase "Favorite fruit"
     And I set "Favorite fruit" to "Apple"
     And I set "Favorite vegetable" to "Turnip"
@@ -10294,9 +10276,11 @@ Feature: Example interviews
     And I should not see the phrase "Modernipsum dolor"
     And I should not see the phrase "Metaphysical art barbizon"
     And I click the button "What do I need to know before starting?"
+    And I wait 1 second
     Then I should see the phrase "Modernipsum dolor"
     And I should not see the phrase "Metaphysical art barbizon"
     And I click the button "What do I do after I finish the interview?"
+    And I wait 1 second
     Then I should see the phrase "Modernipsum dolor"
     And I should see the phrase "Metaphysical art barbizon"
     And I click the button "Continue"
@@ -10321,3 +10305,10 @@ Feature: Example interviews
 
   # Scenario: Test the interview "testdatabase2"
   #   Given I start the interview "docassemble.demo:data/questions/examples/testdatabase2.yml"
+
+  Scenario: Test the interview "datalist" in fields with selection
+    Given I start the interview "docassemble.base:data/questions/examples/fields-choices-datalist.yml"
+    Then I should see the phrase "What is your favorite color?"
+    And I set "Color" to "Red"
+    And I click the button "Continue"
+    Then I should see the phrase "Your favorite color is Red."

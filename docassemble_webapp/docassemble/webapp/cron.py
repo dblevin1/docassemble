@@ -26,6 +26,7 @@ import docassemble.base.interview_cache
 import docassemble.base.parse
 import docassemble.base.util
 import docassemble.base.functions
+from docassemble.base.functions import SS_NEW, SS_OVERWRITE, SS_IGNORE
 from docassemble.base.logger import logmessage
 
 set_request_active(False)
@@ -94,7 +95,7 @@ def delete_inactive_users():
     filters = []
     for item in search_roles:
         filters.append(UserRoles.role_id == item)
-    cutoff_date = datetime.datetime.utcnow() - dateutil.relativedelta.relativedelta(days=cutoff_days)
+    cutoff_date = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None) - dateutil.relativedelta.relativedelta(days=cutoff_days)
     default_date = datetime.datetime(2020, 2, 24, 0, 0)
     candidates = []
     for item in db.session.execute(select(UserModel.id, UserModel.last_login).join(UserRoles, UserModel.id == UserRoles.user_id).where(or_(*filters))).all():
@@ -128,10 +129,12 @@ def clear_old_interviews():
                 days_by_filename[filename] = int(days)
         except:
             logmessage("Error in configuration for interview delete days by filename")
-    nowtime = datetime.datetime.utcnow()
+    nowtime = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
     # logmessage("clear_old_interviews: days is " + str(interview_delete_days))
     for filename, days in days_by_filename.items():
         last_index = -1
+        if days == 0:
+            continue
         while True:
             subq = select(UserDict.key, UserDict.filename, db.func.max(UserDict.indexno).label('indexno')).where(UserDict.indexno > last_index, UserDict.filename == filename).group_by(UserDict.filename, UserDict.key).subquery()
             results = db.session.execute(select(UserDict.indexno, UserDict.key, UserDict.filename, UserDict.modtime).join(subq, and_(subq.c.indexno == UserDict.indexno)).order_by(UserDict.indexno).limit(1000))
@@ -233,11 +236,12 @@ def run_cron(the_cron_type):
                                     interview_status = docassemble.base.parse.InterviewStatus(current_info=ci)
                                     obtain_lock_patiently(key, the_filename)
                                     interview.assemble(the_dict, interview_status)
-                                    save_status = docassemble.base.functions.this_thread.misc.get('save_status', 'new')
+                                    save_status = docassemble.base.functions.this_thread.misc.get('save_status', SS_NEW)
                                     if interview_status.question.question_type in ["restart", "exit", "exit_logout"]:
                                         reset_user_dict(key, the_filename, force=True)
                                     if interview_status.question.question_type in ["restart", "exit", "logout", "exit_logout", "new_session"]:
-                                        release_lock(key, the_filename)
+                                        if save_status != SS_IGNORE:
+                                            release_lock(key, the_filename)
                                         interview_status.do_sleep()
                                     elif interview_status.question.question_type == "backgroundresponseaction":
                                         new_action = interview_status.question.action
@@ -246,18 +250,19 @@ def run_cron(the_cron_type):
                                             interview.assemble(the_dict, interview_status)
                                         except:
                                             pass
-                                        save_status = docassemble.base.functions.this_thread.misc.get('save_status', 'new')
-                                        if save_status != 'ignore':
+                                        save_status = docassemble.base.functions.this_thread.misc.get('save_status', SS_NEW)
+                                        if save_status != SS_IGNORE:
                                             save_user_dict(key, the_dict, the_filename, encrypt=False, manual_user_id=cron_user_id, steps=steps, max_indexno=indexno)
-                                        release_lock(key, the_filename)
+                                            release_lock(key, the_filename)
                                         interview_status.do_sleep()
                                     elif interview_status.question.question_type == "response" and interview_status.questionText == 'null':
-                                        release_lock(key, the_filename)
+                                        if save_status != SS_IGNORE:
+                                            release_lock(key, the_filename)
                                         interview_status.do_sleep()
                                     else:
-                                        if save_status != 'ignore':
+                                        if save_status != SS_IGNORE:
                                             save_user_dict(key, the_dict, the_filename, encrypt=False, manual_user_id=cron_user_id, steps=steps, max_indexno=indexno)
-                                        release_lock(key, the_filename)
+                                            release_lock(key, the_filename)
                                         interview_status.do_sleep()
                                         if interview_status.question.question_type == "response":
                                             if hasattr(interview_status.question, 'all_variables'):
@@ -272,8 +277,9 @@ def run_cron(the_cron_type):
                                                         sys.stdout.write(interview_status.questionText.rstrip() + "\n")
                                                     except:
                                                         sys.stdout.write("Unable to write output to standard error\n")
-                                except Exception as err:
-                                    release_lock(key, the_filename)
+                                except BaseException as err:
+                                    if save_status != SS_IGNORE:
+                                        release_lock(key, the_filename)
                                     logmessage("Cron error: " + str(key) + " " + str(the_filename) + " " + str(err.__class__.__name__) + ": " + str(err))
                                     if hasattr(err, 'traceback'):
                                         error_trace = str(err.traceback)

@@ -4,7 +4,7 @@ import importlib
 from docassemble.webapp.app_object import app
 from docassemble.base.config import daconfig
 import docassemble.webapp.database
-da_version = '1.6.5.1'
+da_version = '1.8.18'
 app.config['DA_VERSION'] = da_version
 app.config['APP_NAME'] = daconfig.get('appname', 'docassemble')
 app.config['BRAND_NAME'] = daconfig.get('brandname', daconfig.get('appname', 'docassemble'))
@@ -112,6 +112,7 @@ if 'session lifetime seconds' in daconfig:
 app.config['SOCIAL'] = daconfig['social']
 app.config['OG_LOCALE'] = re.sub(r'\..*', '', daconfig.get('locale', 'en_US.utf8'))
 app.config['ENABLE_MONITOR'] = daconfig.get('enable monitor', True)
+app.config['ENABLE_TRAINING'] = daconfig.get('enable training', True)
 app.config['INVERSE_NAVBAR'] = bool(daconfig.get('inverse navbar', True))
 app.config['AUTO_COLOR_SCHEME'] = bool(daconfig.get('auto color scheme', True))
 app.config['ENABLE_PLAYGROUND'] = daconfig.get('enable playground', True)
@@ -125,3 +126,4 @@ app.config['USER_PROFILE_FIELDS'] = daconfig.get('user profile fields', [])
 app.config['GRID_CLASSES_USER'] = daconfig['grid classes']['user']
 app.config['GRID_CLASSES_WIDE'] = daconfig['grid classes']['admin wide']
 app.config['GRID_CLASSES_ADMIN'] = daconfig['grid classes']['admin']
+app.config['DEFER'] = daconfig['javascript defer']

@@ -8,6 +8,7 @@ import subprocess
 # import sys
 import tempfile
 import zipfile
+import tomli_w
 import urllib.parse
 from packaging import version
 from flask import url_for
@@ -21,6 +22,7 @@ from docassemble.base.config import daconfig
 from docassemble.base.error import DAError
 from docassemble.base.generate_key import random_alphanumeric
 from docassemble.base.logger import logmessage
+import docassemble.webapp.spdx
 import docassemble.base.functions
 from docassemble.webapp.update import get_pip_info
 import docassemble.webapp.cloud
@@ -104,7 +106,7 @@ def url_sanitize(url):
 
 class SavedFile:
 
-    def __init__(self, file_number, extension=None, fix=False, section='files', filename='file', subdir=None, should_not_exist=False, must_exist=False):
+    def __init__(self, file_number, extension=None, fix=False, section='files', filename='file', subdir=None, should_not_exist=False, must_exist=False):  # pylint: disable=too-many-positional-arguments
         file_number = int(file_number)
         section = str(section)
         if section not in docassemble.base.functions.this_thread.saved_files:
@@ -264,7 +266,7 @@ class SavedFile:
             if os.path.isfile(self.path + '.' + self.extension):
                 os.remove(self.path + '.' + self.extension)
             try:
-                os.symlink(self.path, self.path + '.' + self.extension)
+                os.symlink(os.path.basename(self.path), self.path + '.' + self.extension)
             except:
                 shutil.copyfile(self.path, self.path + '.' + self.extension)
         if finalize:
@@ -561,7 +563,7 @@ def make_package_zip(pkgname, info, author_info, tz_name, current_project='defau
     for root, dirs, files in os.walk(packagedir):  # pylint: disable=unused-variable
         for file in files:
             thefilename = os.path.join(root, file)
-            zinfo = zipfile.ZipInfo(thefilename[trimlength:], date_time=datetime.datetime.utcfromtimestamp(os.path.getmtime(thefilename)).replace(tzinfo=datetime.timezone.utc).astimezone(the_timezone).timetuple())
+            zinfo = zipfile.ZipInfo(thefilename[trimlength:], date_time=datetime.datetime.fromtimestamp(os.path.getmtime(thefilename), tz=datetime.timezone.utc).replace(tzinfo=datetime.timezone.utc).astimezone(the_timezone).timetuple())
             zinfo.compress_type = zipfile.ZIP_DEFLATED
             zinfo.external_attr = 0o644 << 16
             with open(thefilename, 'rb') as fp:
@@ -571,7 +573,16 @@ def make_package_zip(pkgname, info, author_info, tz_name, current_project='defau
     return temp_zip
 
 
-def get_version_suffix(package_name):
+def get_package_identifier(package_name):
+    from docassemble.webapp.package_info import retrieve_package_info  # pylint: disable=import-outside-toplevel
+    package_info = retrieve_package_info(package_name)
+    logmessage("package_info is " + repr(package_info))
+    if package_info is not None and package_info['type'] == 'git':
+        output = package_info['name'] + ' @ git+' + package_info['giturl'] + '.git'
+        if package_info['gitbranch']:
+            output += '@' + package_info['gitbranch']
+        logmessage("returning " + repr(output))
+        return output
     info = get_pip_info(package_name)
     if 'Version' in info:
         the_version = info['Version']
@@ -594,7 +605,7 @@ def get_version_suffix(package_name):
         except:
             pass
         if printable_latest_release:
-            return '>=' + printable_latest_release
+            return package_name + '>=' + printable_latest_release
     return ''
 
 
@@ -602,9 +613,10 @@ def make_package_dir(pkgname, info, author_info, directory=None, current_project
     area = {}
     for sec in ['playground', 'playgroundtemplate', 'playgroundstatic', 'playgroundsources', 'playgroundmodules']:
         area[sec] = SavedFile(author_info['id'], fix=True, section=sec)
-    dependencies = ", ".join(map(lambda x: repr(x + get_version_suffix(x)), sorted(info['dependencies'])))
+    dependencies_list = [y for y in map(get_package_identifier, sorted(info['dependencies'])) if y != ""]
+    dependencies = ", ".join(map(repr, dependencies_list))
     licensetext = str(info['license'])
-    if re.search(r'MIT License', licensetext):
+    if re.search(r'MIT', licensetext):
         licensetext += '\n\nCopyright (c) ' + str(datetime.datetime.now().year) + ' ' + str(info.get('author_name', '')) + """
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -636,12 +648,41 @@ SOFTWARE.
     else:
         readme = '# docassemble.' + str(pkgname) + "\n\n" + info['description'] + "\n\n## Author\n\n" + author_info['author name and email'] + "\n\n"
         using_default['readme'] = True
-    manifestin = """\
+    the_license = str(info.get('license', ''))
+    if not the_license:
+        the_license = ''
+    if the_license not in docassemble.webapp.spdx.LICENSES and not re.search(r'^LicenseRef-[A-Za-z\-0-9]+$', the_license) and the_license != '':
+        if re.search(r'MIT', the_license):
+            the_license = 'MIT'
+        else:
+            the_license = ''
+    package_data = {'build-system': {'requires': ['setuptools==80.9.0'], 'build-backend': 'setuptools.build_meta'}, 'project': {'name': f'docassemble.{pkgname}', 'version': info.get('version', '0.0.1'), 'description': info.get('description', 'A docassemble extension.'), 'readme': 'README.md', 'authors': [{'name': str(info.get('author_name', '')), 'email': str(info.get('author_email', ''))}], 'dependencies': dependencies_list, 'urls': {'Homepage': info['url'] or 'https://docassemble.org'}}, 'tool': {'setuptools': {'packages': {'find': {'where': ['.']}}}}}
+    if the_license != '':
+        package_data['project'].update({'license': str(the_license), 'license-files': ['LICENSE']})
+    pyprojecttoml = tomli_w.dumps(package_data)
+
+    manifestin = f"""\
 include README.md
+graft docassemble/{pkgname}/data
+recursive-exclude * *.egg-info
+recursive-exclude .git *
+recursive-exclude venv *
+recursive-exclude .github *
+recursive-exclude .pytest_cache *
+recursive-exclude .vscode *
+recursive-exclude build *
+recursive-exclude dist *
+recursive-exclude * __pycache__
+recursive-exclude * *.pyc
+recursive-exclude * *.pyo
+recursive-exclude * *.orig
+recursive-exclude * *~
+recursive-exclude * *.bak
+recursive-exclude * *.swp
 """
     setupcfg = """\
 [metadata]
-description_file = README.md
+long_description = file: README.md
 """
     setuppy = """\
 import os
@@ -704,7 +745,6 @@ def find_package_data(where='.', package='', exclude=standard_exclude, exclude_d
       zip_safe=False,
       package_data=find_package_data(where='docassemble/""" + str(pkgname) + """/', package='docassemble.""" + str(pkgname) + """'),
      )
-
 """
     templatereadme = """\
 # Template directory
@@ -721,7 +761,7 @@ this directory.
 # Sources directory
 
 This directory is used to store word translation files,
-machine learning training files, and other source files.
+machine learning training files, and other sources of data.
 """
     if directory is None:
         directory = tempfile.mkdtemp(prefix='SavedFile')
@@ -794,6 +834,9 @@ machine learning training files, and other source files.
     with open(os.path.join(packagedir, 'MANIFEST.in'), 'w', encoding='utf-8') as the_file:
         the_file.write(manifestin)
     os.utime(os.path.join(packagedir, 'MANIFEST.in'), (info['modtime'], info['modtime']))
+    with open(os.path.join(packagedir, 'pyproject.toml'), 'w', encoding='utf-8') as the_file:
+        the_file.write(pyprojecttoml)
+    os.utime(os.path.join(packagedir, 'pyproject.toml'), (info['modtime'], info['modtime']))
     with open(os.path.join(packagedir, 'docassemble', pkgname, '__init__.py'), 'w', encoding='utf-8') as the_file:
         the_file.write("__version__ = " + repr(info.get('version', '')) + "\n")
     os.utime(os.path.join(packagedir, 'docassemble', pkgname, '__init__.py'), (info['modtime'], info['modtime']))

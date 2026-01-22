@@ -2,6 +2,57 @@ Feature: Example interviews
   In order to ensure docassemble is running properly, I want
   to run the example interviews.
 
+  Scenario: Test the interview "Ajax Combobox"
+    Given I start the interview "docassemble.base:data/questions/examples/fields-ajax-list-collect.yml"
+    Then I should see the phrase "What is your first favorite word?"
+    And I set the combobox text to "friendly"
+    And I wait 3 seconds
+    And I select "friendly" from the combobox dropdown
+    And I unfocus
+    And I click the button "Continue"
+    Then I should see the phrase "Your favorite words are friendly."
+
+  Scenario: Test the interview "Ajax Combobox two"
+    Given I start the interview "docassemble.base:data/questions/examples/fields-ajax.yml"
+    Then I should see the phrase "What is your favorite word?"
+    And I set the combobox text to "friendly"
+    And I wait 3 seconds
+    And I select "friendly" from the combobox dropdown
+    And I unfocus
+    And I click the button "Continue"
+    Then I should see the phrase "Your favorite word is friendly."
+
+  Scenario: Test the interview "List fonts"
+    Given I start the interview "docassemble.demo:data/questions/fontlist.yml"
+    Then I should see the phrase "Select a language to see the installed fonts for that language."
+    And I choose "Albanian"
+    And I wait 1 second
+    And I click the button "Continue"
+    Then I should see the phrase "Maiden Orange"
+
+  Scenario: Test the interview "Review answers"
+    Given I start the interview "docassemble.base:data/questions/examples/review-8.yml"
+    Then I should see the phrase "What is your address?"
+    And I set "Street address" to "418 South 20th Street"
+    And I set "City" to "Philadelphia"
+    And I select "Pennsylvania" as the "State"
+    And I set "Zip" to "19146"
+    And I click the button "Continue"
+    Then I should see the phrase "You live in Philadelphia County."
+    And I click the link "Review your answers"
+    Then I should see the phrase "This address is located in Philadelphia County."
+    And I click the link " Edit"
+    Then I should see the phrase "What is your address?"
+    And I set "Street address" to "651 College Drive"
+    And I set "City" to "Blackwood"
+    And I select "New Jersey" as the "State"
+    And I set "Zip" to "08012"
+    And I click the button "Continue"
+
+  Scenario: Test the interview "Get files from Google Drive"
+    Given I start the interview "docassemble.demo:data/questions/examples/google-drive.yml"
+    Then I should see the phrase "Files in your Google Drive"
+
   Scenario: Test the interview "Infinite loop" 2
     Given I start the possibly error-producing interview "docassemble.base:data/questions/examples/infinite-loop-2.yml"
     Then I should explicitly see the phrase "There appears to be an infinite loop."
@@ -198,41 +249,18 @@ Feature: Example interviews
     Then I should see the phrase "Third quarter metrics"
     And I should not see the phrase ":bed:"
 
-  # Scenario: Test the interview "Store data in Google Sheet"
-  #   Given I start the interview "docassemble.demo:data/questions/examples/google-sheet.yml"
-  #   Then I should see the phrase "What is your first name?"
-  #   And I set "Name" to "Auto tester"
-  #   And I click the button "Continue"
-  #   Then I should see the phrase "What is your favorite fruit?"
-  #   And I set "Fruit" to "apples"
-  #   And I click the button "Continue"
-  #   Then I should see the phrase "What is your favorite vegetable?"
-  #   And I set "Vegetable" to "turnips"
-  #   And I click the button "Continue"
-  #   Then I should see the phrase "Thank you for your input!"
-
-  # Scenario: Test the interview "Get files from Google Drive"
-  #   Given I start the interview "docassemble.demo:data/questions/examples/google-drive.yml"
-  #   Then I should see the phrase "Files in your Google Drive"
-
-  Scenario: Test the interview "Review answers"
-    Given I start the interview "docassemble.base:data/questions/examples/review-8.yml"
-    Then I should see the phrase "What is your address?"
-    And I set "Street address" to "418 South 20th Street"
-    And I set "City" to "Philadelphia"
-    And I select "Pennsylvania" as the "State"
-    And I set "Zip" to "19146"
+  Scenario: Test the interview "Store data in Google Sheet"
+    Given I start the interview "docassemble.demo:data/questions/examples/google-sheet.yml"
+    Then I should see the phrase "What is your first name?"
+    And I set "Name" to "Auto tester"
     And I click the button "Continue"
-    Then I should see the phrase "You live in Philadelphia County."
-    And I click the link "Review your answers"
-    Then I should see the phrase "This address is located in Philadelphia County."
-    And I click the link " Edit"
-    Then I should see the phrase "What is your address?"
-    And I set "Street address" to "651 College Drive"
-    And I set "City" to "Blackwood"
-    And I select "New Jersey" as the "State"
-    And I set "Zip" to "08012"
+    Then I should see the phrase "What is your favorite fruit?"
+    And I set "Fruit" to "apples"
     And I click the button "Continue"
+    Then I should see the phrase "What is your favorite vegetable?"
+    And I set "Vegetable" to "turnips"
+    And I click the button "Continue"
+    Then I should see the phrase "Thank you for your input!"
 
   Scenario: Test the interview "Action button"
     Given I start the interview "docassemble.base:data/questions/examples/action-button-html.yml"

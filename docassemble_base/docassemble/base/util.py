@@ -53,13 +53,14 @@ import pandas
 from docx import Document
 from pikepdf import Pdf
 import google.cloud
+from docassemble.base.config import in_celery, daconfig
 from docassemble.base.error import DAError, DAValidationError, DAIndexError, DAWebError, LazyNameError, DAAttributeError, DAException
 from docassemble.base.file_docx import include_docx_template
 from docassemble.base.filter import markdown_to_html
-from docassemble.base.functions import alpha, roman, item_label, comma_and_list, get_language, set_language, get_dialect, get_voice, set_country, get_country, word, comma_list, ordinal, ordinal_number, need, nice_number, quantity_noun, possessify, verb_past, verb_present, noun_plural, noun_singular, space_to_underscore, force_ask, force_gather, period_list, name_suffix, currency_symbol, currency, indefinite_article, nodoublequote, capitalize, title_case, url_of, do_you, did_you, does_a_b, did_a_b, were_you, was_a_b, have_you, has_a_b, your, her, his, their, is_word, get_locale, set_locale, update_locale, process_action, url_action, get_info, set_info, get_config, prevent_going_back, qr_code, action_menu_item, from_b64_json, defined, define, value, message, response, json_response, command, single_paragraph, quote_paragraphs, location_returned, location_known, user_lat_lon, interview_url, interview_url_action, interview_url_as_qr, interview_url_action_as_qr, interview_email, get_emails, this_thread, static_image, action_arguments, action_argument, language_functions, language_function_constructor, get_default_timezone, user_logged_in, interface, user_privileges, user_has_privilege, user_info, current_context, background_action, background_response, background_response_action, background_error_action, us, set_live_help_status, chat_partners_available, phone_number_in_e164, phone_number_formatted, phone_number_is_valid, countries_list, country_name, write_record, read_records, delete_record, variables_as_json, all_variables, server, language_from_browser, device, plain, bold, italic, states_list, state_name, subdivision_type, indent, raw, fix_punctuation, set_progress, get_progress, referring_url, undefine, invalidate, dispatch, yesno, noyes, split, showif, showifdef, phone_number_part, set_parts, log, encode_name, decode_name, interview_list, interview_menu, server_capabilities, session_tags, get_chat_log, get_user_list, get_user_info, set_user_info, get_user_secret, create_user, invite_user, create_session, get_session_variables, set_session_variables, get_question_data, go_back_in_session, manage_privileges, salutation, redact, ensure_definition, forget_result_of, re_run_logic, reconsider, set_title, set_save_status, single_to_double_newlines, CustomDataType, verbatim, add_separators, update_ordinal_numbers, update_ordinal_function, update_language_function, update_nice_numbers, update_word_collection, store_variables_snapshot, get_uid, update_terms, possessify_long, a_in_the_b, its, the, this, these, underscore_to_space, some, ReturnValue, set_variables, language_name, run_action_in_session  # noqa: F401 # pylint: disable=unused-import
+from docassemble.base.functions import alpha, roman, item_label, comma_and_list, get_language, set_language, get_dialect, get_voice, set_country, get_country, word, comma_list, ordinal, ordinal_number, need, nice_number, quantity_noun, possessify, verb_past, verb_present, noun_plural, noun_singular, space_to_underscore, force_ask, force_gather, period_list, name_suffix, currency_symbol, currency, indefinite_article, nodoublequote, capitalize, title_case, url_of, do_you, did_you, does_a_b, did_a_b, were_you, was_a_b, have_you, has_a_b, your, her, his, their, is_word, get_locale, set_locale, update_locale, process_action, url_action, get_info, set_info, get_config, prevent_going_back, qr_code, action_menu_item, from_b64_json, defined, define, value, message, response, json_response, command, single_paragraph, quote_paragraphs, location_returned, location_known, user_lat_lon, interview_url, interview_url_action, interview_url_as_qr, interview_url_action_as_qr, interview_email, get_emails, this_thread, static_image, action_arguments, action_argument, language_functions, language_function_constructor, get_default_timezone, user_logged_in, interface, user_privileges, user_has_privilege, user_info, current_context, background_action, background_response, background_response_action, background_error_action, us, set_live_help_status, chat_partners_available, phone_number_in_e164, phone_number_formatted, phone_number_is_valid, countries_list, country_name, write_record, read_records, delete_record, variables_as_json, all_variables, server, language_from_browser, device, plain, bold, italic, states_list, state_name, subdivision_type, indent, raw, fix_punctuation, set_progress, get_progress, referring_url, undefine, invalidate, dispatch, yesno, noyes, split, showif, showifdef, phone_number_part, set_parts, log, encode_name, decode_name, interview_list, interview_menu, server_capabilities, session_tags, get_chat_log, get_user_list, get_user_info, set_user_info, get_user_secret, create_user, invite_user, create_session, get_session_variables, set_session_variables, get_question_data, go_back_in_session, manage_privileges, salutation, redact, ensure_definition, forget_result_of, re_run_logic, reconsider, set_title, set_save_status, single_to_double_newlines, CustomDataType, verbatim, add_separators, update_ordinal_numbers, update_ordinal_function, update_language_function, update_nice_numbers, update_word_collection, store_variables_snapshot, get_uid, update_terms, possessify_long, a_in_the_b, its, the, this, these, underscore_to_space, some, set_variables, language_name, run_action_in_session  # noqa: F401 # pylint: disable=unused-import
 from docassemble.base.generate_key import random_alphanumeric, random_string
 from docassemble.base.logger import logmessage
-from docassemble.base.pandoc import word_to_markdown, concatenate_files
+from docassemble.base.pandoc import word_to_markdown, concatenate_files, can_convert_word_to_markdown
 import docassemble.base.file_docx
 import docassemble.base.filter
 import docassemble.base.functions
@@ -69,6 +70,7 @@ import docassemble.base.parse
 import docassemble.base.pdftk
 from docassemble.base import DA
 from docassemble.webapp.da_flask_mail import Message
+import google_auth_httplib2
 
 capitalize_func = capitalize
 NoneType = type(None)
@@ -77,7 +79,20 @@ valid_variable_match = re.compile(r'^[^\d][A-Za-z0-9\_]*$')
 match_inside_and_outside_brackets = re.compile(r'(.*)\[([^\]]+)\]$')
 is_number = re.compile(r'^[0-9]+$')
 
+DISABLED = 0
+LOCAL = 1
+REMOTE = 2
+TESSERACT_PATH = 'tesseract'
+if daconfig.get('tesseract with celery', False):
+    TESSERACT_MODE = REMOTE
+    from docassemble.tesseract.tasks import run_tesseract, run_gs  # pylint: disable=import-error,no-name-in-module,ungrouped-imports
+elif TESSERACT_PATH and shutil.which(TESSERACT_PATH):
+    TESSERACT_MODE = LOCAL
+else:
+    TESSERACT_MODE = DISABLED
+
 QPDF_PATH = 'qpdf'
+DEFAULT_BLUE_ICON = {'background': 'blue', 'borderColor': 'blue', 'glyph': None}
 
 __all__ = [
     'alpha',
@@ -167,6 +182,7 @@ __all__ = [
     'send_fax',
     'map_of',
     'selections',
+    'BackgroundAction',
     'DAObject',
     'DAList',
     'DADict',
@@ -348,8 +364,9 @@ __all__ = [
 
 
 def fix_word_processing(filename, extension):
-    result = word_to_markdown(filename, extension)
-    assert result is not None
+    if can_convert_word_to_markdown():
+        result = word_to_markdown(filename, extension)
+        assert result is not None
 
 
 def fix_docx(filename):
@@ -2891,6 +2908,15 @@ class DAList(DAObject):
         if hasattr(self, 'gathered') and self.gathered:
             self.hook_after_gather()
 
+    def _reorder_buttons(self, classes, index):
+        return '<span class="text-nowrap"><a href="#" role="button" class="' + classes + '" data-tablename="' + myb64quote(self.instanceName) + '" data-tableitem="' + str(index) + '" title=' + json.dumps(word("Reorder by moving up")) + '><i class="fa-solid fa-arrow-up"></i><span class="visually-hidden">' + word("Move down") + '</span></a> <a href="#" role="button" class="btn btn-sm ' + server.button_class_prefix + server.daconfig['button colors'].get('reorder', 'info') + ' btn-darevisit databledown"><i class="fa-solid fa-arrow-down" title=' + json.dumps(word("Reorder by moving down")) + '></i><span class="visually-hidden">' + word("Move down") + '</span></a></span> '
+
+    def _edit_button(self, url, classes):
+        return f'<a href="{url}" role="button" class="{classes}"><span class="text-nowrap"><i class="fa-solid fa-pencil-alt"></i> {word("Edit")}</span></a> '
+
+    def _delete_button(self, url, classes):
+        return f'<a href="{url}" role="button" class="{classes}"><span class="text-nowrap"><i class="fa-solid fa-trash"></i> {word("Delete")}</span></a>'
+
     def item_actions(self, *pargs, **kwargs):
         """Returns HTML for editing the items in a list"""
         the_args = list(pargs)
@@ -2898,7 +2924,7 @@ class DAList(DAObject):
         index = the_args.pop(0)
         output = ''
         if kwargs.get('reorder', False):
-            output += '<span class="text-nowrap"><a href="#" role="button" class="btn btn-sm ' + server.button_class_prefix + server.daconfig['button colors'].get('reorder', 'info') + ' btn-darevisit datableup" data-tablename="' + myb64quote(self.instanceName) + '" data-tableitem="' + str(index) + '" title=' + json.dumps(word("Reorder by moving up")) + '><i class="fa-solid fa-arrow-up"></i><span class="visually-hidden">' + word("Move down") + '</span></a> <a href="#" role="button" class="btn btn-sm ' + server.button_class_prefix + server.daconfig['button colors'].get('reorder', 'info') + ' btn-darevisit databledown"><i class="fa-solid fa-arrow-down" title=' + json.dumps(word("Reorder by moving down")) + '></i><span class="visually-hidden">' + word("Move down") + '</span></a></span> '
+            output += self._reorder_buttons('btn btn-sm ' + server.button_class_prefix + server.daconfig['button colors'].get('reorder', 'info') + ' btn-darevisit datableup', index)
         if self.minimum_number is not None and len(self.elements) <= self.minimum_number:
             can_delete = False
         else:
@@ -2927,18 +2953,23 @@ class DAList(DAObject):
                 items += [{'action': '_da_define', 'arguments': {'variables': [item.instanceName + '.' + attrib for attrib in self._complete_attributes()]}}]
             if ensure_complete:
                 items += [{'action': '_da_list_ensure_complete', 'arguments': {'group': self.instanceName}}]
-            output += '<a href="' + docassemble.base.functions.url_action('_da_list_edit', items=items) + '" role="button" class="btn btn-sm ' + server.button_class_prefix + server.daconfig['button colors'].get('edit', 'secondary') + ' btn-darevisit"><span class="text-nowrap"><i class="fa-solid fa-pencil-alt"></i> ' + word('Edit') + '</span></a> '
+            output += self._edit_button(docassemble.base.functions.url_action('_da_list_edit', items=items), 'btn btn-sm ' + server.button_class_prefix + server.daconfig['button colors'].get('edit', 'secondary') + ' btn-darevisit')
         if use_delete and can_delete:
             if kwargs.get('confirm', False):
                 areyousure = ' daremovebutton'
             else:
                 areyousure = ''
-            output += '<a href="' + docassemble.base.functions.url_action('_da_list_remove', list=self.instanceName, item=repr(index)) + '" role="button" class="btn btn-sm ' + server.button_class_prefix + server.daconfig['button colors'].get('delete', 'danger') + ' btn-darevisit' + areyousure + '"><span class="text-nowrap"><i class="fa-solid fa-trash"></i> ' + word('Delete') + '</span></a>'
+            output += self._delete_button(docassemble.base.functions.url_action('_da_list_remove', list=self.instanceName, item=repr(index)), 'btn btn-sm ' + server.button_class_prefix + server.daconfig['button colors'].get('delete', 'danger') + ' btn-darevisit' + areyousure)
         if kwargs.get('edit_url_only', False):
             return docassemble.base.functions.url_action('_da_list_edit', items=items)
         if kwargs.get('delete_url_only', False):
             return docassemble.base.functions.url_action('_da_list_remove', dict=self.instanceName, item=repr(index))
         return output
+
+    def _add_action_button(self, url, classes, icon, the_message):
+        if icon != '':
+            icon = f'<i class="{icon}"></i> '
+        return f'<a href="{url}" class="{classes}">{icon}{the_message}</a>'
 
     def add_action(self, label=None, message=None, url_only=False, icon='plus-circle', color=None, size='sm', block=None, classname=None):  # pylint: disable=redefined-outer-name
         """Returns HTML for adding an item to a list"""
@@ -2963,7 +2994,6 @@ class DAList(DAObject):
             icon = re.sub(r'^fas ', 'fa-solid ', icon)
             icon = re.sub(r'^far ', 'fa-regular ', icon)
             icon = re.sub(r'^fab ', 'fa-brands ', icon)
-            icon = '<i class="' + icon + '"></i> '
         else:
             icon = ''
         if classname is None:
@@ -2983,7 +3013,7 @@ class DAList(DAObject):
             message = word(str(message))
         if url_only:
             return docassemble.base.functions.url_action('_da_list_add', list=self.instanceName)
-        return '<a href="' + docassemble.base.functions.url_action('_da_list_add', list=self.instanceName) + '" class="btn' + size + block + ' ' + server.button_class_prefix + color + ' btn-darevisit' + classname + '">' + icon + str(message) + '</a>'
+        return self._add_action_button(docassemble.base.functions.url_action('_da_list_add', list=self.instanceName), 'btn' + size + block + ' ' + server.button_class_prefix + color + ' btn-darevisit' + classname, icon, message)
 
     def hook_on_gather(self, *pargs, **kwargs):
         """Code that runs just before a list is marked as gathered."""
@@ -3860,11 +3890,9 @@ class DADict(DAObject):
         """Set a key to a default value if it does not already exist in the dictionary"""
         return self.elements.setdefault(*pargs)
 
-    def get(self, *pargs):
+    def get(self, *pargs, **kwargs):
         """Returns the value of a given key."""
-        if len(pargs) == 1:
-            return self[pargs[0]]
-        return self.elements.get(*pargs)
+        return self.elements.get(*pargs, **kwargs)
 
     def clear(self):
         """Removes all the items from the dictionary."""
@@ -4945,7 +4973,10 @@ class DAFile(DAObject):
             if not docassemble.base.pandoc.convert_file(input_path, output_to.path(), input_extension, output_extension):
                 raise DAError("Could not convert file")
         elif input_extension in ("docx", "doc", "odt", "rtf") and output_extension == 'md':
-            result = docassemble.base.pandoc.word_to_markdown(input_path, input_extension)
+            if can_convert_word_to_markdown():
+                result = docassemble.base.pandoc.word_to_markdown(input_path, input_extension)
+            else:
+                result = None
             if result is None:
                 raise DAError("Could not convert file")
             shutil.copyfile(result.name, output_to.path())
@@ -4962,7 +4993,7 @@ class DAFile(DAObject):
         output_to.retrieve()
 
     def fix_up(self):
-        """Makes corrections to the file and changes it in-place if necessary.
+        """Make corrections to the file and changes it in-place if necessary.
         Raises an exception if the file is corrupt and cannot be fixed."""
         if not self.ok and not hasattr(self, 'content'):
             self.initialized  # pylint: disable=pointless-statement
@@ -5178,7 +5209,7 @@ class DAFile(DAObject):
         output_to.initialize(extension='pdf', filename=input_filename, reinitialize=output_to.ok)
         try:
             docassemble.base.pdftk.extract_pages(input_path, output_to.path(), first, last)
-        except Exception as err:
+        except BaseException as err:
             raise DAError("extract_pages: " + str(err))
         output_to.retrieve()
         output_to.commit()
@@ -6416,21 +6447,19 @@ class DALazyTemplate(DAObject):
         return docassemble.base.filter.markdown_to_html(self.content, **the_args)
 
     @property
-    def subject(self, **kwargs):
+    def subject(self):
         if not hasattr(self, 'source_subject'):
             raise LazyNameError("name '" + str(self.instanceName) + "' is not defined")
         user_dict_copy = copy.copy(self.userdict)
         user_dict_copy.update(self.tempvars)
-        user_dict_copy.update(kwargs)
         return self.source_subject.text(user_dict_copy).rstrip()
 
     @property
-    def content(self, **kwargs):
+    def content(self):
         if not hasattr(self, 'source_content'):
             raise LazyNameError("name '" + str(self.instanceName) + "' is not defined")
         user_dict_copy = copy.copy(self.userdict)
         user_dict_copy.update(self.tempvars)
-        user_dict_copy.update(kwargs)
         return self.source_content.text(user_dict_copy).rstrip()
 
     @property
@@ -6485,7 +6514,7 @@ class DALazyTableTemplate(DALazyTemplate):
         return text_of_table(self.table_info, self.userdict, self.tempvars, editable=False)
 
     @property
-    def content(self, **kwargs):
+    def content(self):
         if not hasattr(self, 'table_info'):
             raise LazyNameError("name '" + str(self.instanceName) + "' is not defined")
         return text_of_table(self.table_info, self.userdict, self.tempvars)
@@ -6922,9 +6951,13 @@ class DAContext(DADict):
             self.elements[key] = val
 
     def __str__(self):
-        if docassemble.base.functions.this_thread.evaluation_context in ('docx', 'pdf', 'pandoc'):
-            if docassemble.base.functions.this_thread.evaluation_context in self.elements:
-                return str(self.elements[docassemble.base.functions.this_thread.evaluation_context])
+        if isinstance(docassemble.base.functions.this_thread.evaluation_context, str) and docassemble.base.functions.this_thread.evaluation_context.startswith('pandoc'):
+            context = 'pandoc'
+        else:
+            context = docassemble.base.functions.this_thread.evaluation_context
+        if context in ('docx', 'pdf', 'pandoc'):
+            if context in self.elements:
+                return str(self.elements[context])
             return str(self.elements['document'])
         return str(self.elements['question'])
 
@@ -7353,7 +7386,7 @@ class DAWeb(DAObject):
                     params = data
                     data = None
                 r = requests.options(url, params=params, headers=headers, auth=auth, cookies=cookies, timeout=600)
-            elif method == 'HEAD':
+            else:  # method == 'HEAD'
                 if len(params) == 0:
                     params = data
                     data = None
@@ -7512,6 +7545,55 @@ class DACloudStorage(DAObject):
         return server.cloud.container
 
 
+class BackgroundAction(DAObject):
+    """Runs a background action or raises a wait command if the action is still running."""
+
+    def init(self, *pargs, **kwargs):
+        self._running = False
+        self.refresh_seconds = 4
+        super().init(*pargs, **kwargs)
+
+    def run(self, action, **pargs):
+        if in_celery:
+            raise DAException("You cannot run a BackgroundAction inside of a background action")
+        if not self._running:
+            self.bg_action = background_action(action, **pargs)
+            self._running = True
+            self.initial_wait()
+        if self._running:
+            if not self.bg_action.ready():
+                self.wait()
+            result = self.bg_action.result()
+            failed = self.bg_action.failed()
+            del self.bg_action
+            self._running = False
+            if failed:
+                return self.on_failure(result)
+            return self.process_response(result)
+        return None
+
+    def initial_wait(self):
+        command('wait', sleep=self.refresh_seconds)
+
+    def wait(self):
+        set_save_status('ignore')
+        command('wait', sleep=self.refresh_seconds)
+
+    def process_response(self, result):
+        return result.value
+
+    def on_failure(self, result):
+        return result.value
+
+    def running(self):
+        return self._running
+
+    def ready(self):
+        if self._running:
+            return self.bg_action.ready()
+        return None
+
+
 class DAGoogleAPI(DAObject):
 
     def api_credentials(self, scope):
@@ -7520,7 +7602,7 @@ class DAGoogleAPI(DAObject):
 
     def http(self, scope):
         """Returns a credentialized http object for the given scope."""
-        return self.api_credentials(scope).authorize(httplib2.Http())
+        return google_auth_httplib2.AuthorizedHttp(self.cloud_credentials(scopes=[scope]), http=httplib2.Http())
 
     def drive_service(self):
         """Returns a Google Drive service object using google-api-python-client."""
@@ -7530,9 +7612,9 @@ class DAGoogleAPI(DAObject):
         """Returns a Google Sheets service object using google-api-python-client."""
         return apiclient.discovery.build('sheets', 'v4', http=self.http('https://www.googleapis.com/auth/spreadsheets.readonly'))
 
-    def cloud_credentials(self, scope):
-        """Returns a google.oauth2.service_account credentials object for the given scope."""
-        return server.google_api.google_cloud_credentials(scope)
+    def cloud_credentials(self, scopes=None):
+        """Returns a google.oauth2.service_account credentials object."""
+        return server.google_api.google_cloud_credentials(scopes=scopes)
 
     def project_id(self):
         """Returns the ID of the project referenced in the google service account credentials in the Configuration."""
@@ -7573,7 +7655,7 @@ def today(timezone=None, format=None):  # pylint: disable=redefined-builtin
     ensure_definition(timezone, format)
     if timezone is None:
         timezone = get_default_timezone()
-    val = datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc).astimezone(zoneinfo.ZoneInfo(timezone))
+    val = datetime.datetime.now(datetime.timezone.utc).astimezone(zoneinfo.ZoneInfo(timezone))
     if format is not None:
         return dd(val.replace(hour=0, minute=0, second=0, microsecond=0)).format_date(format)
     return dd(val.replace(hour=0, minute=0, second=0, microsecond=0))
@@ -7708,7 +7790,7 @@ def format_time(the_time, format=None, language=None):  # pylint: disable=redefi
         else:
             this_time = dateutil.parser.parse(the_time)
         return babel.dates.format_time(this_time, format=format, locale=babel_language(language))
-    except Exception as errmess:
+    except BaseException as errmess:
         return word("Bad date: " + str(errmess))
 
 
@@ -7820,7 +7902,7 @@ def current_datetime(timezone=None):
     ensure_definition(timezone)
     if timezone is None:
         timezone = get_default_timezone()
-    return dd(datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc).astimezone(zoneinfo.ZoneInfo(timezone)))
+    return dd(datetime.datetime.now(datetime.timezone.utc).astimezone(zoneinfo.ZoneInfo(timezone)))
 
 
 def as_datetime(the_date, timezone=None):
@@ -8420,7 +8502,7 @@ class Address(DAObject):
                 success = geocoder.geocode(the_address, language=get_language())
                 assert hasattr(geocoder.data, 'longitude')
                 assert success
-            except Exception as the_err:
+            except BaseException as the_err:
                 logmessage(the_err.__class__.__name__ + ": " + str(the_err))
                 try_number += 1
                 time.sleep(try_number)
@@ -8451,7 +8533,7 @@ class Address(DAObject):
             self.norm.location.longitude = geocoder.data.longitude
             try:
                 self.norm.location.description = self.norm.block()
-            except Exception as err:
+            except BaseException as err:
                 logmessage("Normalized address was incomplete: " + str(err))
                 self._geocode_success = False
                 self.geolocate_success = False
@@ -8586,7 +8668,7 @@ class Address(DAObject):
             else:
                 return ''
         if hasattr(self, 'unit') and self.unit != '' and self.unit is not None:
-            if not re.search(r'unit|floor|suite|apt|apartment|room|ste|fl', str(self.unit), flags=re.IGNORECASE):
+            if not re.search(r'apartment|apt|basement|bsmt|building|bldg|department|dept|floor|fl|front|frnt|hanger|hngr|key|lobby|lbby|lot|lower|lowr|office|ofc|penthouse|ph|pier|rear|room|rm|side|slip|space|spc|stop|suite|ste|trailer|trlr|unit|upper|uppr', str(self.unit), flags=re.IGNORECASE):
                 return word("Unit", language=language) + " " + str(self.unit)
             return str(self.unit)
         if hasattr(self, 'floor') and self.floor != '' and self.floor is not None:
@@ -8739,7 +8821,7 @@ class Person(DAObject):
             if hasattr(self, 'icon'):
                 result['icon'] = self.icon
             elif self is this_thread.global_vars.user:
-                result['icon'] = {'path': 'CIRCLE', 'scale': 5, 'strokeColor': 'blue'}
+                result['icon'] = DEFAULT_BLUE_ICON
             return [result]
         return None
 
@@ -9384,7 +9466,7 @@ def send_sms(to=None, body=None, template=None, task=None, task_persistent=False
                         twilio_client.messages.create(to=phone_number, from_=from_number, body=body, media_url=media)
                     else:
                         twilio_client.messages.create(to=phone_number, from_=from_number, body=body)
-                except Exception as errstr:
+                except BaseException as errstr:
                     logmessage("send_sms: failed to send message from " + from_number + " to " + phone_number + ": " + str(errstr))
                     return False
     if success and task is not None:
@@ -9565,7 +9647,7 @@ def send_email(to=None, sender=None, reply_to=None, cc=None, bcc=None, body=None
             logmessage("send_email: starting to send")
             server.send_mail(msg, config=config)
             logmessage("send_email: finished sending")
-        except Exception as errmess:
+        except BaseException as errmess:
             logmessage("send_email: sending mail failed with error of " + " type " + str(errmess.__class__.__name__) + ": " + str(errmess))
             success = False
     if success and task is not None:
@@ -9682,7 +9764,7 @@ def get_work_bucket():
     except:
         try:
             bucket = client.create_bucket(bucket_name)
-        except Exception as err:
+        except BaseException as err:
             raise DAError("failed to create bucket named " + bucket_name + ": " + str(err))
     return bucket
 
@@ -9832,13 +9914,21 @@ def ocr_file(image_file, language=None, psm=6, f=None, l=None, x=None, y=None, W
         brightened = bright.enhance(1.5)
         contrast = ImageEnhance.Contrast(brightened)
         final_image = contrast.enhance(2.0)
-        file_to_read = tempfile.TemporaryFile()
+        file_to_read = tempfile.NamedTemporaryFile(prefix="datemp", mode="wb", suffix=".png")
         final_image.save(file_to_read, "PNG")
         file_to_read.seek(0)
-        try:
-            text = subprocess.check_output(['tesseract', 'stdin', 'stdout', '-l', str(lang), '--psm', str(psm)], stdin=file_to_read).decode('utf-8', 'ignore')
-        except subprocess.CalledProcessError as err:
-            raise DAError("ocr_file: failed to list available languages: " + str(err) + " " + str(err.output.decode()))
+        if TESSERACT_MODE == LOCAL:
+            try:
+                text = subprocess.check_output([TESSERACT_PATH, 'stdin', 'stdout', '-l', str(lang), '--psm', str(psm)], stdin=file_to_read).decode('utf-8', 'ignore')
+            except subprocess.CalledProcessError as err:
+                raise DAError("ocr_file: failed to OCR file: " + str(err) + " " + str(err.output.decode()))
+        elif TESSERACT_MODE == REMOTE:
+            result = run_tesseract.delay(['stdin', 'stdout', '-l', str(lang), '--psm', str(psm)], mode=0, file_path=file_to_read.name).get(disable_sync_subtasks=False)
+            if not result.ok:
+                raise DAError("ocr_file: failed to OCR file")
+            text = result.content
+        else:
+            raise DAError("ocr_file: tesseract not installed")
         page_text.append(text)
     for directory in temp_directory_list:
         shutil.rmtree(directory)
@@ -10173,7 +10263,7 @@ def zip_file(*pargs, **kwargs):
         info = zipfile.ZipInfo(zip_path)
         info.compress_type = zipfile.ZIP_DEFLATED
         info.external_attr = 0o644 << 16
-        info.date_time = datetime.datetime.utcfromtimestamp(os.path.getmtime(path)).replace(tzinfo=datetime.timezone.utc).astimezone(zoneinfo.ZoneInfo(timezone)).timetuple()
+        info.date_time = datetime.datetime.fromtimestamp(os.path.getmtime(path), datetime.timezone.utc).astimezone(zoneinfo.ZoneInfo(timezone)).timetuple()
         with open(path, 'rb') as fp:
             zf.writestr(info, fp.read())
     zf.close()
@@ -10478,7 +10568,10 @@ def assemble_docx(input_file, fields=None, output_path=None, output_format='docx
         temp_file = tempfile.NamedTemporaryFile()
         docx_template.save(temp_file.name)
         docassemble.base.file_docx.fix_docx(temp_file.name)
-        result = docassemble.base.pandoc.word_to_markdown(temp_file.name, 'docx')
+        if can_convert_word_to_markdown():
+            result = docassemble.base.pandoc.word_to_markdown(temp_file.name, 'docx')
+        else:
+            result = None
         if not result:
             raise DAError("Unable to convert docx to Markdown")
         shutil.copyfile(result.name, output_path)
@@ -10523,6 +10616,10 @@ def register_jinja_filter(filter_name, func):
 
 def variables_snapshot_connection():
     return server.variables_snapshot_connection()
+
+
+def variables_snapshot_connect():
+    return server.variables_snapshot_connect()
 
 
 def get_persistent_task_store(persistent):
@@ -10773,7 +10870,7 @@ class DAOAuth(DAObject):
                     revoke_uri = None
                 if 'expires_in' in token_dict:
                     delta = datetime.timedelta(seconds=int(token_dict['expires_in']))
-                    token_expiry = delta + datetime.datetime.utcnow()
+                    token_expiry = delta + datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
                 else:
                     token_expiry = None
                 extracted_id_token = None
@@ -10906,14 +11003,14 @@ def ocr_finalize(*pargs, **kwargs):
         for parg in pargs:
             if isinstance(parg, list):
                 for item in parg:
-                    if isinstance(item, ReturnValue):
+                    if item.__class__.__name__ == 'ReturnValue':
                         if isinstance(item.value, dict):
                             if 'page' in item.value:
                                 file_list.append([item.value['indexno'], int(item.value['page']), item.value['doc']._pdf_page_path(int(item.value['page']))])
                             else:
                                 file_list.append([item.value['indexno'], 0, item.value['doc'].path()])
             else:
-                if isinstance(parg, ReturnValue):
+                if parg.__class__.__name__ == 'ReturnValue':
                     if isinstance(item.value, dict):
                         if 'page' in item.value:
                             file_list.append([parg.value['indexno'], int(parg.value['page']), parg.value['doc']._pdf_page_path(int(parg.value['page']))])
@@ -10934,10 +11031,10 @@ def ocr_finalize(*pargs, **kwargs):
         if isinstance(parg, list):
             for item in parg:
                 # logmessage("ocr_finalize: sub item is a " + str(type(item)))
-                if isinstance(item, ReturnValue) and isinstance(item.value, dict):
+                if item.__class__.__name__ == 'ReturnValue' and isinstance(item.value, dict):
                     output[int(item.value['page'])] = item.value['text']
         else:
-            if isinstance(parg, ReturnValue) and isinstance(parg.value, dict):
+            if parg.__class__.__name__ == 'ReturnValue' and isinstance(parg.value, dict):
                 output[int(parg.value['page'])] = parg.value['text']
         # index += 1
     # logmessage("ocr_finalize: assembling output")
@@ -10970,7 +11067,7 @@ def get_ocr_language(language):
                     else:
                         lang = langs[0]
                     raise DAError("could not get OCR language for language " + str(language) + "; using language " + str(lang))
-            except Exception as the_error:
+            except BaseException as the_error:
                 if 'eng' in langs:
                     lang = 'eng'
                 else:
@@ -10980,10 +11077,18 @@ def get_ocr_language(language):
 
 
 def get_available_languages():
-    try:
-        output = subprocess.check_output(['tesseract', '--list-langs'], stderr=subprocess.STDOUT).decode()
-    except subprocess.CalledProcessError as err:
-        raise DAError("get_available_languages: failed to list available languages: " + str(err))
+    if TESSERACT_MODE == LOCAL:
+        try:
+            output = subprocess.check_output([TESSERACT_PATH, '--list-langs'], stderr=subprocess.STDOUT).decode()
+        except subprocess.CalledProcessError as err:
+            raise DAError("get_available_languages: failed to list available languages: " + str(err))
+    elif TESSERACT_MODE == REMOTE:
+        result = run_tesseract.delay(['--list-langs'], mode=1).get(disable_sync_subtasks=False)
+        if not result.ok:
+            raise DAError("get_available_languages: failed to list available languages")
+        output = result.content
+    else:
+        raise DAError("get_available_languages: tesseract not installed")
     result = output.splitlines()
     result.pop(0)
     return result
@@ -11025,7 +11130,7 @@ def ocr_page_tasks(image_file, language=None, psm=6, f=None, l=None, x=None, y=N
                     else:
                         lang = langs[0]
                     logmessage("ocr_file: could not get OCR language for language " + str(language) + "; using language " + str(lang))
-            except Exception as the_error:
+            except BaseException as the_error:
                 if 'eng' in langs:
                     lang = 'eng'
                 else:
@@ -11147,28 +11252,56 @@ def ocr_pdf(*pargs, target=None, filename=None, lang=None, psm=6, dafilelist=Non
         if doc.extension == 'pdf':
             tiff_file = tempfile.NamedTemporaryFile(prefix="datemp", mode="wb", suffix=".tiff", delete=False)
             params = ['gs', '-q', '-dNOPAUSE', '-sDEVICE=' + the_device, '-r600', '-sOutputFile=' + tiff_file.name, path, '-c', 'quit']
-            try:
-                result = subprocess.run(params, timeout=60*60, check=False).returncode
-            except subprocess.TimeoutExpired:
-                result = 1
-                logmessage("ocr_pdf: call to gs took too long")
+            if TESSERACT_MODE == LOCAL:
+                try:
+                    result = subprocess.run(params, timeout=60*60, check=False).returncode
+                except subprocess.TimeoutExpired:
+                    result = 1
+                    logmessage("ocr_pdf: call to gs took too long")
+            elif TESSERACT_MODE == REMOTE:
+                result = run_gs.delay(params[1:]).get(disable_sync_subtasks=False)
+                if result is None:
+                    result = 1
+                    logmessage("ocr_pdf: call to gs took too long")
+            else:
+                raise DAError("ocr_pdf: ghostscript not installed")
             if result != 0:
                 raise DAError("ocr_pdf: failed to run gs with command " + " ".join(params))
-            params = ['tesseract', tiff_file.name, pdf_file.name, '-l', str(lang), '--psm', str(psm), '--dpi', '600', 'pdf']
-            try:
-                result = subprocess.run(params, timeout=60*60, check=False).returncode
-            except subprocess.TimeoutExpired:
-                result = 1
-                logmessage("ocr_pdf: call to tesseract took too long")
+            params = [TESSERACT_PATH, tiff_file.name, pdf_file.name, '-l', str(lang), '--psm', str(psm), '--dpi', '600', 'pdf']
+            if TESSERACT_MODE == LOCAL:
+                try:
+                    result = subprocess.run(params, timeout=60*60, check=False).returncode
+                except subprocess.TimeoutExpired:
+                    result = 1
+                    logmessage("ocr_pdf: call to tesseract took too long")
+            elif TESSERACT_MODE == REMOTE:
+                result = run_tesseract.delay(params[1:], mode=2).get(disable_sync_subtasks=False)
+                if result.ok:
+                    result = result.content
+                else:
+                    result = 1
+                    logmessage("ocr_pdf: call to tesseract took too long")
+            else:
+                raise DAError("ocr_pdf: tesseract not installed")
             if result != 0:
                 raise DAError("ocr_pdf: failed to run tesseract with command " + " ".join(params))
         else:
-            params = ['tesseract', path, pdf_file.name, '-l', str(lang), '--psm', str(psm), '--dpi', '300', 'pdf']
-            try:
-                result = subprocess.run(params, timeout=60*60, check=False).returncode
-            except subprocess.TimeoutExpired:
-                result = 1
-                logmessage("ocr_pdf: call to tesseract took too long")
+            params = [TESSERACT_PATH, path, pdf_file.name, '-l', str(lang), '--psm', str(psm), '--dpi', '300', 'pdf']
+            if TESSERACT_MODE == LOCAL:
+                try:
+                    result = subprocess.run(params, timeout=60*60, check=False).returncode
+                except subprocess.TimeoutExpired:
+                    result = 1
+                    logmessage("ocr_pdf: call to tesseract took too long")
+            elif TESSERACT_MODE == REMOTE:
+                result = run_tesseract.delay(params[1:], mode=2).get(disable_sync_subtasks=False)
+                if result.ok:
+                    result = result.content
+                else:
+                    result = 1
+                    logmessage("ocr_pdf: call to tesseract took too long")
+            else:
+                raise DAError("ocr_pdf: tesseract not installed")
             if result != 0:
                 raise DAError("ocr_pdf: failed to run tesseract with command " + " ".join(params))
         output.append(pdf_file.name + '.pdf')
@@ -11232,7 +11365,7 @@ def ocr_page(indexno, doc=None, lang=None, pdf_to_ppm='pdf_to_ppm', ocr_resoluti
             the_file = output_file.name + '.png'
     else:
         the_file = path
-    file_to_read = tempfile.NamedTemporaryFile()
+    file_to_read = tempfile.NamedTemporaryFile(prefix="datemp")
     if pdf and preserve_color:
         shutil.copyfile(the_file, file_to_read.name)
     else:
@@ -11243,26 +11376,42 @@ def ocr_page(indexno, doc=None, lang=None, pdf_to_ppm='pdf_to_ppm', ocr_resoluti
         brightened = bright.enhance(1.5)
         contrast = ImageEnhance.Contrast(brightened)
         final_image = contrast.enhance(2.0)
-        file_to_read = tempfile.TemporaryFile()
+        file_to_read = tempfile.NamedTemporaryFile(prefix="datemp", suffix='.png')
         final_image.convert('RGBA').save(file_to_read, "PNG")
     file_to_read.seek(0)
     if pdf:
         outfile = doc._pdf_page_path(page)
-        params = ['tesseract', 'stdin', re.sub(r'\.pdf$', '', outfile), '-l', str(lang), '--psm', str(psm), '--dpi', str(ocr_resolution), 'pdf']
+        params = [TESSERACT_PATH, 'stdin', re.sub(r'\.pdf$', '', outfile), '-l', str(lang), '--psm', str(psm), '--dpi', str(ocr_resolution), 'pdf']
         logmessage("ocr_page: piping to command " + " ".join(params))
+        if TESSERACT_MODE == LOCAL:
+            try:
+                text = subprocess.check_output(params, stdin=file_to_read).decode()
+            except subprocess.CalledProcessError as err:
+                raise DAError("ocr_page: failed to run tesseract with command " + " ".join(params) + ": " + str(err) + " " + str(err.output.decode()))
+        elif TESSERACT_MODE == REMOTE:
+            result = run_tesseract.delay(params[1:], mode=0, file_path=file_to_read.name).get(disable_sync_subtasks=False)
+            if result.ok:
+                text = result.content
+            else:
+                raise DAError("ocr_page: failed to run tesseract with command " + " ".join(params))
+        else:
+            raise DAError("ocr_page: tesseract not installed")
+        logmessage("ocr_page finished with pdf page " + str(page))
+        doc.commit()
+        return {'indexno': indexno, 'page': page, 'doc': doc}
+    params = [TESSERACT_PATH, 'stdin', 'stdout', '-l', str(lang), '--psm', str(psm), '--dpi', str(ocr_resolution)]
+    logmessage("ocr_page: piping to command " + " ".join(params))
+    if TESSERACT_MODE == LOCAL:
         try:
             text = subprocess.check_output(params, stdin=file_to_read).decode()
         except subprocess.CalledProcessError as err:
             raise DAError("ocr_page: failed to run tesseract with command " + " ".join(params) + ": " + str(err) + " " + str(err.output.decode()))
-        logmessage("ocr_page finished with pdf page " + str(page))
-        doc.commit()
-        return {'indexno': indexno, 'page': page, 'doc': doc}
-    params = ['tesseract', 'stdin', 'stdout', '-l', str(lang), '--psm', str(psm), '--dpi', str(ocr_resolution)]
-    logmessage("ocr_page: piping to command " + " ".join(params))
-    try:
-        text = subprocess.check_output(params, stdin=file_to_read).decode()
-    except subprocess.CalledProcessError as err:
-        raise DAError("ocr_page: failed to run tesseract with command " + " ".join(params) + ": " + str(err) + " " + str(err.output.decode()))
+    elif TESSERACT_MODE == REMOTE:
+        result = run_tesseract.delay(params[1:], mode=0, file_path=file_to_read.name).get(disable_sync_subtasks=False)
+        if result.ok:
+            text = result.content
+        else:
+            raise DAError("ocr_page: failed to run tesseract with command " + " ".join(params))
     logmessage("ocr_page finished with page " + str(page))
     return {'indexno': indexno, 'page': page, 'text': text}
 

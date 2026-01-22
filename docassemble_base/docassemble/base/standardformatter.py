@@ -66,6 +66,21 @@ BUTTON_COLOR_BACK_TO_QUESTION = daconfig['button colors'].get('back to question'
 DEFAULT_LABELAUTY_COLOR = daconfig['button colors'].get('labelauty', 'primary')
 DEFAULT_LABELAUTY_NOTA_COLOR = daconfig['button colors'].get('labelauty nota', DEFAULT_LABELAUTY_COLOR)
 DEFAULT_LABELAUTY_AOTA_COLOR = daconfig['button colors'].get('labelauty aota', DEFAULT_LABELAUTY_COLOR)
+USE_GOOGLE_PLACES_NEW_API = daconfig['google']['use places api new']
+if USE_GOOGLE_PLACES_NEW_API:
+    DEFAULT_AUTOCOMPLETE = {"types": ["street_address"], "fields": ["address_components"]}
+else:
+    DEFAULT_AUTOCOMPLETE = {"types": ["address"], "fields": ["address_components"]}
+
+
+def paren_phrase(status, phrase):
+    if status.extras.get('describe_file_types', True) and phrase != "":
+        return " (" + phrase + ")"
+    return ""
+
+
+def underscore_to_camel(text):
+    return re.sub(r'_([a-z])', lambda x: x.group(1).upper(), text)
 
 
 def process_help(help_section, status, full_page=True):
@@ -150,36 +165,6 @@ def icon_html(status, name, width_value=1.0, width_units='em'):
         else:
             sizing += 'height:auto;'
     return '<img alt="" class="daicon" src="' + url + '" style="' + str(sizing) + '"/>'
-
-# def signature_html(status, debug, root, validation_rules):
-#     if (status.continueLabel):
-#         continue_label = markdown_to_html(status.continueLabel, trim=True)
-#     else:
-#         continue_label = word('Done')
-#     output = '    <div class="sigpage" id="dasigpage">\n      <div class="sigshowsmallblock sigheader" id="dasigheader">\n        <div class="siginnerheader">\n          <a id="danew" class="signavbtn signav-left">' + word('Clear') + '</a>\n          <a id="dasave" class="signavbtn signav-right">' + continue_label + '</a>\n          <div class="sigtitle">'
-#     if status.questionText:
-#         output += markdown_to_html(status.questionText, trim=True)
-#     else:
-#         output += word('Sign Your Name')
-#     output += '</div>\n        </div>\n      </div>\n      <div class="dasigtoppart" id="dasigtoppart">\n        <div id="daerrormess" class="sigerrormessage signotshowing">' + word("You must sign your name to continue.") + '</div>\n        '
-#     output += '\n      </div>'
-#     if status.subquestionText:
-#         output += '\n      <div class="sigmidpart">\n        ' + markdown_to_html(status.subquestionText) + '\n      </div>'
-#     output += '\n      <div id="dasigcontent"><p style="text-align:center;border-style:solid;border-width:1px">' + word('Loading.  Please wait . . . ') + '</p></div>\n      <div class="sigbottompart" id="sigbottompart">\n        '
-#     if 'underText' in status.extras:
-#         output += markdown_to_html(status.extras['underText'], trim=True)
-#     output += "\n      </div>"
-#     output += """
-#       <div class="form-actions sighidesmall sigbuttons">
-#         <a id="savetwo" class="btn btn-primary btn-lg">""" + continue_label + """</a>
-#         <a id="savetwo" class="btn btn-warning btn-lg">""" + word('Clear') + """</a>
-#       </div>
-# """
-#     output += '    </div>\n    <form action="' + root + '" id="dasigform" method="POST"><input type="hidden" name="_save_as" value="' + escape_id(status.question.fields[0].saveas) + '"/><input type="hidden" id="_the_image" name="_the_image" value=""/><input type="hidden" id="da_success" name="_success" value="0"/>'
-#     output += tracker_tag(status)
-#     output += '</form>\n'
-#     add_validation(status.extra_scripts, validation_rules)
-#     return output
 
 
 def get_choices_with_abb(status, field, the_user_dict, terms=None, links=None):
@@ -562,8 +547,8 @@ def embed_input(status, variable):
 def help_wrap(content, helptext, status):
     if helptext is None:
         return content
-    help_wrapper = '<div class="dachoicewithhelp"><div><div>%s</div><div class="dachoicehelp text-' + (status.extras.get('help button color', None) or BUTTON_COLOR_HELP) + '"><a tabindex="0" data-bs-container="body" data-bs-toggle="popover" data-bs-placement="left" data-bs-content=%s><i class="fa-solid fa-question-circle"></i></a></div></div></div>'
-    return help_wrapper % (content, noquote(markdown_to_html(helptext, trim=True, status=status, do_terms=False)))
+    help_wrapper = '<div class="dachoicewithhelp"><div><div>%s</div><div class="dachoicehelp text-' + (status.extras.get('help button color', None) or BUTTON_COLOR_HELP) + '"><a tabindex="0" data-bs-container="body" data-bs-toggle="popover" data-bs-placement="left" data-bs-content=%s aria-label="%s" role="button"><i class="fa-solid fa-question-circle"></i></a></div></div></div>'
+    return help_wrapper % (content, noquote(markdown_to_html(helptext, trim=True, status=status, do_terms=False)), word('Information'))
 
 
 def field_item(field, grid_info, pre=None, row=True, floating=False, classes=None, hidden_message=None, label_for=None, label_classes=None, label_content=None, grid_type=None, content_classes=None, content=None, side_note=None, under_text=None, use_fieldset=0, required=False):
@@ -789,6 +774,10 @@ def sub_indices(the_var, special_vars):
     return the_var
 
 
+def strip_script_tags(script):
+    return re.sub(r'</?script[^>]*>', '', script)
+
+
 def as_html(status, debug, root, validation_rules, field_error, the_progress_bar, steps):
     decorations = []
     audio_text = ''
@@ -797,7 +786,6 @@ def as_html(status, debug, root, validation_rules, field_error, the_progress_bar
     varnames = {}
     onchange = []
     autocomplete_info = []
-    validation_rules['ignore'] = None
     showUnderText = 'underText' in status.extras and len(status.attachments) == 0
     if status.using_navigation == 'vertical':
         grid_class = daconfig['grid classes']['vertical navigation']['body']
@@ -813,7 +801,7 @@ def as_html(status, debug, root, validation_rules, field_error, the_progress_bar
     labels_above = status.question.interview.options.get('labels above', False)
     floating_labels = status.question.interview.options.get('floating labels', False)
     if 'script' in status.extras and status.extras['script'] is not None:
-        status.extra_scripts.append(status.extras['script'])
+        status.extra_scripts.append({"type": "custom", "script": strip_script_tags(status.extras['script'])})
     if 'css' in status.extras and status.extras['css'] is not None:
         status.extra_css.append(status.extras['css'])
     if status.continueLabel:
@@ -976,7 +964,7 @@ def as_html(status, debug, root, validation_rules, field_error, the_progress_bar
             output += '                <div id="dasigmidpart" class="dasigmidpart da-subquestion">\n' + markdown_to_html(status.subquestionText, status=status) + '                </div>\n'
         else:
             output += '\n              <div id="dasigmidpart" class="dasigmidpart"></div>'
-        output += '\n              <div id="dasigcontent"' + (' aria-required="true"' if status.extras['required'][0] else '') + '><p class="form-control" style="text-align:center;padding:0;">' + word('Loading.  Please wait . . . ') + '</p></div>\n              <div class="dasigbottompart" id="dasigbottompart">\n                '
+        output += '\n              <div id="dasigcontent"' + (' aria-required="true"' if status.extras['required'][0] else '') + '></div>\n              <div class="dasigbottompart" id="dasigbottompart">\n                '
         if showUnderText:
             output += '                <div class="d-none d-sm-block da-d-sm-block">' + markdown_to_html(status.extras['underText'], trim=False, status=status) + '</div>\n                <div class="d-block d-sm-none da-d-sm-none">' + markdown_to_html(status.extras['underText'], trim=True, status=status) + '</div>'
         output += "\n              </div>"
@@ -1256,7 +1244,7 @@ def as_html(status, debug, root, validation_rules, field_error, the_progress_bar
                     validation_rules['messages'][the_saveas] = {}
                 if 'address_autocomplete' in status.extras and field.number in status.extras['address_autocomplete'] and status.extras['address_autocomplete'][field.number]:
                     if isinstance(status.extras['address_autocomplete'][field.number], bool):
-                        autocomplete_info.append([the_saveas, {"types": ["address"], "fields": ["address_components"]}])
+                        autocomplete_info.append([the_saveas, DEFAULT_AUTOCOMPLETE])
                     elif isinstance(status.extras['address_autocomplete'][field.number], dict):
                         autocomplete_info.append([the_saveas, status.extras['address_autocomplete'][field.number]])
                     else:
@@ -1477,7 +1465,7 @@ def as_html(status, debug, root, validation_rules, field_error, the_progress_bar
                     field_class += ' da-field-container-inputtype-dropdown'
             field_class += extra_container_class
             if field.number in status.helptexts:
-                helptext_start = '<a tabindex="0" class="text-info ms-1 dapointer" data-bs-container="body" data-bs-toggle="popover" data-bs-placement="bottom" data-bs-content=' + noquote(markdown_to_html(status.helptexts[field.number], trim=True, status=status)) + '>'
+                helptext_start = '<a tabindex="0" class="text-info ms-1 dapointer" data-bs-container="body" data-bs-toggle="popover" data-bs-placement="bottom" data-bs-content=' + noquote(markdown_to_html(status.helptexts[field.number], trim=True, status=status)) + ' aria-label="' + word("Information") + '" role="button">'
                 helptext_end = '<i class="fa-solid fa-question-circle"></i></a>'
             else:
                 helptext_start = ''
@@ -2112,7 +2100,8 @@ def as_html(status, debug, root, validation_rules, field_error, the_progress_bar
                 else:
                     validation_rules['messages']['X211bHRpcGxlX2Nob2ljZQ'] = {'required': status.question.fields[0].validation_message('multiple choice required', status, word("You need to select one."))}
                 validation_rules['rules']['X211bHRpcGxlX2Nob2ljZQ'] = {'required': True}
-            output += '                <div id="daerrorcontainer" style="display:none"></div>\n'
+            if status.question.question_variety != 'combobox':
+                output += '                <div id="daerrorcontainer" style="display:none"></div>\n'
             if status.question.question_variety == "radio":
                 output += "                </fieldset>\n"
             output += status.submit
@@ -2246,6 +2235,20 @@ def as_html(status, debug, root, validation_rules, field_error, the_progress_bar
         output += help_button_area
         if showUnderText:
             output += markdown_to_html(status.extras['underText'], status=status, divclass="daundertext")
+        if 'track_location' in status.extras and status.extras['track_location']:
+            output += '            <form>\n'
+            output += tracker_tag(status)
+            output += '            </form>\n'
+    elif status.question.question_type == 'wait':
+        output += '            <form aria-labelledby="daMainQuestion" action="' + root + '" id="daform" class="form-horizontal daformcontinueother" method="POST">\n'
+        output += '                <div class="da-page-header"><h1 class="h3" id="daMainQuestion">' + markdown_to_html(status.questionText or word("Please wait . . ."), trim=True, status=status, strip_newlines=True) + '</h1><div class="daclear"></div></div>\n'
+        if status.subquestionText:
+            output += '                <div class="da-subquestion">\n' + markdown_to_html(status.subquestionText, status=status) + '                </div>\n'
+        if showUnderText:
+            output += markdown_to_html(status.extras['underText'], status=status, divclass="daundertext")
+        output += tracker_tag(status)
+        output += '            </form>\n'
+        status.extra_scripts.append({"type": "wait", "sleep": status.question.sleep})
     else:
         output += status.pre
         output += indent_by(audio_text, 12) + '            <form aria-labelledby="daMainQuestion" action="' + root + '" id="daform" class="form-horizontal daformcontinueother" method="POST">\n'
@@ -2346,21 +2349,21 @@ def as_html(status, debug, root, validation_rules, field_error, the_progress_bar
                     output += '                <div class="tab-pane show active da-attachment-tab-download" id="dadownload' + str(attachment_index) + '" role="tabpanel" aria-labelledby="dadownload-tab' + str(attachment_index) + '">\n'
                 else:
                     output += '                <div>\n'
-                if multiple_formats:
+                if status.extras.get('describe_file_types', True) and multiple_formats:
                     output += '                  <p class="da-attachment-tab-download-intro">' + word('The document is available in the following formats:') + '</p>\n'
                 if attachment.get('raw', False):
-                    output += '                  <p class="da-attachment-tab-download-raw"><a href="' + server.url_finder(attachment['file']['raw'], display_filename=attachment['filename'] + attachment['raw']) + '" target="_blank"><i class="fa-solid fa-code fa-fw"></i> ' + attachment['filename'] + attachment['raw'] + '</a> (' + word('for downloading') + ')</p>\n'
+                    output += '                  <p class="da-attachment-tab-download-raw"><a href="' + server.url_finder(attachment['file']['raw'], display_filename=attachment['filename'] + attachment['raw']) + '" target="_blank"><i class="fa-solid fa-code fa-fw"></i> ' + attachment['filename'] + attachment['raw'] + '</a>' + paren_phrase(status, word('for downloading')) + '</p>\n'
                 else:
                     if 'pdf' in attachment['valid_formats'] or '*' in attachment['valid_formats']:
-                        output += '                  <p class="da-attachment-tab-download-pdf"><a href="' + server.url_finder(attachment['file']['pdf'], display_filename=attachment['filename'] + '.pdf') + '" target="_blank"><i class="fa-solid fa-print fa-fw"></i> PDF</a> (' + word('for printing; requires Adobe Reader or similar application') + ')</p>\n'
+                        output += '                  <p class="da-attachment-tab-download-pdf"><a href="' + server.url_finder(attachment['file']['pdf'], display_filename=attachment['filename'] + '.pdf') + '" target="_blank"><i class="fa-solid fa-print fa-fw"></i> PDF</a>' + paren_phrase(status, word('for printing; requires Adobe Reader or similar application')) + '</p>\n'
                     if 'rtf' in attachment['valid_formats'] or '*' in attachment['valid_formats']:
-                        output += '                  <p class="da-attachment-tab-download-rtf"><a href="' + server.url_finder(attachment['file']['rtf'], display_filename=attachment['filename'] + '.rtf') + '" target="_blank"><i class="fa-solid fa-pencil-alt fa-fw"></i> RTF</a> (' + word('for editing; requires Microsoft Word, Wordpad, or similar application') + ')</p>\n'
+                        output += '                  <p class="da-attachment-tab-download-rtf"><a href="' + server.url_finder(attachment['file']['rtf'], display_filename=attachment['filename'] + '.rtf') + '" target="_blank"><i class="fa-solid fa-pencil-alt fa-fw"></i> RTF</a>' + paren_phrase(status, word('for editing; requires Microsoft Word, Wordpad, or similar application')) + '</p>\n'
                     if 'docx' in attachment['valid_formats']:
-                        output += '                  <p class="da-attachment-tab-download-docx"><a href="' + server.url_finder(attachment['file']['docx'], display_filename=attachment['filename'] + '.docx') + '" target="_blank"><i class="fa-solid fa-pencil-alt fa-fw"></i> DOCX</a> (' + word('for editing; requires Microsoft Word or compatible application') + ')</p>\n'
+                        output += '                  <p class="da-attachment-tab-download-docx"><a href="' + server.url_finder(attachment['file']['docx'], display_filename=attachment['filename'] + '.docx') + '" target="_blank"><i class="fa-solid fa-pencil-alt fa-fw"></i> DOCX</a>' + paren_phrase(status, word('for editing; requires Microsoft Word or compatible application')) + '</p>\n'
                     if 'rtf to docx' in attachment['valid_formats']:
-                        output += '                  <p class="da-attachment-tab-download-docx"><a href="' + server.url_finder(attachment['file']['rtf to docx'], display_filename=attachment['filename'] + '.docx') + '" target="_blank"><i class="fa-solid fa-pencil-alt fa-fw"></i> DOCX</a> (' + word('for editing; requires Microsoft Word or compatible application') + ')</p>\n'
+                        output += '                  <p class="da-attachment-tab-download-docx"><a href="' + server.url_finder(attachment['file']['rtf to docx'], display_filename=attachment['filename'] + '.docx') + '" target="_blank"><i class="fa-solid fa-pencil-alt fa-fw"></i> DOCX</a>' + paren_phrase(status, word('for editing; requires Microsoft Word or compatible application')) + '</p>\n'
                     if 'tex' in attachment['valid_formats']:
-                        output += '                  <p class="da-attachment-tab-download-tex"><a href="' + server.url_finder(attachment['file']['tex'], display_filename=attachment['filename'] + '.tex') + '" target="_blank"><i class="fa-solid fa-pencil-alt fa-fw"></i> LaTeX</a> (' + word('for debugging PDF output') + ')</p>\n'
+                        output += '                  <p class="da-attachment-tab-download-tex"><a href="' + server.url_finder(attachment['file']['tex'], display_filename=attachment['filename'] + '.tex') + '" target="_blank"><i class="fa-solid fa-pencil-alt fa-fw"></i> LaTeX</a>' + paren_phrase(status, word('for debugging PDF output')) + '</p>\n'
                     if 'md' in attachment['valid_formats']:
                         output += '                  <p class="da-attachment-tab-download-md"><a href="' + server.url_finder(attachment['file']['md'], display_filename=attachment['filename'] + '.md') + '" target="_blank"><i class="fa-brands fa-markdown fa-fw"></i> Markdown</a></p>\n'
                     for output_format in extra_formats:
@@ -2520,8 +2523,8 @@ def as_html(status, debug, root, validation_rules, field_error, the_progress_bar
                   <div class="col">
                     <div class="input-group">
                       <label for="daMessage" class="visually-hidden">""" + word("Chat message you want to send") + """</label>
-                      <input type="text" class="form-control daChatMessage" id="daMessage" placeholder=""" + fix_double_quote(word("Type your message here.")) + """>
-                      <button class="btn """ + BUTTON_STYLE + """secondary daChatButton" id="daSend" type="button">""" + word("Send") + """</button>
+                      <input type="text" class="form-control dachatmessage" id="daMessage" placeholder=""" + fix_double_quote(word("Type your message here.")) + """>
+                      <button class="btn """ + BUTTON_STYLE + """secondary dachatbutton" id="daSend" type="button">""" + word("Send") + """</button>
                     </div>
                   </div>
                 </div>
@@ -2575,129 +2578,22 @@ def as_html(status, debug, root, validation_rules, field_error, the_progress_bar
     add_validation(status.extra_scripts, validation_rules, field_error)
     for element_id_unescaped in onchange:
         element_id = re.sub(r'(:|\.|\[|\]|,|=)', r'\\\\\1', element_id_unescaped)
-        the_script = """\
-    <script>
-      $('[name=""" + '"' + element_id + '"' + """]').change(function(){
-        if ($(this).attr('type') == "checkbox" || $(this).attr('type') == "radio"){
-          theVal = $('[name=""" + '"' + element_id + '"' + """]:checked').val();
-        }
-        else{
-          theVal = $( this ).val();
-        }
-        var n = 0;
-        if ($(this).data('disableothers')){
-          var id_list = JSON.parse(decodeURIComponent(escape(atob($(this).data('disableothers')))));
-          n = id_list.length;
-        }
-        if (n){
-          for(var i = 0; i < n; ++i){
-            var the_element_id = id_list[i].replace(/(:|\.|\[|\]|,|=)/g, "\\\\$1");
-            if (theVal == null || theVal == ""){
-              daDisableIfNotHidden("#daform [name='" + the_element_id + "']:not([type=hidden])", false);
-              daDisableIfNotHidden("#daform [id='" + the_element_id + "']:not([type=hidden])", false);
-            }
-            else{
-              daDisableIfNotHidden("#daform [name='" + the_element_id + "']:not([type=hidden])", true);
-              daDisableIfNotHidden("#daform [id='" + the_element_id + "']:not([type=hidden])", true);
-            }
-          }
-        }
-        else{
-          if (theVal == null || theVal == ""){
-            daDisableIfNotHidden("#daform input:not([name='""" + element_id + """']):not([id^='""" + element_id + """']):not([type=hidden])", false);
-            daDisableIfNotHidden("#daform select:not([name='""" + element_id + """']):not([id^='""" + element_id + """']):not([type=hidden])", false);
-            daDisableIfNotHidden("#daform textarea:not([name='""" + element_id + """']):not([type=hidden])", false);
-          }
-          else{
-            daDisableIfNotHidden("#daform input:not([name='""" + element_id + """']):not([id^='""" + element_id + """']):not([type=hidden])", true);
-            daDisableIfNotHidden("#daform select:not([name='""" + element_id + """']):not([id^='""" + element_id + """']):not([type=hidden])", true);
-            daDisableIfNotHidden("#daform textarea:not([name='""" + element_id + """']):not([type=hidden])", true);
-          }
-        }
-      });
-      $("[data-disableothers]").trigger('change');
-    </script>
-"""  # noqa: W605
-        status.extra_scripts.append(the_script)
+        status.extra_scripts.append({"type": "listeners", "element": element_id})
     if 'track_location' in status.extras and status.extras['track_location']:
-        track_js = """\
-    <script>
-      function daSetPosition(position) {
-        document.getElementById('da_track_location').value = JSON.stringify({'latitude': position.coords.latitude, 'longitude': position.coords.longitude})
-      }
-      function daShowError(error) {
-        switch(error.code) {
-          case error.PERMISSION_DENIED:
-            document.getElementById('da_track_location').value = JSON.stringify({error: "User denied the request for Geolocation"});
-            console.log("User denied the request for Geolocation.");
-            break;
-          case error.POSITION_UNAVAILABLE:
-            document.getElementById('da_track_location').value = JSON.stringify({error: "Location information is unavailable"});
-            console.log("Location information is unavailable.");
-            break;
-          case error.TIMEOUT:
-            document.getElementById('da_track_location').value = JSON.stringify({error: "The request to get user location timed out"});
-            console.log("The request to get user location timed out.");
-            break;
-          case error.UNKNOWN_ERROR:
-            document.getElementById('da_track_location').value = JSON.stringify({error: "An unknown error occurred"});
-            console.log("An unknown error occurred.");
-            break;
-        }
-      }
-      $( document ).ready(function() {
-        $(function () {
-          if (navigator.geolocation) {
-            document.getElementById('da_track_location').value = JSON.stringify({error: "getCurrentPosition was still running"});
-            navigator.geolocation.getCurrentPosition(daSetPosition, daShowError, {timeout: 1000, maximumAge: 3600000});
-          }
-          else{
-            document.getElementById('da_track_location').value = JSON.stringify({error: "navigator.geolocation not available in browser"});
-          }
-        });
-      });
-    </script>"""
-        status.extra_scripts.append(track_js)
+        status.extra_scripts.append({"type": "enable_tracking"})
     if len(autocomplete_info) > 0:
-        status.extra_scripts.append("""
-<script>
-  daInitAutocomplete(""" + json.dumps(autocomplete_info) + """);
-</script>
-""")
+        status.extra_scripts.append({"type": "autocomplete" if USE_GOOGLE_PLACES_NEW_API else "autocomplete_old", "info": autocomplete_info})
     if len(status.maps) > 0:
-        status.extra_scripts.append("""
-<script>
-  daInitMap([""" + ", ".join(status.maps) + """]);
-</script>
-""")
-        # google_config = daconfig.get('google', {})
-        # if 'google maps api key' in google_config:
-        #     api_key = google_config.get('google maps api key')
-        # elif 'api key' in google_config:
-        #     api_key = google_config.get('api key')
-        # else:
-        #     raise DAException('google API key not provided')
-        # status.extra_scripts.append('<script async defer src="https://maps.googleapis.com/maps/api/js?key=' + urllibquote(api_key) + '&callback=daInitMap"></script>')
+        status.extra_scripts.append({"type": "map", "maps": [json.loads(item) for item in status.maps]})
     return master_output
 
 
 def add_validation(extra_scripts, validation_rules, field_error):
-    if field_error is None:
-        error_show = ''
-    else:
-        error_mess = {}
+    error_mess = {}
+    if field_error is not None:
         for key, val in field_error.items():
             error_mess[key] = val
-        error_show = "\n    daValidator.showErrors(" + json.dumps(error_mess) + ");"
-    extra_scripts.append("""<script>
-  var daValidationRules = """ + json.dumps(validation_rules) + """;
-  daValidationRules.submitHandler = daValidationHandler;
-  daValidationRules.invalidHandler = daInvalidHandler;
-  daValidationRules.onfocusout = daInjectTrim($.validator.defaults.onfocusout);
-  if ($("#daform").length > 0){
-    var daValidator = $("#daform").validate(daValidationRules);""" + error_show + """
-  }
-</script>""")
+    extra_scripts.append({"type": "validation", "rules": validation_rules, "messages": error_mess})
 
 
 def locale_format_string(the_value):
@@ -2856,6 +2752,8 @@ def input_for(status, field, embedded=False, floating_label=None):
         autocomplete_off = ''
     if 'css class' in status.extras and field.number in status.extras['css class']:
         extra_class += ' ' + clean_whitespace(status.extras['css class'][field.number])
+    if USE_GOOGLE_PLACES_NEW_API and 'address_autocomplete' in status.extras and field.number in status.extras['address_autocomplete'] and status.extras['address_autocomplete'][field.number]:
+        extra_class += ' combobox da-address-combobox'
     is_hidden = hasattr(field, 'inputtype') and field.inputtype == 'hidden'
     if hasattr(field, 'choicetype') and not is_hidden:
         if field.choicetype in ['compute', 'manual']:
@@ -3187,6 +3085,8 @@ def input_for(status, field, embedded=False, floating_label=None):
                 daobject = ''
             if hasattr(field, 'inputtype') and field.inputtype == 'combobox' and defaultvalue:
                 datadefault = ' data-default=' + fix_double_quote(str(defaultvalue))
+            elif hasattr(field, 'inputtype') and field.inputtype == 'datalist' and defaultvalue:
+                datadefault = ' value=' + fix_double_quote(str(defaultvalue))
             else:
                 datadefault = ''
             if embedded:
@@ -3202,11 +3102,26 @@ def input_for(status, field, embedded=False, floating_label=None):
                     if floating_label:
                         emb_text += ' da-combobox-floating'
                     emb_text += '" '
+                elif hasattr(field, 'inputtype') and field.inputtype == 'datalist':
+                    emb_text = 'class="form-control' + daobject
+                    if floating_label:
+                        emb_text += ' da-datalist-floating'
+                    emb_text += '" '
                 else:
                     emb_text = 'class="form-select dasingleselect' + daobject + '" '
             if embedded:
                 output += '<span class="da-inline-error-wrapper">'
-            output += '<select ' + emb_text + 'name="' + escape_id(saveas_string) + '"' + datadefault + ' id="' + escape_id(saveas_string) + '" ' + disable_others_data + req_attr + disabled_attr + '>'
+            if hasattr(field, 'inputtype') and field.inputtype == 'datalist':
+                input_type = 'text'
+                if hasattr(field, 'datatype'):
+                    if field.datatype == 'integer':
+                        input_type = 'number'
+                        emb_text += ' step="1"'
+                    elif field.datatype in ('number', 'float'):
+                        input_type = 'number'
+                output += '<input type="' + input_type + '" list="' + escape_id(saveas_string) + 'list" ' + emb_text + 'name="' + escape_id(saveas_string) + '"' + datadefault + ' id="' + escape_id(saveas_string) + '" ' + placeholdertext + disable_others_data + req_attr + disabled_attr + '><datalist id="' + escape_id(saveas_string) + 'list">'
+            else:
+                output += '<select ' + emb_text + 'name="' + escape_id(saveas_string) + '"' + datadefault + ' id="' + escape_id(saveas_string) + '" ' + disable_others_data + req_attr + disabled_attr + '>'
             first_option = ''
             if hasattr(field, 'inputtype') and field.inputtype == 'combobox' and not embedded:
                 if placeholdertext == '':
@@ -3215,6 +3130,8 @@ def input_for(status, field, embedded=False, floating_label=None):
                     first_option += '<option value=""></option>'
                 else:
                     first_option += '<option value="">' + option_escape(str(status.hints[field.number].replace('\n', ' '))) + '</option>'
+            elif hasattr(field, 'inputtype') and field.inputtype == 'datalist':
+                pass
             else:
                 if placeholdertext == '':
                     first_option += '<option value="">' + option_escape(word('Select...')) + '</option>'
@@ -3263,10 +3180,14 @@ def input_for(status, field, embedded=False, floating_label=None):
             if (not status.extras['required'][field.number]) or (not found_default):
                 output += first_option
             output += other_options
-            if embedded:
-                output += '</select></span> '
+            if hasattr(field, 'inputtype') and field.inputtype == 'datalist':
+                output += '</datalist>'
             else:
-                output += '</select> '
+                output += '</select>'
+            if embedded:
+                output += '</span> '
+            else:
+                output += ' '
     elif hasattr(field, 'datatype'):
         if field.datatype == 'boolean' and not is_hidden:
             label_text = markdown_to_html(status.labels[field.number], trim=True, status=status, strip_newlines=True, escape=(not embedded), do_terms=False)
@@ -3467,7 +3388,7 @@ def input_for(status, field, embedded=False, floating_label=None):
                     output += '<span class="daslider daslider-embedded"' + title_text + '><input alt="' + word('Select a value between') + ' ' + min_string + ' ' + word('and') + ' ' + max_string + '" name="' + escape_id(saveas_string) + '" id="' + escape_id(saveas_string) + '"' + the_default + ' data-slider-max="' + max_string + '" data-slider-min="' + min_string + '"' + the_step + disable_others_data + disabled_attr + ' data-slider-id="' + escape_id(saveas_string) + '_slider" /></span><br>'
                 else:
                     output += '<input class="daslider" alt="' + word('Select a value between') + ' ' + min_string + ' ' + word('and') + ' ' + max_string + '" name="' + escape_id(saveas_string) + '" id="' + escape_id(saveas_string) + '"' + the_default + ' data-slider-max="' + max_string + '" data-slider-min="' + min_string + '"' + the_step + disable_others_data + disabled_attr + ' data-slider-id="' + escape_id(saveas_string) + '_slider" />'
-                status.extra_scripts.append('<script>$("#' + escape_for_jquery(saveas_string) + '").slider({tooltip: "always", enabled: ' + ('false' if is_disabled else 'true') + '});</script>\n')
+                status.extra_scripts.append({"type": "slider", "id": escape_for_jquery(saveas_string), "enabled": not is_disabled})
         elif hasattr(field, 'inputtype') and field.inputtype == 'area':
             if embedded:
                 output += '<span class="da-embed-area-wrapper">'
@@ -3559,7 +3480,7 @@ def input_for(status, field, embedded=False, floating_label=None):
             if field.datatype in ['integer', 'float', 'currency', 'number']:
                 if field.datatype != 'currency':
                     extra_class += ' danumeric'
-                input_type = 'text" inputmode="numeric" pattern="[\-\d.]*'  # noqa: W605
+                input_type = r'text" inputmode="numeric" pattern="[\-\d.]*'
                 if hasattr(field, 'extras') and 'step' in field.extras and 'step' in status.extras and field.number in status.extras['step']:
                     step_string = ' step="' + str(status.extras['step'][field.number]) + '"'
                 else:

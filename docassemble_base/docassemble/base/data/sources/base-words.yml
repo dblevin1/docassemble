@@ -3,7 +3,6 @@
 "Access shared repositories": Null
 "Account did not exist.": Null
 "Account disabled": Null
-"A chat message has arrived.": Null
 "A confirmation email has been sent to %(email)s with instructions to complete your registration.": Null
 "Action": Null
 "Actions": Null
@@ -84,6 +83,7 @@
 "Available interviews": Null
 "Available Interviews": Null
 "Available": Null
+"A valid SPDX identifier must be provided, e.g., MIT, GPL-3.0, Apache-2.0.": Null
 "Azerbaijan": Null
 "back": Null
 "Back": Null
@@ -232,7 +232,6 @@
 "Document": Null
 "Dominican Republic": Null
 "Dominica": Null
-"Done": Null
 "-- Do not link --": Null
 "Do not stop your web browser.": Null
 "Download all documents as a ZIP file": Null
@@ -324,6 +323,7 @@
 "File not found: ": Null
 "File": Null
 "Files": Null
+"Files to include": Null
 "File Text": Null
 "File to upload": Null
 "Filter by tag": Null
@@ -364,6 +364,7 @@
 "Ghana": Null
 "Gibraltar": Null
 "GitHub Branch": Null
+"GitHub Commit": Null
 "GitHub integration": Null
 "GitHub Integration": Null
 "GitHub integration was successfully configured.": Null
@@ -457,6 +458,7 @@
 "India": Null
 "Indonesia": Null
 "Information for the developer": Null
+"Information": Null
 "in mako": Null
 "Input box": Null
 "Input not processed because the page expired.": Null
@@ -493,6 +495,7 @@
 "Invite!": Null
 "Invite": Null
 "Invite User": Null
+"IP Address": Null
 "Iran, Islamic Republic of": Null
 "Iraq": Null
 "Ireland": Null
@@ -641,6 +644,7 @@
 "n": Null
 "No access code was entered.": Null
 "No administrators could be found.": Null
+"No authentication": Null
 "No data existed in training set.  JSON file not created.": Null
 "No files have been uploaded yet.": Null
 "No models were found.": Null
@@ -764,6 +768,7 @@
 "Please wait.  File is being uploaded": Null
 "Please wait.  Files are syncing.": Null
 "Please wait.  Interview will start when sync is complete.": Null
+"Please wait . . .": Null
 "Please wait.": Null
 "Please wait.  Packages are updating.  The screen will refresh when the process is complete.  This may take several minutes.": Null
 "Please wait.  System is restarting.": Null
@@ -810,15 +815,17 @@
 "Read this screen out loud": Null
 "Reason for needing developer account (optional)": Null
 "Reconfigure": Null
+"Referring URL": Null
 "Refresh": Null
 "Register for an account on": Null
 "Register": Null
 "Register with Auth0": Null
+"Register with Authentik": Null
 "Register with Azure": Null
 "Register with Facebook": Null
 "Register with Google": Null
+"Register with Keycloak": Null
 "Register with miniOrange": Null
-"Register with Twitter": Null
 "Register with your mobile phone": Null
 "Register with Zitadel": Null
 "Registration attempt": Null
@@ -889,6 +896,7 @@
 "Select one": Null
 "Select the folder from your OneDrive that you want to be synchronized with the Playground.": Null
 "Select the project": Null
+"Select which files to include in the commit": Null
 "Select zero or more files": Null
 "Select zero or more packages": Null
 "Send confirmation email": Null
@@ -919,12 +927,12 @@
 "Sign in or sign up to save answers": Null
 "Sign in to save answers": Null
 "Sign in with Auth0": Null
+"Sign in with Authentik": Null
 "Sign in with Azure": Null
 "Sign in with Facebook": Null
 "Sign in with Google": Null
 "Sign in with Keycloak": Null
 "Sign in with miniOrange": Null
-"Sign in with Twitter": Null
 "Sign in with your mobile phone": Null
 "Sign in with Zitadel": Null
 "Sign Out": Null
@@ -1302,10 +1310,11 @@
 "You need to increment the version before publishing to PyPI.": Null
 "You need to log in before you can access": Null
 "You need to log in with Auth0.": Null
+"You need to log in with Authentik.": Null
 "You need to log in with Azure.": Null
 "You need to log in with Facebook.": Null
 "You need to log in with Google.": Null
-"You need to log in with Twitter.": Null
+"You need to log in with Keycloak.": Null
 "You need to select one.": Null
 "You need to select one or type in a new value.": Null
 "You need to supply a Git URL, upload a file, or supply the name of a package on PyPI.": Null

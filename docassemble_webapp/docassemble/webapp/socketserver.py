@@ -220,7 +220,7 @@ def terminate_interview_connection():
 
 @socketio.on('chatmessage', namespace='/wsinterview')
 def chat_message(data):
-    nowtime = datetime.datetime.utcnow()
+    nowtime = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
     yaml_filename = data['i']
     session_info = get_session(yaml_filename)
     if session_info is not None:
@@ -397,7 +397,7 @@ def on_interview_disconnect():
 def get_current_info(yaml_filename, session_id, secret):
     url_root = daconfig.get('url root', 'http://localhost') + daconfig.get('root', '/')
     url = url_root + 'interview'
-    return {'user': {'is_anonymous': False, 'is_authenticated': True, 'email': 'admin@admin.com', 'theid': 1, 'the_user_id': 1, 'roles': ['admin'], 'firstname': 'Admin', 'lastname': 'User', 'nickname': '', 'country': '', 'subdivisionfirst': '', 'subdivisionsecond': '', 'subdivisionthird': '', 'organization': '', 'location': None, 'session_uid': 'admin', 'device_id': 'admin'}, 'session': session_id, 'secret': secret, 'yaml_filename': yaml_filename, 'url': url, 'url_root': url_root, 'encrypted': True, 'action': None, 'interface': 'chat', 'arguments': {}}
+    return {'user': {'is_anonymous': False, 'is_authenticated': True, 'email': 'admin@example.com', 'theid': 1, 'the_user_id': 1, 'roles': ['admin'], 'firstname': 'Admin', 'lastname': 'User', 'nickname': '', 'country': '', 'subdivisionfirst': '', 'subdivisionsecond': '', 'subdivisionthird': '', 'organization': '', 'location': None, 'session_uid': 'admin', 'device_id': 'admin'}, 'session': session_id, 'secret': secret, 'yaml_filename': yaml_filename, 'url': url, 'url_root': url_root, 'encrypted': True, 'action': None, 'interface': 'chat', 'arguments': {}}
 
 
 def get_dict(yaml_filename):
@@ -416,7 +416,7 @@ def get_dict(yaml_filename):
     docassemble.base.functions.this_thread.current_info = get_current_info(yaml_filename, session_id, secret)
     try:
         steps, user_dict, is_encrypted = fetch_user_dict(session_id, yaml_filename, secret=secret)  # pylint: disable=unused-variable
-    except Exception as err:
+    except BaseException as err:
         # release_lock(session_id, yaml_filename)
         logmessage('get_dict: attempt to get dictionary failed: ' + str(err))
         return None
@@ -441,7 +441,7 @@ def get_dict_encrypt(yaml_filename):
     docassemble.base.functions.this_thread.current_info = get_current_info(yaml_filename, session_id, secret)
     try:
         steps, user_dict, is_encrypted = fetch_user_dict(session_id, yaml_filename, secret=secret)  # pylint: disable=unused-variable
-    except Exception as err:
+    except BaseException as err:
         # release_lock(session_id, yaml_filename)
         logmessage('get_dict_encrypt: attempt to get dictionary failed: ' + str(err))
         return None, None
@@ -813,13 +813,13 @@ def monitor_chat_message(data):
     with session_scope() as dbsession:
         try:
             steps, user_dict, encrypted = fetch_user_dict(session_id, yaml_filename, secret=secret)  # pylint: disable=unused-variable
-        except Exception as err:
+        except BaseException as err:
             # release_lock(session_id, yaml_filename)
             logmessage("monitor_chat_message: could not get dictionary: " + str(err))
             return
         # release_lock(session_id, yaml_filename)
         docassemble.base.functions.this_thread.current_info['encrypted'] = encrypted
-        nowtime = datetime.datetime.utcnow()
+        nowtime = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
         if encrypted:
             message = encrypt_phrase(data['data'], secret)
         else:
@@ -881,7 +881,7 @@ def monitor_chat_log(data):
         docassemble.base.functions.this_thread.current_info = get_current_info(yaml_filename, session_id, secret)
         try:
             steps, user_dict, encrypted = fetch_user_dict(session_id, yaml_filename, secret=secret)  # pylint: disable=unused-variable
-        except Exception as err:
+        except BaseException as err:
             # release_lock(session_id, yaml_filename)
             logmessage("monitor_chat_log: could not get dictionary: " + str(err))
             return

@@ -11,6 +11,8 @@ db:
   host: localhost
   port: Null
   table_prefix: Null
+google:
+  use places api new: True
 oauth:
   facebook:
     enable: False
@@ -31,10 +33,13 @@ oauth:
     secret: LLGEBDrrgDFDfBsFjErsdSdsntkrtAbfa4ee3ss_adfdSDFEWEsfgHTerjNsd3dD
     domain: keycloak.example.com
     realm: default
-  twitter:
+  authentik:
     enable: False
-    id: Iweh63ReKfOCttaUBE3t27TET
-    secret: hfieegGgrht5re3hfhsRGStYUbDDAgerergrggSDGHtrErE7rf
+    id: 29zWxVegWUEaIh75WTOAg9jUnbpAOiuc683JmL2s
+    secret: 6dg8kgi8I87xcYxaOu2LSamj7cWE4j6VxC1bPcGTIl4ddMXr3Xaq6IBLo3TupITFylydPciPLULOKxIff3LmT7FxIOmEcnAsUdQf7OG3334S4FlMzEXhGFgFOARnYcVo
+    application slug: myapplication-authentik
+    domain: myserver:9000
+    protocol: "http://"
   azure:
     enable: False
     id: e378beb1-0bfb-45bc-9b4b-604dcf640c87
@@ -90,3 +95,6 @@ new markdown to docx: True
 new template markdown behavior: True
 enable unoconv: True
 allow configuration editing: True
+javascript defer: True
+use nginx to serve files: True
+restrict input variables: True

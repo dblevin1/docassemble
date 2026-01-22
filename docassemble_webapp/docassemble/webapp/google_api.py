@@ -16,7 +16,7 @@ if credential_json is None:
 else:
     try:
         credential_info = json.loads(credential_json, strict=False)
-    except Exception as err:
+    except BaseException as err:
         credential_info = None
         sys.stderr.write("Unable to load google service account credentials:\n")
         sys.stderr.write(str(err) + "\n")
@@ -33,11 +33,11 @@ def google_api_credentials(scope):
     return ServiceAccountCredentials.from_json_keyfile_dict(credential_info, scope)
 
 
-def google_cloud_credentials():
+def google_cloud_credentials(scopes=None):
     """Returns google.oauth2.service_account.Credentials that can be used with the google.cloud API."""
     if credential_info is None:
         raise DAException("google service account credentials not defined in configuration")
-    return service_account.Credentials.from_service_account_info(credential_info)
+    return service_account.Credentials.from_service_account_info(credential_info, scopes=scopes)
 
 
 def project_id():

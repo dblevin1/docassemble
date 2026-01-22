@@ -6,7 +6,7 @@ import shutil
 import types
 import yaml
 from docassemble.webapp.files import SavedFile, get_ext_and_mimetype, make_package_zip
-from docassemble.base.pandoc import word_to_markdown, convertible_mimetypes, convertible_extensions
+from docassemble.base.pandoc import word_to_markdown, convertible_mimetypes, convertible_extensions, can_convert_word_to_markdown
 from docassemble.base.util import DAObject, DADict, DAList
 from docassemble.base.error import DAError, DAException
 import docassemble.base.functions
@@ -100,7 +100,7 @@ class DAInterview(DAObject):
         info['readme'] = ""
         info['description'] = self.title
         info['version'] = "1.0"
-        info['license'] = "The MIT License"
+        info['license'] = "MIT"
         info['url'] = "https://docassemble.org"
         for block in self.all_blocks():
             if hasattr(block, 'templates_used'):
@@ -397,6 +397,8 @@ class PlaygroundSection:
         if not self.file_exists(filename):
             return False
         path = self.get_file(filename)
+        if not can_convert_word_to_markdown():
+            return False
         result_file = word_to_markdown(path, 'docx')
         if result_file is None:
             return False
@@ -488,8 +490,8 @@ class Playground(PlaygroundSection):
         temp_current_info['yaml_filename'] = "docassemble.playground" + str(self.user_id) + project_name(self.project) + ":_temp.yml"
         interview_status = docassemble.base.parse.InterviewStatus(current_info=temp_current_info)
         user_dict = docassemble.base.parse.get_initial_dict()
-        user_dict['_internal']['starttime'] = datetime.datetime.utcnow()
-        user_dict['_internal']['modtime'] = datetime.datetime.utcnow()
+        user_dict['_internal']['starttime'] = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+        user_dict['_internal']['modtime'] = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
         try:
             interview.assemble(user_dict, interview_status)
         except:

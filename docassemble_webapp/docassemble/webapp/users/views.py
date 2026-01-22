@@ -253,11 +253,15 @@ def edit_user_profile_page(user_id):
     confirmation_feature = bool(user.id > 2)
     script = """
     <script>
-      $(".dadeleteaccount").click(function(event){
-        if (!confirm(""" + json.dumps(word("Are you sure you want to permanently delete this user's account?")) + """)){
-          event.preventDefault();
-          return false;
-        }
+      document.addEventListener("DOMContentLoaded", function () {
+        $( document ).ready(function() {
+          $(".dadeleteaccount").click(function(event){
+            if (!confirm(""" + json.dumps(word("Are you sure you want to permanently delete this user's account?")) + """)){
+              event.preventDefault();
+              return false;
+            }
+          });
+        });
       });
     </script>"""
     form.role_id.process_data(the_role_id)
@@ -390,7 +394,7 @@ def invite():
                 logmessage("Trying to send invite e-mail to " + str(user_invite.email))
                 emails.send_invite_email(user_invite, accept_invite_link)
                 logmessage("Sent e-mail invite to " + str(user_invite.email))
-            except Exception as e:
+            except BaseException as e:
                 try:
                     logmessage("Failed to send invite e-mail: " + e.__class__.__name__ + ': ' + str(e))
                 except:

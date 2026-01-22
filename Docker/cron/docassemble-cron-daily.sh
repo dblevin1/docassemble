@@ -1,7 +1,7 @@
 #! /bin/bash
 
 export DA_ROOT="${DA_ROOT:-/usr/share/docassemble}"
-export DA_DEFAULT_LOCAL="local3.10"
+export DA_DEFAULT_LOCAL="local3.12"
 
 export DA_ACTIVATE="${DA_PYTHON:-${DA_ROOT}/${DA_DEFAULT_LOCAL}}/bin/activate"
 source "${DA_ACTIVATE}"
@@ -115,7 +115,7 @@ if [[ $CONTAINERROLE =~ .*:(all):.* ]]; then
 fi
 
 # If this container is running a SQL server, back up PostgreSQL
-if [[ $CONTAINERROLE =~ .*:(all|sql):.* ]] && [ "$DBTYPE" == "postgresql" ]; then
+if [[ $CONTAINERROLE =~ .*:(all|sql):.* ]]; then
     PGBACKUPDIR=`mktemp -d`
     chown postgres:postgres "${PGBACKUPDIR}"
     su postgres -c 'psql -Atc "SELECT datname FROM pg_database" postgres' | grep -v -e template -e postgres | awk -v backupdir="$PGBACKUPDIR" '{print "cd /tmp; su postgres -c \"pg_dump -F c -f " backupdir "/" $1 " " $1 "\""}' | bash

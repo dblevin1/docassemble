@@ -6,8 +6,8 @@ import math
 import os
 import pickle
 import re
-import sys
-import time
+# import sys
+# import time
 import types
 import xml.etree.ElementTree as ET
 import pandas
@@ -17,12 +17,11 @@ from flask import session, url_for as base_url_for
 from flask_login import current_user
 from flask_wtf.csrf import generate_csrf
 from sqlalchemy import or_, and_, select, delete
-import ruamel.yaml
 import tzlocal
 from docassemble.base.error import DAException
 from docassemble.webapp.da_flask_mail import Message  # noqa: F401 # pylint: disable=unused-import
-from docassemble.base.functions import pickleable_objects, filename_invalid
-from docassemble.base.config import daconfig, hostname, DEBUG_BOOT, START_TIME, boot_log
+from docassemble.base.functions import pickleable_objects, filename_invalid, safeyaml
+from docassemble.base.config import daconfig, hostname, DEBUG_BOOT, boot_log  # START_TIME
 from docassemble.base.generate_key import random_bytes, random_alphanumeric
 from docassemble.base.logger import logmessage
 import docassemble.base.functions
@@ -39,6 +38,7 @@ from docassemble.webapp.da_flask_mail import FlaskMail
 from docassemble.webapp.packages.models import PackageAuth
 from docassemble.webapp.screenreader import to_text
 from docassemble.webapp.sendgrid_mail import Mail as SendgridMail
+from docassemble.webapp.azure_mail import Mail as AzureMail
 from docassemble.webapp.users.models import UserModel, Role, ChatLog, UserDict, UserDictKeys, UserAuthModel, UserRoles
 import docassemble.webapp.cloud
 import docassemble.webapp.database
@@ -53,8 +53,6 @@ if DEBUG_BOOT:
 TypeType = type(type(None))
 NoneType = type(None)
 DEBUG = daconfig.get('debug', False)
-
-safeyaml = ruamel.yaml.YAML(typ='safe')
 
 # def elapsed(name_of_function):
 #     def elapse_decorator(func):
@@ -272,6 +270,18 @@ def get_mail_config():
             mail_class = SendgridMail
             config = {
                 'SENDGRID_API_KEY': mail_config['sendgrid api key'],
+                'MAIL_DEFAULT_SENDER': mail_config.get('default sender', None),
+                'MAIL_DEBUG': app.config.get('MAIL_DEBUG', False),
+                'MAIL_MAX_EMAILS': app.config.get('MAIL_MAX_EMAILS'),
+                'MAIL_SUPPRESS_SEND': app.config.get('MAIL_SUPPRESS_SEND', False),
+                'MAIL_ASCII_ATTACHMENTS': app.config.get('MAIL_ASCII_ATTACHMENTS', False)
+            }
+        elif 'azure client id' in mail_config and mail_config['azure client id']:
+            mail_class = AzureMail
+            config = {
+                'AZURE_CLIENT_ID': mail_config['azure client id'],
+                'AZURE_CLIENT_SECRET': mail_config.get('azure client secret', None),
+                'AZURE_TENANT_ID': mail_config.get('azure tenant id', None),
                 'MAIL_DEFAULT_SENDER': mail_config.get('default sender', None),
                 'MAIL_DEBUG': app.config.get('MAIL_DEBUG', False),
                 'MAIL_MAX_EMAILS': app.config.get('MAIL_MAX_EMAILS'),
@@ -525,7 +535,7 @@ def fix_words():
                             logmessage("Error reading " + str(word_file) + ": xlsx for language " + lang + " could not be processed.")
                     if len(problems) > 0:
                         logmessage("Error reading " + str(word_file) + ": could not read lines " + ", ".join(problems) + ".")
-                except Exception as err:
+                except BaseException as err:
                     logmessage("Error reading " + str(word_file) + ": xlsx processing raised exception " + err.__class__.__name__ + ": " + str(err))
             elif filename.lower().endswith('.xlf') or filename.lower().endswith('.xliff'):
                 try:
@@ -588,7 +598,7 @@ def fix_words():
                             docassemble.base.functions.update_word_collection(lang, the_dict)
                         except:
                             logmessage("Error reading " + str(word_file) + ": xlf for language " + lang + " could not be processed.")
-                except Exception as err:
+                except BaseException as err:
                     logmessage("Error reading " + str(word_file) + ": xlf processing raised exception " + err.__class__.__name__ + ": " + str(err))
             else:
                 logmessage("filename " + filename + " had an unknown type")
@@ -811,7 +821,7 @@ def fetch_user_dict(user_code, filename, secret=None):
     user_dict = None
     steps = 1
     encrypted = True
-    subq = select(db.func.max(UserDict.indexno).label('indexno'), db.func.count(UserDict.indexno).label('cnt')).where(and_(UserDict.key == user_code, UserDict.filename == filename)).subquery()
+    subq = select(db.func.max(UserDict.indexno).label('indexno'), db.func.count(UserDict.indexno).label('cnt')).where(and_(UserDict.key == user_code, UserDict.filename == filename)).subquery()  # pylint: disable=not-callable
     stmt = select(UserDict.indexno, UserDict.dictionary, UserDict.encrypted, subq.c.cnt).join(subq, subq.c.indexno == UserDict.indexno)
     result = db.session.execute(stmt)
     for d in list(result):
@@ -975,6 +985,8 @@ def delete_user_data(user_id, r, r_user):
 # @elapsed('reset_user_dict')
 def reset_user_dict(user_code, filename, user_id=None, temp_user_id=None, force=False):
     logmessage(f"reset_user_dict called with {user_code=} {filename=} {user_id=} {temp_user_id=} {force=}")
+    # logmessage("reset_user_dict called with " + str(user_code) + " and " + str(filename) + " and " + str(user_id) + " and " + str(temp_user_id) + " and " + str(force))
+    user_type = ''
     if force:
         the_user_id = None
     else:

@@ -7,6 +7,7 @@ from celery import Celery
 from celery.result import result_from_tuple
 from docassemble.base.config import daconfig
 from docassemble.base.logger import logmessage
+from docassemble.base.save_status import SS_NEW, SS_OVERWRITE, SS_IGNORE
 
 backend = daconfig.get('redis', None)
 if backend is None:
@@ -20,6 +21,23 @@ importlib.import_module('docassemble.webapp.config_worker')
 workerapp.config_from_object('docassemble.webapp.config_worker')
 workerapp.set_current()
 workerapp.set_default()
+
+
+class ReturnValue:
+
+    def __init__(self, **kwargs):
+        self.extra = kwargs.get('extra', None)
+        self.value = kwargs.get('value', None)
+        for key, val in kwargs.items():
+            if key not in ['extra', 'value']:
+                setattr(self, key, val)
+
+    def __str__(self):
+        if hasattr(self, 'ok') and self.ok and hasattr(self, 'content'):
+            return str(self.content)
+        if hasattr(self, 'error_message'):
+            return str(self.error_message)
+        return str(self.value)
 
 
 class WorkerController:
@@ -89,7 +107,7 @@ def process_error(interview, session_code, yaml_filename, secret, user_info, url
     old_language = worker_controller.functions.get_language()
     try:
         interview.assemble(user_dict, interview_status)
-    except Exception as e:
+    except BaseException as e:
         if hasattr(e, 'traceback'):
             logmessage("Error in assembly during error callback: " + str(e.__class__.__name__) + ": " + str(e) + ": " + str(e.traceback))
         else:
@@ -105,13 +123,13 @@ def process_error(interview, session_code, yaml_filename, secret, user_info, url
         worker_controller.error_notification(e, message=error_message, trace=error_trace)
     worker_controller.functions.set_language(old_language)
     # is this right?
-    save_status = worker_controller.functions.this_thread.misc.get('save_status', 'new')
-    if save_status != 'ignore':
+    save_status = worker_controller.functions.this_thread.misc.get('save_status', SS_NEW)
+    if save_status != SS_IGNORE:
         if str(user_info.get('the_user_id', None)).startswith('t'):
             worker_controller.save_user_dict(session_code, user_dict, yaml_filename, secret=secret, encrypt=is_encrypted, steps=steps)
         else:
             worker_controller.save_user_dict(session_code, user_dict, yaml_filename, secret=secret, encrypt=is_encrypted, manual_user_id=user_info['theid'], steps=steps)
-    worker_controller.release_lock(session_code, yaml_filename)
+        worker_controller.release_lock(session_code, yaml_filename)
     if hasattr(interview_status, 'question'):
         if interview_status.question.question_type == "response":
             logmessage("Time in error callback was " + str(time.time() - start_time))
@@ -122,9 +140,9 @@ def process_error(interview, session_code, yaml_filename, secret, user_info, url
                 sys.stdout.write(interview_status.questionText.rstrip().encode('utf8') + "\n")
         elif interview_status.question.question_type == "backgroundresponse":
             logmessage("Time in error callback was " + str(time.time() - start_time))
-            return worker_controller.functions.ReturnValue(ok=False, error_type=error_type, error_trace=error_trace, error_message=error_message, variables=variables, value=interview_status.question.backgroundresponse, extra=extra)
+            return ReturnValue(ok=False, error_type=error_type, error_trace=error_trace, error_message=error_message, variables=variables, value=interview_status.question.backgroundresponse, extra=extra)
     logmessage("Time in error callback was " + str(time.time() - start_time))
-    return worker_controller.functions.ReturnValue(ok=False, error_type=error_type, error_trace=error_trace, error_message=error_message, variables=variables, extra=extra)
+    return ReturnValue(ok=False, error_type=error_type, error_trace=error_trace, error_message=error_message, variables=variables, extra=extra)
 
 
 def error_object(err):
@@ -133,7 +151,7 @@ def error_object(err):
     error_message = str(err)
     error_trace = None
     worker_controller.error_notification(err, message=error_message, trace=error_trace)
-    return worker_controller.functions.ReturnValue(ok=False, error_message=error_message, error_type=error_type, error_trace=error_trace, restart=False)
+    return ReturnValue(ok=False, error_message=error_message, error_type=error_type, error_trace=error_trace, restart=False)
 
 
 @contextmanager

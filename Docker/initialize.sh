@@ -2,7 +2,7 @@
 
 export HOME=/root
 export DA_ROOT="${DA_ROOT:-/usr/share/docassemble}"
-export DA_DEFAULT_LOCAL="local3.10"
+export DA_DEFAULT_LOCAL="local3.12"
 
 export DA_ACTIVATE="${DA_PYTHON:-${DA_ROOT}/${DA_DEFAULT_LOCAL}}/bin/activate"
 
@@ -40,6 +40,12 @@ if [ "${DAALLOWUPDATES:-true}" == "true" ]; then
     apt-get clean &> /dev/null
     echo "initialize: Running apt-get update" >&2
     apt-get -q -y update &> /dev/null
+fi
+
+if [[ '$(dpkg --print-architecture)' == 'amd64' ]]; then
+    CURRENTARCH=x86_64
+else
+    CURRENTARCH=aarch64
 fi
 
 echo "initialize: Determining if web browser already running" >&2
@@ -122,6 +128,9 @@ if [ "${S3ENABLE:-null}" == "true" ] && [ "${S3BUCKET:-null}" != "null" ] && [ "
     export AWS_SECRET_ACCESS_KEY="$S3SECRETACCESSKEY"
     export AWS_DEFAULT_REGION="$S3REGION"
 fi
+
+export AWS_REQUEST_CHECKSUM_CALCULATION=WHEN_REQUIRED
+export AWS_RESPONSE_CHECKSUM_VALIDATION=WHEN_REQUIRED
 
 S4CMD_OPTS=""
 
@@ -495,7 +504,11 @@ if [ ! -f "$DA_CONFIG_FILE" ]; then
         -e 's/{{DADEBUG}}/'"${DADEBUG:-true}"'/g' \
         -e 's/{{DASUPERVISORUSERNAME}}/'"${DASUPERVISORUSERNAME:-null}"'/g' \
         -e 's/{{DASUPERVISORPASSWORD}}/'"${DASUPERVISORPASSWORD:-null}"'/g' \
-        -e 's#{{GOTENBERGURL}}#'"${GOTENBERGURL:-null}"'#g' \
+        -e 's#{{GOTENBERGENABLE}}#'"${GOTENBERGENABLE:-false}"'#g' \
+        -e 's@{{GOTENBERGURL}}@'"${GOTENBERGURL:-null}"'@g' \
+        -e 's#{{GOTENBERGUSERNAME}}#'"${GOTENBERGUSERNAME:-null}"'#g' \
+        -e 's/{{GOTENBERGPASSWORD}}/'"${GOTENBERGPASSWORD:-null}"'/g' \
+	-e 's/{{USENGINXTOSERVEFILES}}/'"${USENGINXTOSERVEFILES:-true}"'/g' \
         "$DA_CONFIG_FILE_DIST" > "$DA_CONFIG_FILE" || exit 1
 fi
 if [ "${DAROOTOWNED:-false}" == "false" ] && [ "${DAREADONLYFILESYSTEM:-false}" == "false" ]; then
@@ -532,7 +545,7 @@ if [ "${DAREADONLYFILESYSTEM:-false}" == "false" ]; then
         if [ "${DAROOTOWNED:-false}" == "true" ]; then
             if [ "${DAALLOWUPDATES:-true}" == "true" ] \
                    || [ "${DAENABLEPLAYGROUND:-true}" == "true" ]; then
-                chown -R www-data:www-data /usr/share/docassemble/local3.10
+                chown -R www-data:www-data /usr/share/docassemble/local3.12
             else
                 echo "initialize: Python virtual environment is read-only" >&2
             fi
@@ -551,10 +564,137 @@ if [ "${DAREADONLYFILESYSTEM:-false}" == "false" ]; then
         else
             echo "initialize: No root ownership; changing file ownership to www-data (this takes a long time)" >&2
             chsh -s /bin/bash www-data
-            chown -R www-data:www-data /usr/share/docassemble/local3.10
+            chown -R www-data:www-data /usr/share/docassemble/local3.12
             chown -R www-data:www-data /usr/share/docassemble/config \
                   /usr/share/docassemble/webapp/docassemble.wsgi
         fi
+	echo "initialize: considering whether to install extra fonts" >&2
+	if [ "${DAEXTRAFONTS:-false}" == "true" ]; then
+	    echo "initialize: installing extra fonts" >&2
+	    apt-get -q -y install \
+		    texlive-fonts-extra \
+		    fonts-adf-accanthis \
+		    fonts-adf-berenis \
+		    fonts-adf-gillius \
+		    fonts-adf-universalis \
+		    fonts-arkpandora \
+		    fonts-beng \
+		    fonts-beng-extra \
+		    fonts-cabin \
+		    fonts-cantarell \
+		    fonts-clear-sans \
+		    fonts-comfortaa \
+		    fonts-comic-neue \
+		    fonts-deva \
+		    fonts-deva-extra \
+		    fonts-ebgaramond-extra \
+		    fonts-font-awesome \
+		    fonts-gargi \
+		    fonts-gfs-artemisia \
+		    fonts-gfs-complutum \
+		    fonts-gfs-didot \
+		    fonts-gfs-neohellenic \
+		    fonts-gfs-olga \
+		    fonts-gfs-solomos \
+		    fonts-go \
+		    fonts-gubbi \
+		    fonts-gujr \
+		    fonts-gujr-extra \
+		    fonts-guru \
+		    fonts-guru-extra \
+		    fonts-indic \
+		    fonts-inter \
+		    fonts-kalapi \
+		    fonts-knda \
+		    fonts-lato \
+		    fonts-liberation2 \
+		    fonts-lobster \
+		    fonts-lobstertwo \
+		    fonts-lohit-beng-assamese \
+		    fonts-lohit-beng-bengali \
+		    fonts-lohit-deva \
+		    fonts-lohit-gujr \
+		    fonts-lohit-guru \
+		    fonts-lohit-knda \
+		    fonts-lohit-mlym \
+		    fonts-lohit-orya \
+		    fonts-lohit-taml \
+		    fonts-lohit-taml-classical \
+		    fonts-lohit-telu \
+		    fonts-mlym \
+		    fonts-nakula \
+		    fonts-navilu \
+		    fonts-noto \
+		    fonts-noto-cjk \
+		    fonts-noto-cjk-extra \
+		    fonts-noto-core \
+		    fonts-noto-extra \
+		    fonts-noto-ui-extra \
+		    fonts-noto-unhinted \
+		    fonts-oflb-asana-math \
+		    fonts-open-sans \
+		    fonts-orya \
+		    fonts-orya-extra \
+		    fonts-pagul \
+		    fonts-paratype \
+		    fonts-roboto-slab \
+		    fonts-roboto-unhinted \
+		    fonts-sahadeva \
+		    fonts-samyak \
+		    fonts-samyak-deva \
+		    fonts-samyak-gujr \
+		    fonts-samyak-mlym \
+		    fonts-samyak-orya \
+		    fonts-samyak-taml \
+		    fonts-sarai \
+		    fonts-sil-andika \
+		    fonts-sil-annapurna \
+		    fonts-sil-charis \
+		    fonts-sil-gentiumplus \
+		    fonts-sil-gentiumplus-compact \
+		    fonts-smc \
+		    fonts-smc-anjalioldlipi \
+		    fonts-smc-chilanka \
+		    fonts-smc-dyuthi \
+		    fonts-smc-gayathri \
+		    fonts-smc-karumbi \
+		    fonts-smc-keraleeyam \
+		    fonts-smc-manjari \
+		    fonts-smc-meera \
+		    fonts-smc-rachana \
+		    fonts-smc-raghumalayalamsans \
+		    fonts-smc-suruma \
+		    fonts-smc-uroob \
+		    fonts-stix \
+		    fonts-taml \
+		    fonts-telu \
+		    fonts-telu-extra \
+		    fonts-teluguvijayam \
+		    fonts-yrsa-rasa \
+		    cm-super &> /dev/null
+	    if [ $? -eq 0 ]; then
+		echo "initialize: extra fonts installed." >&2
+	    else
+		echo "initialize: error while installing extra fonts." >&2
+	    fi
+	fi
+	echo "initialize: considering whether to install google fonts" >&2
+	if [ "${DAGOOGLEFONTS:-false}" == "true" ]; then
+	    echo "initialize: installing google fonts" >&2
+	    { cd /tmp \
+		  && wget -q -O google-fonts.tar.gz https://github.com/google/fonts/archive/main.tar.gz \
+		  && tar -zxf google-fonts.tar.gz \
+		  && rm google-fonts.tar.gz \
+		  && mkdir -p /usr/share/fonts/truetype/google-fonts \
+		  && find ./fonts-main/ -name "*.ttf" -exec install -m644 {} /usr/share/fonts/truetype/google-fonts/ \; \
+		  && rm -r ./fonts-main \
+		  && fc-cache -f -v; } &> /dev/null
+	    if [ $? -eq 0 ]; then
+		echo "initialize: google fonts installed." >&2
+	    else
+		echo "initialize: error while installing google fonts." >&2
+	    fi
+	fi
         touch /etc/hasbeeninitialized
     else
         echo "initialize: This is not the first time the server was initialized" >&2
@@ -705,7 +845,8 @@ if [ "${DAWEBSERVER:-nginx}" = "nginx" ] && [ "${DAREADONLYFILESYSTEM:-false}" =
         DASSLCERTIFICATE="/etc/ssl/docassemble/nginx.crt;"
         DASSLCERTIFICATEKEY="/etc/ssl/docassemble/nginx.key;"
     fi
-    DASSLPROTOCOLS=${DASSLPROTOCOLS:-TLSv1.2}
+    DASSLPROTOCOLS=${DASSLPROTOCOLS:-TLSv1.2 TLSv1.3}
+    DASSLCIPHERS=${DASSLCIPHERS:-HIGH:!aNULL:!MD5}
     if [ ! -f "/etc/letsencrypt/live/${DAHOSTNAME}/fullchain.pem" ]; then
         rm -f /etc/letsencrypt/da_using_lets_encrypt
     fi
@@ -738,6 +879,7 @@ if [ "${DAWEBSERVER:-nginx}" = "nginx" ] && [ "${DAREADONLYFILESYSTEM:-false}" =
                     -e 's@{{DASSLCERTIFICATE}}@'"${DASSLCERTIFICATE}"'@' \
                     -e 's@{{DASSLCERTIFICATEKEY}}@'"${DASSLCERTIFICATEKEY}"'@' \
                     -e 's@{{DASSLPROTOCOLS}}@'"${DASSLPROTOCOLS}"'@' \
+                    -e 's@{{DASSLCIPHERS}}@'"${DASSLCIPHERS}"'@' \
                     -e 's@{{DAWEBSOCKETSIP}}@'"${DAWEBSOCKETSIP:-127.0.0.1}"'@' \
                     -e 's@{{DAWEBSOCKETSPORT}}@'"${DAWEBSOCKETSPORT:-5000}"'@' \
                     -e 's@{{DALISTENPORT}}@'"${PORT:-80}"'@' \
@@ -975,11 +1117,15 @@ if [[ $CONTAINERROLE =~ .*:(all|sql):.* ]] && [ "$PGRUNNING" == "false" ] && [ "
     ${SUPERVISORCMD} start main:postgres || exit 1
     sleep 4
     su -c "while ! pg_isready -q; do sleep 1; done" postgres
-    echo "initialize: Testing if the database user exists" >&2
-    roleexists=`su -c "psql -tAc \"SELECT 1 FROM pg_roles WHERE rolname='${DBUSER:-docassemble}'\"" postgres`
-    if [ -z "$roleexists" ]; then
-        echo "initialize: Creating the database user" >&2
-        echo "create role "${DBUSER:-docassemble}" with login password '"${DBPASSWORD:-abc123}"';" | su -c psql postgres || exit 1
+    if [[ $CONTAINERROLE =~ .*:all:.* ]] && [ "${DBHOST:-localhost}" != "localhost" ]; then
+	echo "initialize: Using remote SQL server so no need to test if database user exists" >&2
+    else
+	echo "initialize: Testing if the database user exists" >&2
+	roleexists=`su -c "psql -tAc \"SELECT 1 FROM pg_roles WHERE rolname='${DBUSER:-docassemble}'\"" postgres`
+	if [ -z "$roleexists" ]; then
+	    echo "initialize: Creating the database user" >&2
+	    echo "create role "${DBUSER:-docassemble}" with login password '"${DBPASSWORD:-abc123}"';" | su -c psql postgres || exit 1
+	fi
     fi
     if [ "${RESTOREFROMBACKUP}" == "true" ]; then
         echo "initialize: Restoring SQL database" >&2
@@ -1003,8 +1149,12 @@ if [[ $CONTAINERROLE =~ .*:(all|sql):.* ]] && [ "$PGRUNNING" == "false" ] && [ "
             cd "$PGBACKUPDIR"
             chown -R postgres:postgres "$PGBACKUPDIR"
             for db in $( find . -maxdepth 1 -type f ! -iname ".*" ); do
-                echo "initialize: Restoring postgres database $db" >&2
-                pg_restore -f - -F c -C -c $db | su -c psql postgres
+		if [[ $CONTAINERROLE =~ .*:all:.* ]] && [ "${DBHOST:-localhost}" != "localhost" ] && [ "${DBBACKUP:-true}" == "true" ] && [ "${DBNAME:-docassemble}" == "${db}" ]; then
+		    echo "initialize: Not restoring postgres database $db because it is a backup of the remote database" >&2
+		else
+                    echo "initialize: Restoring postgres database $db" >&2
+                    pg_restore -f - -F c -C -c $db | su -c psql postgres
+		fi
             done
             if ([ "${S3ENABLE:-false}" == "true" ] || [ "${AZUREENABLE:-false}" == "true" ]) && [ "${PGBACKUPDIR}" != "${DA_ROOT}/backup/postgres" ]; then
                 cd /
@@ -1013,11 +1163,15 @@ if [[ $CONTAINERROLE =~ .*:(all|sql):.* ]] && [ "$PGRUNNING" == "false" ] && [ "
             cd /tmp
         fi
     fi
-    echo "initialize: Testing if database exists" >&2
-    dbexists=`su -c "psql -tAc \"SELECT 1 FROM pg_database WHERE datname='${DBNAME:-docassemble}'\"" postgres`
-    if [ -z "$dbexists" ]; then
-        echo "initialize: Creating SQL database" >&2
-        echo "create database "${DBNAME:-docassemble}" owner "${DBUSER:-docassemble}" encoding UTF8;" | su -c psql postgres || exit 1
+    if [[ $CONTAINERROLE =~ .*:all:.* ]] && [ "${DBHOST:-localhost}" != "localhost" ]; then
+	echo "initialize: Using remote SQL server so no need to test if database exists" >&2
+    else
+	echo "initialize: Testing if database exists" >&2
+	dbexists=`su -c "psql -tAc \"SELECT 1 FROM pg_database WHERE datname='${DBNAME:-docassemble}'\"" postgres`
+	if [ -z "$dbexists" ]; then
+	    echo "initialize: Creating SQL database" >&2
+	    echo "create database "${DBNAME:-docassemble}" owner "${DBUSER:-docassemble}" encoding UTF8;" | su -c psql postgres || exit 1
+	fi
     fi
 elif [ "$PGRUNNING" == "false" ] && [ "$DBTYPE" == "postgresql" ]; then
     export PGHOST="${DBHOST}"
@@ -1365,7 +1519,7 @@ if [ "${DAWEBSERVER:-nginx}" = "apache" ]; then
                 a2dismod remoteip
                 a2disconf docassemble-behindlb
             fi
-            echo -e "LoadModule wsgi_module ${DA_PYTHON:-${DA_ROOT}/${DA_DEFAULT_LOCAL}}/lib/python3.10/site-packages/mod_wsgi/server/mod_wsgi-py310.cpython-310-x86_64-linux-gnu.so" >> /etc/apache2/conf-available/docassemble.conf
+            echo -e "LoadModule wsgi_module ${DA_PYTHON:-${DA_ROOT}/${DA_DEFAULT_LOCAL}}/lib/python3.12/site-packages/mod_wsgi/server/mod_wsgi-py312.cpython-312-${CURRENTARCH}-linux-gnu.so" >> /etc/apache2/conf-available/docassemble.conf
             echo -e "# This file is automatically generated" > /etc/apache2/conf-available/docassemble.conf
             echo -e "WSGIPythonHome ${DA_PYTHON:-${DA_ROOT}/${DA_DEFAULT_LOCAL}}" >> /etc/apache2/conf-available/docassemble.conf
             echo -e "Timeout ${DATIMEOUT:-60}\nDefine DAHOSTNAME ${DAHOSTNAME}\nDefine DAPOSTURLROOT ${POSTURLROOT}\nDefine DAWSGIROOT ${WSGIROOT}\nDefine DASERVERADMIN ${SERVERADMIN}\nDefine DAWEBSOCKETSIP ${DAWEBSOCKETSIP}\nDefine DAWEBSOCKETSPORT ${DAWEBSOCKETSPORT}\nDefine DACROSSSITEDOMAINVALUE *\nDefine DALISTENPORT ${PORT:-80}" >> /etc/apache2/conf-available/docassemble.conf

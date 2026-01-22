@@ -25,6 +25,8 @@ import us
 import pycountry
 import markdown
 import nltk
+import ruamel.yaml
+from docassemble.base.save_status import SS_NEW, SS_OVERWRITE, SS_IGNORE
 
 try:
     if not os.path.isfile(os.path.join(nltk.data.path[0], 'corpora', 'omw-1.4.zip')):
@@ -60,7 +62,7 @@ import phonenumbers
 import werkzeug.utils
 import num2words
 from jinja2.runtime import Undefined
-from docassemble.base.logger import logmessage
+from docassemble.base.logger import logmessage  # pylint: disable=ungrouped-imports
 from docassemble.base.error import ForcedNameError, QuestionError, ResponseError, CommandError, BackgroundResponseError, BackgroundResponseActionError, ForcedReRun, DAError, DANameError, DAInvalidFilename
 from docassemble.base.generate_key import random_string
 import docassemble.base.astparser
@@ -105,7 +107,7 @@ def raw(val):
     return RawValue(val)
 
 
-class ReturnValue:
+class ReturnValue:  # This class is defined here for backwards-compatibility reasons because it might be pickled in existing data.
 
     def __init__(self, **kwargs):
         self.extra = kwargs.get('extra', None)
@@ -178,7 +180,7 @@ def pop_event_stack(var):
             this_thread.internal['event_stack'][unique_id].pop(0)
             # logmessage("popped the event stack")
     if 'action' in this_thread.current_info and this_thread.current_info['action'] == var:
-        del docassemble.base.functions.this_thread.current_info['action']
+        del this_thread.current_info['action']
 
 
 def pop_current_variable():
@@ -883,6 +885,18 @@ class TheUser:
         return None
 
     @property
+    def login_method(self):
+        if user_logged_in():
+            return this_thread.current_info['user']['login_method']
+        return None
+
+    @property
+    def phone_number(self):
+        if user_logged_in() and this_thread.current_info['user']['login_method'] == 'phone':
+            return this_thread.current_info['user']['nickname']
+        return None
+
+    @property
     def email(self):
         if user_logged_in():
             return this_thread.current_info['user']['email']
@@ -1144,6 +1158,8 @@ def interview_url(**kwargs):
     additional users to participate."""
     do_local = False
     args = {}
+    temporary = kwargs.pop('temporary', None)
+    once_temporary = kwargs.pop('once_temporary', None)
     for key, val in kwargs.items():
         args[key] = val
     if 'local' in args:
@@ -1170,6 +1186,7 @@ def interview_url(**kwargs):
     if 'style' in args and args['style'] in ('short', 'short_package'):
         the_style = args['style']
         del args['style']
+        is_new = False
         try:
             if int(args['new_session']):
                 is_new = True
@@ -1203,15 +1220,15 @@ def interview_url(**kwargs):
         url = url_of('flex_interview', **args)
     else:
         url = url_of('interview', **args)
-    if 'temporary' in args:
-        if isinstance(args['temporary'], (int, float)) and args['temporary'] > 0:
-            expire_seconds = int(args['temporary'] * 60 * 60)
+    if temporary:
+        if isinstance(temporary, (int, float)) and temporary > 0:
+            expire_seconds = int(temporary * 60 * 60)
         else:
             expire_seconds = 24 * 60 * 60
         return temp_redirect(url, expire_seconds, do_local, False)
-    if 'once_temporary' in args:
-        if isinstance(args['once_temporary'], (int, float)) and args['once_temporary'] > 0:
-            expire_seconds = int(args['once_temporary'] * 60 * 60)
+    if once_temporary in args:
+        if isinstance(once_temporary, (int, float)) and once_temporary > 0:
+            expire_seconds = int(once_temporary * 60 * 60)
         else:
             expire_seconds = 24 * 60 * 60
         return temp_redirect(url, expire_seconds, do_local, True)
@@ -1434,6 +1451,8 @@ def interview_url_action(action, **kwargs):
         if is_priority:
             kwargs = {'_action': action, '_arguments': kwargs}
             action = '_da_priority_action'
+    temporary = kwargs.pop('temporary', None)
+    once_temporary = kwargs.pop('once_temporary', None)
     args['action'] = myb64quote(json.dumps({'action': action, 'arguments': kwargs}))
     if not do_local:
         args['_external'] = True
@@ -1445,12 +1464,13 @@ def interview_url_action(action, **kwargs):
     if 'style' in args and args['style'] in ('short', 'short_package'):
         the_style = args['style']
         del args['style']
+        is_new = False
         try:
             if int(args['new_session']):
                 is_new = True
                 del args['new_session']
         except:
-            is_new = False
+            pass
         url = None
         if the_style == 'short':
             for k, v in server.daconfig.get('dispatch').items():
@@ -1478,19 +1498,15 @@ def interview_url_action(action, **kwargs):
         url = url_of('flex_interview', **args)
     else:
         url = url_of('interview', **args)
-    if 'temporary' in kwargs:
-        args['temporary'] = kwargs['temporary']
-    if 'once_temporary' in kwargs:
-        args['once_temporary'] = kwargs['once_temporary']
-    if 'temporary' in args:
-        if isinstance(args['temporary'], (int, float)) and args['temporary'] > 0:
-            expire_seconds = int(args['temporary'] * 60 * 60)
+    if temporary is not None:
+        if isinstance(temporary, (int, float)) and temporary > 0:
+            expire_seconds = int(temporary * 60 * 60)
         else:
             expire_seconds = 24 * 60 * 60
         return temp_redirect(url, expire_seconds, do_local, False)
-    if 'once_temporary' in args:
-        if isinstance(args['once_temporary'], (int, float)) and args['once_temporary'] > 0:
-            expire_seconds = int(args['once_temporary'] * 60 * 60)
+    if once_temporary is not None:
+        if isinstance(once_temporary, (int, float)) and once_temporary > 0:
+            expire_seconds = int(once_temporary * 60 * 60)
         else:
             expire_seconds = 24 * 60 * 60
         return temp_redirect(url, expire_seconds, do_local, True)
@@ -1578,18 +1594,18 @@ def update_terms(dictionary, auto=False, language='*'):
                 for term, definition in termitems:
                     lower_term = re.sub(r'\s+', ' ', term.lower())
                     if auto:
-                        terms[lower_term] = {'definition': str(definition), 're': re.compile(r"{?(?i)\b(%s)\b}?" % (re.sub(r'\s', '\\\s+', lower_term),), re.IGNORECASE | re.DOTALL)}  # noqa: W605
+                        terms[lower_term] = {'definition': str(definition), 're': re.compile(r"(?i){?\b(%s)\b}?" % (re.sub(r'\s', r'\\s+', lower_term),), re.IGNORECASE | re.DOTALL)}  # noqa: W605
                     else:
-                        terms[lower_term] = {'definition': str(definition), 're': re.compile(r"{(?i)(%s)(\|[^\}]*)?}" % (re.sub(r'\s', '\\\s+', lower_term),), re.IGNORECASE | re.DOTALL)}  # noqa: W605
+                        terms[lower_term] = {'definition': str(definition), 're': re.compile(r"(?i){(%s)(\|[^\}]*)?}" % (re.sub(r'\s', r'\\s+', lower_term),), re.IGNORECASE | re.DOTALL)}  # noqa: W605
             else:
                 raise DAError("update_terms: terms organized as a list must be a list of dictionary items.")
     elif isinstance(dictionary, dict):
         for term in dictionary:
             lower_term = re.sub(r'\s+', ' ', term.lower())
             if auto:
-                terms[lower_term] = {'definition': str(dictionary[term]), 're': re.compile(r"{?(?i)\b(%s)\b}?" % (re.sub(r'\s', '\\\s+', lower_term),), re.IGNORECASE | re.DOTALL)}  # noqa: W605
+                terms[lower_term] = {'definition': str(dictionary[term]), 're': re.compile(r"(?i){?\b(%s)\b}?" % (re.sub(r'\s', r'\\s+', lower_term),), re.IGNORECASE | re.DOTALL)}  # noqa: W605
             else:
-                terms[lower_term] = {'definition': str(dictionary[term]), 're': re.compile(r"{(?i)(%s)(\|[^\}]*)?}" % (re.sub(r'\s', '\\\s+', lower_term),), re.IGNORECASE | re.DOTALL)}  # noqa: W605
+                terms[lower_term] = {'definition': str(dictionary[term]), 're': re.compile(r"(?i){(%s)(\|[^\}]*)?}" % (re.sub(r'\s', r'\\s+', lower_term),), re.IGNORECASE | re.DOTALL)}  # noqa: W605
     else:
         raise DAError("update_terms: terms must be organized as a dictionary or a list.")
 
@@ -1597,7 +1613,17 @@ def update_terms(dictionary, auto=False, language='*'):
 def set_save_status(status):
     """Indicates whether the current processing of the interview logic should result in a new step in the interview."""
     if status in ('new', 'overwrite', 'ignore'):
-        this_thread.misc['save_status'] = status
+        if this_thread.misc.get('save_status', SS_NEW) == SS_IGNORE:
+            if status != 'ignore':
+                logmessage("Call to set_save_status disregarded because save status was already 'ignore'")
+        else:
+            if status == 'new':
+                this_thread.misc['save_status'] = SS_NEW
+            if status == 'overwrite':
+                this_thread.misc['save_status'] = SS_OVERWRITE
+            if status == 'ignore':
+                this_thread.misc['save_status'] = SS_IGNORE
+                server.release_lock(this_thread.current_info['session'], this_thread.current_info['yaml_filename'])
 
 
 class DANav:
@@ -1913,12 +1939,12 @@ server.wait_for_task = null_func
 server.worker_convert = null_func
 server.write_answer_json = null_func
 server.write_record = null_func
-server.to_text = null_func
+server.to_text = null_func_str
 server.transform_json_variables = null_func
-server.get_login_url = null_func
-server.run_action_in_session = null_func
+server.get_login_url = null_func_dict
+server.run_action_in_session = null_func_dict
 server.invite_user = null_func
-server.get_url = null_func
+server.get_url = null_func_dict
 
 
 def write_record(key, data):
@@ -1983,7 +2009,7 @@ def url_of(file_reference, **kwargs):
 
 def server_capabilities():
     """Returns a dictionary with true or false values indicating various capabilities of the server."""
-    result = {'sms': False, 'fax': False, 'google_login': False, 'facebook_login': False, 'auth0_login': False, 'keycloak_login': False, 'twitter_login': False, 'azure_login': False, 'phone_login': False, 'voicerss': False, 's3': False, 'azure': False, 'github': False, 'pypi': False, 'googledrive': False, 'google_maps': False}
+    result = {'sms': False, 'fax': False, 'google_login': False, 'facebook_login': False, 'auth0_login': False, 'keycloak_login': False, 'authentik_login': False, 'azure_login': False, 'miniorange_login': False, 'phone_login': False, 'voicerss': False, 's3': False, 'azure': False, 'github': False, 'pypi': False, 'googledrive': False, 'google_maps': False}
     if 'twilio' in server.daconfig and isinstance(server.daconfig['twilio'], (list, dict)):
         if isinstance(server.daconfig['twilio'], list):
             tconfigs = server.daconfig['twilio']
@@ -1998,30 +2024,20 @@ def server_capabilities():
             if 'phone login' in server.daconfig:
                 result['phone_login'] = True
     if 'oauth' in server.daconfig and isinstance(server.daconfig['oauth'], dict):
-        if 'google' in server.daconfig['oauth'] and isinstance(server.daconfig['oauth']['google'], dict):
-            if not ('enable' in server.daconfig['oauth']['google'] and not server.daconfig['oauth']['google']['enable']):
-                result['google_login'] = True
-        if 'facebook' in server.daconfig['oauth'] and isinstance(server.daconfig['oauth']['facebook'], dict):
-            if not ('enable' in server.daconfig['oauth']['facebook'] and not server.daconfig['oauth']['facebook']['enable']):
-                result['facebook_login'] = True
-        if 'azure' in server.daconfig['oauth'] and isinstance(server.daconfig['oauth']['azure'], dict):
-            if not ('enable' in server.daconfig['oauth']['azure'] and not server.daconfig['oauth']['azure']['enable']):
-                result['azure_login'] = True
-        if 'auth0' in server.daconfig['oauth'] and isinstance(server.daconfig['oauth']['auth0'], dict):
-            if not ('enable' in server.daconfig['oauth']['auth0'] and not server.daconfig['oauth']['auth0']['enable']):
-                result['auth0_login'] = True
-        if 'keycloak' in server.daconfig['oauth'] and isinstance(server.daconfig['oauth']['keycloak'], dict):
-            if not ('enable' in server.daconfig['oauth']['keycloak'] and not server.daconfig['oauth']['keycloak']['enable']):
-                result['keycloak_login'] = True
-        if 'twitter' in server.daconfig['oauth'] and isinstance(server.daconfig['oauth']['twitter'], dict):
-            if not ('enable' in server.daconfig['oauth']['twitter'] and not server.daconfig['oauth']['twitter']['enable']):
-                result['twitter_login'] = True
-        if 'googledrive' in server.daconfig['oauth'] and isinstance(server.daconfig['oauth']['googledrive'], dict):
-            if not ('enable' in server.daconfig['oauth']['googledrive'] and not server.daconfig['oauth']['googledrive']['enable']):
-                result['googledrive'] = True
-        if 'github' in server.daconfig['oauth'] and isinstance(server.daconfig['oauth']['github'], dict):
-            if not ('enable' in server.daconfig['oauth']['github'] and not server.daconfig['oauth']['github']['enable']):
-                result['github'] = True
+        oauth_providers = [
+            ('google', 'google_login'),
+            ('facebook', 'facebook_login'),
+            ('azure', 'azure_login'),
+            ('miniorange', 'miniorange_login'),
+            ('auth0', 'auth0_login'),
+            ('keycloak', 'keycloak_login'),
+            ('authentik', 'authentik_login'),
+            ('googledrive', 'googledrive'),
+            ('github', 'github')
+        ]
+        for provider, result_key in oauth_providers:
+            if provider in server.daconfig['oauth'] and isinstance(server.daconfig['oauth'][provider], dict) and ('enable' not in server.daconfig['oauth'][provider] or server.daconfig['oauth'][provider]['enable']):
+                result[result_key] = True
     if 'pypi' in server.daconfig and server.daconfig['pypi'] is True:
         result['pypi'] = True
     if 'google' in server.daconfig and isinstance(server.daconfig['google'], dict) and ('google maps api key' in server.daconfig['google'] or 'api key' in server.daconfig['google']):
@@ -2202,7 +2218,11 @@ def backup_thread_variables():
             backup[key] = getattr(this_thread, key)
             if key == 'global_vars':
                 this_thread.global_vars = GenericObject()
-            elif key in ('current_info', 'misc'):
+            elif key == 'misc':
+                for key in [item for item in this_thread.misc.keys() if item.startswith('yaml_')]:
+                    del this_thread.misc[key]
+                setattr(this_thread, key, copy.deepcopy(this_thread.misc))
+            elif key == 'current_info':
                 setattr(this_thread, key, copy.deepcopy(getattr(this_thread, key)))
             elif key in ('internal', 'gathering_mode', 'saved_files'):
                 setattr(this_thread, key, {})
@@ -2282,6 +2302,15 @@ class MyAsyncResult:
     def revoke(self, terminate=True):
         return server.worker_convert(self.obj).revoke(terminate=terminate)
 
+    def status(self):
+        return server.worker_convert(self.obj).status
+
+    def state(self):
+        return server.worker_convert(self.obj).state
+
+    def date_done(self):
+        return server.worker_convert(self.obj).date_done
+
 
 def worker_caller(func, ui_notification, action):
     # logmessage("Got to worker_caller in functions")
@@ -2317,6 +2346,58 @@ def worker_caller(func, ui_notification, action):
 # def set_server_redis(target):
 #     global server_redis
 #     server_redis = target
+
+
+class SafeYaml:
+    def __init__(self, yaml_type):
+        self._yaml_type = yaml_type
+
+    def _get_yaml(self):
+        if self._yaml_type not in this_thread.misc:
+            if self._yaml_type == 'bytesyaml':
+                the_yaml = ruamel.yaml.YAML(typ=['safe', 'bytes'])
+            else:
+                the_yaml = ruamel.yaml.YAML(typ=['safe', 'string'])
+            if self._yaml_type == 'prettyyaml':
+                the_yaml.indent(mapping=2, sequence=4, offset=2)
+                the_yaml.default_flow_style = False
+                the_yaml.default_style = '|'
+                the_yaml.allow_unicode = True
+            elif self._yaml_type == 'altyaml':
+                the_yaml.indent(mapping=2, sequence=4, offset=2)
+                the_yaml.default_flow_style = False
+                the_yaml.default_style = '|'
+                the_yaml.allow_unicode = True
+            elif self._yaml_type == 'bytesyaml':
+                the_yaml.default_flow_style = False
+                the_yaml.default_style = '"'
+                the_yaml.allow_unicode = True
+                the_yaml.width = 10000
+            elif self._yaml_type == 'altyamlstring':
+                the_yaml.default_flow_style = False
+                the_yaml.default_style = '"'
+                the_yaml.allow_unicode = True
+                the_yaml.width = 10000
+            this_thread.misc[self._yaml_type] = the_yaml
+        return this_thread.misc[self._yaml_type]
+
+    def load(self, *pargs, **kwargs):
+        return self._get_yaml().load(*pargs, **kwargs)
+
+    def load_all(self, *pargs, **kwargs):
+        return self._get_yaml().load_all(*pargs, **kwargs)
+
+    def dump_to_string(self, *pargs, **kwargs):
+        return self._get_yaml().dump_to_string(*pargs, **kwargs)
+
+    def dump_to_bytes(self, *pargs, **kwargs):
+        return self._get_yaml().dump_to_bytes(*pargs, **kwargs)
+
+safeyaml = SafeYaml('yaml_safeyaml')
+altyaml = SafeYaml('yaml_altyaml')
+prettyyaml = SafeYaml('yaml_prettyyaml')
+bytesyaml = SafeYaml('yaml_bytesyaml')
+altyamlstring = SafeYaml('yaml_altyamlstring')
 
 
 def ordinal_function_en(i, **kwargs):
@@ -2380,6 +2461,8 @@ def item_label(num, level=None, punctuation=True):
         string = alpha(num, case='lower')
     elif level == 6:
         string = roman(num, case='lower')
+    else:
+        string = str(num + 1)
     if not punctuation:
         return string
     if level < 3:
@@ -2735,7 +2818,7 @@ def update_locale():
         the_locale = str(this_thread.language) + '_' + str(this_thread.locale)
     try:
         locale.setlocale(locale.LC_ALL, the_locale)
-    except Exception as err:
+    except BaseException as err:
         logmessage("update_locale error: unable to set the locale to " + the_locale)
         logmessage(err.__class__.__name__ + ": " + str(err))
         locale.setlocale(locale.LC_ALL, 'en_US.utf8')
@@ -4094,7 +4177,7 @@ def all_variables(simplify=True, include_internal=False, special=False, make_cop
 
 
 def command(*pargs, **kwargs):
-    """Executes a command, such as exit, logout, restart, or leave."""
+    """Executes a command, such as exit, logout, restart, leave, or wait."""
     raise CommandError(*pargs, **kwargs)
 
 
@@ -4131,7 +4214,7 @@ def force_ask(*pargs, **kwargs):
     force_ask_nameerror(the_pargs[0])
 
 
-def force_ask_nameerror(variable_name, priority=False):
+def force_ask_nameerror(variable_name, priority=False):  # pylint: disable=unused-argument
     if illegal_variable_name(variable_name):
         raise DAError("Illegal variable name")
     raise DANameError("name '" + str(variable_name) + "' is not defined")
@@ -4516,7 +4599,7 @@ def process_action():
                     del this_thread.current_info['action_list']._necessary_length
                 if hasattr(this_thread.current_info['action_list'], 'ask_number') and this_thread.current_info['action_list'].ask_number and hasattr(this_thread.current_info['action_list'], 'target_number') and int(this_thread.current_info['action_list'].target_number) > 0:
                     this_thread.current_info['action_list'].target_number = int(this_thread.current_info['action_list'].target_number) - 1
-            except Exception as err:
+            except BaseException as err:
                 logmessage("process_action: _da_list_remove error: " + str(err))
                 try:
                     logmessage("process_action: list is: " + str(this_thread.current_info['action_list'].instanceName))
@@ -4540,7 +4623,7 @@ def process_action():
                     this_thread.current_info['action_dict'].there_are_any = False
                 if hasattr(this_thread.current_info['action_dict'], 'ask_number') and this_thread.current_info['action_dict'].ask_number and hasattr(this_thread.current_info['action_dict'], 'target_number') and int(this_thread.current_info['action_dict'].target_number) > 0:
                     this_thread.current_info['action_dict'].target_number = int(this_thread.current_info['action_dict'].target_number) - 1
-            except Exception as err:
+            except BaseException as err:
                 logmessage("process_action: _da_dict_remove error: " + str(err))
                 try:
                     logmessage("process_action: dict is: " + str(this_thread.current_info['action_dict'].instanceName))
@@ -4577,7 +4660,8 @@ def process_action():
     if the_action == '_da_dict_complete' and 'action_dict' in this_thread.current_info:
         # logmessage("_da_dict_complete")
         the_dict = this_thread.current_info['action_dict']
-        the_dict._validate(the_dict.object_type, the_dict.complete_attribute)
+        the_dict.gathered_and_complete()
+        # the_dict._validate(the_dict.object_type, the_dict.complete_attribute)
         unique_id = this_thread.current_info['user']['session_uid']
         if 'event_stack' in this_thread.internal and unique_id in this_thread.internal['event_stack'] and len(this_thread.internal['event_stack'][unique_id]) and this_thread.internal['event_stack'][unique_id][0]['action'] == the_action and this_thread.internal['event_stack'][unique_id][0]['arguments']['dict'] == the_dict.instanceName:
             this_thread.internal['event_stack'][unique_id].pop(0)
@@ -4648,12 +4732,10 @@ def process_action():
             the_dict.reset_gathered()
             if the_dict.auto_gather:
                 if the_dict.ask_number:
-                    if hasattr(the_dict, 'target_number'):
-                        the_dict.target_number = int(the_dict.target_number) + 1
+                    the_dict.target_number = len(the_dict.elements) + 1
                 else:
                     the_dict.there_is_another = False
-                    if len(the_dict.elements) > 0:
-                        the_dict.there_is_one_other = True
+                    the_dict.there_is_one_other = True
         if the_dict.auto_gather and not the_dict.ask_number:
             the_dict.there_are_any = True
         unique_id = this_thread.current_info['user']['session_uid']
@@ -5346,6 +5428,7 @@ def safe_json(the_object, level=0, is_key=False):
                 continue
             new_dict[safe_json(key, level=level+1, is_key=True)] = safe_json(data, level=level+1)
         return new_dict
+
     try:
         json.dumps(the_object)
     except:
@@ -5719,14 +5802,14 @@ def set_session_variables(yaml_filename, session_id, variables, secret=None, que
     server.set_session_variables(yaml_filename, session_id, variables, secret=secret, del_variables=delete, question_name=question_name, post_setting=not overwrite, process_objects=process_objects)
 
 
-def run_action_in_session(yaml_filename, session_id, action, arguments=None, secret=None, persistent=False, overwrite=False):
+def run_action_in_session(yaml_filename, session_id, action, arguments=None, secret=None, persistent=False, overwrite=False, read_only=False):
     if session_id == get_uid() and yaml_filename == this_thread.current_info.get('yaml_filename', None):
         raise DAError("You cannot run an action in the current interview session")
     if arguments is None:
         arguments = {}
     if secret is None:
         secret = this_thread.current_info.get('secret', None)
-    result = server.run_action_in_session(i=yaml_filename, session=session_id, secret=secret, action=action, persistent=persistent, overwrite=overwrite, arguments=arguments)
+    result = server.run_action_in_session(i=yaml_filename, session=session_id, secret=secret, action=action, persistent=persistent, overwrite=overwrite, read_only=read_only, arguments=arguments)
     if isinstance(result, dict):
         if result['status'] == 'success':
             return True
@@ -5821,7 +5904,7 @@ def ensure_definition(*pargs, **kwargs):
 
 def verbatim(text):
     """Disables the effect of formatting characters in the text."""
-    if this_thread.evaluation_context == 'pandoc':
+    if this_thread.evaluation_context in ('pandoc tex', 'pandoc pdf'):
         return '\\textrm{' + str(escape_latex(re.sub(r'\r?\n(\r?\n)+', '\n', str(text).strip()))) + '}'
     if this_thread.evaluation_context is None:
         text = '<span>' + re.sub(r'>', '&gt;', re.sub(r'<', '&lt;', re.sub(r'&(?!#?[0-9A-Za-z]+;)', '&amp;', str(text).strip()))) + '</span>'

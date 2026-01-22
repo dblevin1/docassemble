@@ -15,7 +15,6 @@ import PIL
 from docassemble.base.logger import logmessage
 from docassemble.base.rtfng.object.picture import Image
 from docassemble.base.functions import server, word
-from docassemble.base.error import DAException
 import docassemble.base.functions
 from docassemble.base import pandoc
 from bs4 import BeautifulSoup
@@ -686,7 +685,7 @@ def map_string(encoded_text, status):
         return ''
     map_number = len(status.maps)
     status.maps.append(codecs.decode(bytearray(encoded_text, 'utf-8'), 'base64').decode())
-    return '<div id="map' + str(map_number) + '" class="dagoogleMap"></div>'
+    return '<div id="map' + str(map_number) + '" class="dagooglemap"></div>'
 
 
 def target_html(match):
@@ -816,7 +815,7 @@ def image_as_rtf(match, question=None):
                     orig_width, orig_height = im.size
                 png_file.close()
                 return rtf_image({"width": orig_width, "height": orig_height, "fullpath": png_file.name}, width, False)
-        except Exception as err:
+        except BaseException as err:
             logmessage("Could not insert SVG into RTF file: " + err.__class__.__name__ + ": " + str(err))
             return '[graphic could not be inserted]'
     if 'width' in file_info:
@@ -827,12 +826,12 @@ def image_as_rtf(match, question=None):
                         im.save(png_file.name)
                     png_file.close()
                     return rtf_image({"width": file_info["width"], "height": file_info["height"], "fullpath": png_file.name}, width, False)
-            except Exception as err:
+            except BaseException as err:
                 logmessage("Could not insert image into RTF file: " + err.__class__.__name__ + ": " + str(err))
                 return '[graphic could not be inserted]'
         try:
             return rtf_image(file_info, width, False)
-        except Exception as err:
+        except BaseException as err:
             logmessage("Could not insert graphic into RTF file: " + err.__class__.__name__ + ": " + str(err))
             return '[graphic could not be inserted]'
     elif file_info['extension'] in ('pdf', 'docx', 'rtf', 'doc', 'odt'):
@@ -871,7 +870,7 @@ def image_as_rtf(match, question=None):
                     with PIL.Image.open(page_file['fullpath']) as im:
                         page_file['width'], page_file['height'] = im.size
                     output += rtf_image(page_file, width, False)
-                except Exception as err:
+                except BaseException as err:
                     logmessage("Could not insert graphic into RTF file: " + err.__class__.__name__ + ": " + str(err))
                     return '[page image could not be inserted]'
             else:
@@ -906,7 +905,7 @@ def qr_as_rtf(match):
             page_file['fullpath'] = the_image.name
             page_file['width'], page_file['height'] = im.size
             output += rtf_image(page_file, width, False)
-    except Exception as err:
+    except BaseException as err:
         logmessage("Could not insert QR code into RTF file: " + err.__class__.__name__ + ": " + str(err))
         return '[QR code could not be inserted]'
     if not width_supplied:
@@ -1160,7 +1159,7 @@ def image_include_string(match, emoji=False, question=None):
                     file_info['fullpath'] = png_file.name
                     file_info['extension'] = 'png'
                     file_info['mimetype'] = 'image/png'
-                except Exception as err:
+                except BaseException as err:
                     logmessage("Could not convert GIF to PNG: " + err.__class__.__name__ + ": " + str(err))
     if 'mimetype' in file_info and file_info['mimetype']:
         if re.search(r'^(audio|video)', file_info['mimetype']):
@@ -1515,7 +1514,10 @@ def markdown_to_html(a, trim=False, pclass=None, status=None, question=None, use
             result = term_match.sub((lambda x: add_terms(x.group(1), interview_autoterms[lang], label=x.group(2), status=status, question=question)), result)
         elif question.language in interview_autoterms and len(interview_autoterms[question.language]):
             result = term_match.sub((lambda x: add_terms(x.group(1), interview_autoterms[question.language], label=x.group(2), status=status, question=question)), result)
-    if status is not None and question.interview.scan_for_emojis:
+    do_not_scan_for_emojis = bool(re.search(r'\[NO_EMOJIS\]', result))
+    if do_not_scan_for_emojis:
+        result = re.sub(r'\[NO_EMOJIS\]\s*', r'', result)
+    if status is not None and question.interview.scan_for_emojis and not do_not_scan_for_emojis:
         result = emoji_match.sub((lambda x: emoji_html(x.group(1), status=status, question=question)), result)
     result = re.sub(r'<p><i class="visually-hidden *([^>]*)></i>', r'<p class="\1>', result)
     if trim:
@@ -1946,7 +1948,7 @@ def convert_svg_to_eps(file_info):
                 file_info['extension'] = 'eps'
                 file_info['mimetype'] = 'application/postscript'
                 eps_file.close()
-    except Exception as err:
+    except BaseException as err:
         logmessage("Failure to convert SVG to EPS: " + err.__class__.__name__ + ": " + str(err))
 
 
@@ -1963,5 +1965,5 @@ def convert_svg_to_png(file_info):
                 file_info['extension'] = 'png'
                 file_info['mimetype'] = 'image/png'
                 png_file.close()
-    except Exception as err:
+    except BaseException as err:
         logmessage("Failure to convert SVG to PNG: " + err.__class__.__name__ + ": " + str(err))

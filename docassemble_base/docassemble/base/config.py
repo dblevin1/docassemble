@@ -131,7 +131,7 @@ def aws_get_secret(data):
         )
     try:
         response = this_thread.botoclient[region].get_secret_value(SecretId=data)
-    except Exception as e:
+    except BaseException as e:
         if e.__class__.__name__ == 'ClientError':
             if e.response['Error']['Code'] == 'DecryptionFailureException':
                 sys.stderr.write("aws_get_secret: Secrets Manager can't decrypt the protected secret text using the provided KMS key.\n")
@@ -192,7 +192,7 @@ def azure_get_secret(data):
         try:
             credential = DefaultAzureCredential()
             this_thread.azureclient[vault_name] = SecretClient(vault_url="https://" + vault_name + ".vault.azure.net/", credential=credential)
-        except Exception as err:
+        except BaseException as err:
             sys.stderr.write("azure_get_secret: unable to create key vault client: " + err.__class__.__name__ + str(err) + "\n")
             return data
     try:
@@ -200,7 +200,7 @@ def azure_get_secret(data):
             secret_data = this_thread.azureclient[vault_name].get_secret(secret_name, secret_version)
         else:
             secret_data = this_thread.azureclient[vault_name].get_secret(secret_name)
-    except Exception as err:
+    except BaseException as err:
         sys.stderr.write("azure_get_secret: unable to retrieve secret: " + err.__class__.__name__ + str(err) + "\n")
         return data
     if isinstance(secret_data.properties.content_type, str):
@@ -314,6 +314,9 @@ def load(**kwargs):
             daconfig['google'] = {}
     else:
         daconfig['google'] = {}
+    daconfig['google']['use places api new'] = bool(daconfig['google'].get('use places api new', False))
+    if (daconfig['google'].get('google maps api key', None) or daconfig['google'].get('google maps api key', None)) and not daconfig['google']['use places api new']:
+        config_error("Google has migrated to 'Places API (New)' and the old 'Places API' is now deprecated. Please enable Places API (New) in Google Cloud Console and set 'use places api new: True' within your 'google' configuration. Support for the old 'Places API' will be removed in a future version.")
     if 'analytics id' in daconfig['google']:
         if isinstance(daconfig['google']['analytics id'], str):
             daconfig['google']['analytics id'] = [daconfig['google']['analytics id']]
@@ -352,6 +355,7 @@ def load(**kwargs):
             daconfig['grid classes'] = {}
     else:
         daconfig['grid classes'] = {}
+    daconfig['javascript defer'] = bool(daconfig.get('javascript defer', False))
     for key in ('vertical navigation', 'flush left', 'centered'):
         if key not in daconfig['grid classes']:
             daconfig['grid classes'][key] = {}
@@ -421,6 +425,23 @@ def load(**kwargs):
             daconfig['celery modules'] = []
     else:
         daconfig['celery modules'] = []
+    if 'gotenberg' in daconfig:
+        if not isinstance(daconfig['gotenberg'], dict):
+            config_error("gotenberg must be a dict")
+            daconfig['gotenberg'] = {'enable': False}
+        if 'url' in daconfig['gotenberg'] and isinstance(daconfig['gotenberg']['url'], str) and re.search(r'[a-z]', daconfig['gotenberg']['url']) and 'enable' not in daconfig['gotenberg']:
+            daconfig['gotenberg']['enable'] = True
+        daconfig['gotenberg']['enable'] = bool(daconfig['gotenberg'].get('enable', False))
+        if daconfig['gotenberg']['enable']:
+            if 'url' not in daconfig['gotenberg'] or not isinstance(daconfig['gotenberg']['url'], str):
+                config_error("invalid gotenberg url")
+                daconfig['gotenberg'] = {'enable': False}
+    else:
+        daconfig['gotenberg'] = {'enable': False}
+    if 'gotenberg url' in daconfig and isinstance(daconfig['gotenberg url'], str) and re.search(r'[a-z]', daconfig['gotenberg url']):
+        config_error("The gotenberg url directive is deprecated; use the gotenberg dictionary")
+        daconfig['gotenberg']['url'] = daconfig['gotenberg url']
+        daconfig['gotenberg']['enable'] = True
     if isinstance(daconfig['signature pen thickness scaling factor'], int):
         daconfig['signature pen thickness scaling factor'] = float(daconfig['signature pen thickness scaling factor'])
     if not isinstance(daconfig['signature pen thickness scaling factor'], float):
@@ -901,7 +922,7 @@ def load(**kwargs):
             del daconfig['checkin interval']
     if daconfig.get('checkin interval', 5) == 0:
         daconfig['enable monitor'] = False
-    else:
+    elif 'enable monitor' not in daconfig:
         daconfig['enable monitor'] = True
     try:
         assert isinstance(daconfig['jinja data'], dict)
@@ -1095,8 +1116,9 @@ def load(**kwargs):
             override_config(daconfig, messages, 'read only file system', 'DAREADONLYFILESYSTEM')
         if env_exists('ENABLEUNOCONV'):
             override_config(daconfig, messages, 'enable unoconv', 'ENABLEUNOCONV')
-        if env_exists('GOTENBERGURL'):
-            override_config(daconfig, messages, 'gotenberg url', 'GOTENBERGURL')
+        for env_var, key in (('GOTENBERGURL', 'url'), ('GOTENBERGUSERNAME', 'username'), ('GOTENBERGPASSWORD', 'password'), ('GOTENBERGENABLE', 'enable')):
+            if env_exists(env_var):
+                override_config(daconfig, messages, key, env_var, pre_key=['gotenberg'])
         env_messages = messages
     if DEBUG_BOOT:
         boot_log("config: load complete")
