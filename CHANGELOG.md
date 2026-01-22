@@ -1,6 +1,62 @@
 # Change Log
 
 <!-- insertion marker -->
+## [1.8.18.1](https://github.com/dblevin1/docassemble/releases/tag/1.8.18.1) - 2026-01-22
+
+<small>[Compare with 1.6.5.1](https://github.com/dblevin1/docassemble/compare/1.6.5.1...1.8.18.1)</small>
+
+### Added
+
+- added gotenberg enable configuration directive ([7ae2d96](https://github.com/dblevin1/docassemble/commit/7ae2d9637ffd3ff6628b5b02d9b355cee64f47ec) by Jonathan Pyle).
+- Added Basic Auth for Gotenberg servers ([d0949b2](https://github.com/dblevin1/docassemble/commit/d0949b248911495b78fba6f7f487be89b1a35c53) by Bryce Willey).
+- Added 'git add' feature to GitHub commit interface on the Playground Packages page; upgraded CodeMirror; use thread-local variables to store ruamel.yaml objects; removed fonts from the Docker image; added DAEXTRAFONTS and DAGOOGLEFONTS environment variables for installing the fonts that were removed ([2078733](https://github.com/dblevin1/docassemble/commit/20787339fdd091e4616a45a3d6bf5c47c970307a) by Jonathan Pyle).
+- added support for oauth2 logins with Authentik ([42fd850](https://github.com/dblevin1/docassemble/commit/42fd850a2a9ff04b94ede369875e0b553b0f3f30) by Jonathan Pyle).
+- added support for email sending with the Microsoft Graph API ([f01aa7a](https://github.com/dblevin1/docassemble/commit/f01aa7af665a6197bd6bc3b773699796279bb94e) by Jonathan Pyle).
+
+### Fixed
+
+- fix bugs with the monitor system; fix issue with license being added to pyproject.toml incorrectly ([bdaf84f](https://github.com/dblevin1/docassemble/commit/bdaf84fbe582b41ca00d2a0ff6bbf7ffb0cf02bf) by Jonathan Pyle).
+- Fix cloud convert output filename. ([c775e74](https://github.com/dblevin1/docassemble/commit/c775e7401d68981de89c925bfb3c520ca4e2f223) by Bryce Willey).
+- fixed issue with ReturnValue ([ca1bce1](https://github.com/dblevin1/docassemble/commit/ca1bce118cca3e7c95a9ffb9d4282c78bd00fd58) by Jonathan Pyle).
+- fix bug with interview delete days by filename ([27217ae](https://github.com/dblevin1/docassemble/commit/27217ae825943743c33d0f4106e5ee9be0bdb5e2) by Jonathan Pyle).
+- fixed backwards compatibility with Python 3.10; changed set_save_status so that it releases the lock on the interview answers ([44a815b](https://github.com/dblevin1/docassemble/commit/44a815bab19bbe62d7819b43855beb6b64df7555) by Jonathan Pyle).
+- fix issue with comboboxes not being disabled ([4716c28](https://github.com/dblevin1/docassemble/commit/4716c2815cae010d923c3f6c1c68bef634de7692) by Jonathan Pyle).
+- Fixed issue with missing dependencies ([9cbc571](https://github.com/dblevin1/docassemble/commit/9cbc571787f7934dbac4c207064fe1c35a906d7f) by Jonathan Pyle).
+
+### Changed
+
+- Change 'admin@admin.com' to 'admin@example.com' ([13b6aaa](https://github.com/dblevin1/docassemble/commit/13b6aaaed150eebb298c2a32b99e5dbd6db7785c) by Bryce Willey).
+- changelog ([ec199e8](https://github.com/dblevin1/docassemble/commit/ec199e85245949d4c52b68b02c6d17a87efd9c12) by Jonathan Pyle).
+- Changed the names of example dropdowns ([9441cd1](https://github.com/dblevin1/docassemble/commit/9441cd14bb7d05f300dca8e096450707cfa6de30) by Bryce Willey).
+
+### Removed
+
+- remove locale-gen step from Dockerfile image ([5e8eabd](https://github.com/dblevin1/docassemble/commit/5e8eabd61fdc51db62764f40d718d85f476804f5) by Jonathan Pyle).
+
+### Merged
+
+- Merge branch 'upstream-latest' ([42f447c](https://github.com/dblevin1/docassemble/commit/42f447c2632c2f69197bfd83139efacb5d550726) by Daniel Blevins).
+- Merge branch 'master' of github.com:jhpyle/docassemble ([aa2d48d](https://github.com/dblevin1/docassemble/commit/aa2d48d81e43e4191bc3da4a07019ade5d798af4) by Jonathan Pyle).
+- Merge pull request #859 from BryceStevenWilley/gotenberg_basic_auth_support ([3b7eb68](https://github.com/dblevin1/docassemble/commit/3b7eb68b7b16d1112b68ab109d391cf563077fb0) by Jonathan Pyle).
+- Merge pull request #858 from BryceStevenWilley/fix_cloud_convert ([76ab074](https://github.com/dblevin1/docassemble/commit/76ab0748b667b88e5037ee71f1db589906b1123c) by Jonathan Pyle).
+- Merge pull request #856 from jhpyle/dependabot/pip/docassemble_webapp/eventlet-0.40.3 ([2ec6b6d](https://github.com/dblevin1/docassemble/commit/2ec6b6d690a3f1474c25e274ef4c746ab4d05af6) by Jonathan Pyle).
+- Merge pull request #853 from BryceStevenWilley/admin_example_com ([748caff](https://github.com/dblevin1/docassemble/commit/748caffc1f85ad4f1749bc6d5b12a8e283298223) by Jonathan Pyle).
+- Merge pull request #855 from BryceStevenWilley/pull-to-drop ([92f5f88](https://github.com/dblevin1/docassemble/commit/92f5f88abca7fc09dbd460ebc925eafff7c63c2a) by Jonathan Pyle).
+- Merge pull request #851 from BryceStevenWilley/find_setuppy_too ([4f2a551](https://github.com/dblevin1/docassemble/commit/4f2a5519a7abcf3f50f23cf9dcbd75d1bdc2498e) by Jonathan Pyle).
+- Merge pull request #849 from BryceStevenWilley/fix_single_quote_pyproject ([99d19ab](https://github.com/dblevin1/docassemble/commit/99d19ab6ad216f68da7243a58a4d78302df0a061) by Jonathan Pyle).
+- Merge pull request #837 from jpagh/master ([db398aa](https://github.com/dblevin1/docassemble/commit/db398aa2ea585b305c9b5bd95f90cc55fcb5cb0e) by Jonathan Pyle).
+- Merge pull request #836 from jhpyle/dependabot/pip/docassemble_base/setuptools-78.1.1 ([c8e66bd](https://github.com/dblevin1/docassemble/commit/c8e66bd5e1c6eb34e5477e192803cc7e761a9fc6) by Jonathan Pyle).
+- Merge pull request #832 from jpagh/master ([5ce2c89](https://github.com/dblevin1/docassemble/commit/5ce2c89b3c74b3096bf5c7a9ada7d94041600251) by Jonathan Pyle).
+- Merge pull request #835 from jhpyle/dependabot/pip/docassemble_webapp/flask-3.1.1 ([08c208f](https://github.com/dblevin1/docassemble/commit/08c208fbe0837cd0cae7d946c9b54f2aa3a24258) by Jonathan Pyle).
+- Merge pull request #833 from jhpyle/dependabot/pip/docassemble_webapp/setuptools-78.1.1 ([a65bbf4](https://github.com/dblevin1/docassemble/commit/a65bbf4e17af0829b760c4eb20ed2621e146b07b) by Jonathan Pyle).
+- Merge pull request #831 from jhpyle/dependabot/pip/docassemble_webapp/flask-cors-6.0.0 ([a485d0c](https://github.com/dblevin1/docassemble/commit/a485d0c7aac9481d3021b074dc8a31ddc1f9e202) by Jonathan Pyle).
+- Merge pull request #830 from jhpyle/dependabot/pip/docassemble_base/flask-3.1.1 ([8c288ef](https://github.com/dblevin1/docassemble/commit/8c288ef1642097b11cf58d81939c97ede6b30eee) by Jonathan Pyle).
+- Merge pull request #824 from jhpyle/dependabot/pip/docassemble_webapp/h11-0.16.0 ([ce65a91](https://github.com/dblevin1/docassemble/commit/ce65a91560b3d1e3a52991116b7cfdb1068bef8f) by Jonathan Pyle).
+- Merge pull request #823 from jpagh/master ([870b834](https://github.com/dblevin1/docassemble/commit/870b83498df6badec3296ea640dee49a6f38c4ac) by Jonathan Pyle).
+- Merge branch 'master' of https://github.com/jhpyle/docassemble ([9ce7b98](https://github.com/dblevin1/docassemble/commit/9ce7b98d72cfda4e5dbcde63e647054dd0942bec) by Jack Adamson).
+- Merge pull request #820 from jhpyle/dependabot/pip/docassemble_base/jinja2-3.1.6 ([15b9fdd](https://github.com/dblevin1/docassemble/commit/15b9fdd69ede4c8842804de78d3f8caffe22d5b8) by Jonathan Pyle).
+- Merge pull request #819 from jhpyle/dependabot/pip/docassemble_webapp/jinja2-3.1.6 ([ef5c9bc](https://github.com/dblevin1/docassemble/commit/ef5c9bcdc9a86b25f50a056f8252ecafbb8ba5ae) by Jonathan Pyle).
+
 ## [1.6.5.1](https://github.com/dblevin1/docassemble/releases/tag/1.6.5.1) - 2025-03-19
 
 <small>[Compare with 1.6.3.2](https://github.com/dblevin1/docassemble/compare/1.6.3.2...1.6.5.1)</small>
