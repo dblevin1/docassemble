@@ -1,6 +1,14 @@
 # Change Log
 
 <!-- insertion marker -->
+## [1.8.18.2](https://github.com/dblevin1/docassemble/releases/tag/1.8.18.2) - 2026-01-22
+
+<small>[Compare with 1.8.18.1](https://github.com/dblevin1/docassemble/compare/1.8.18.1...1.8.18.2)</small>
+
+### Fixed
+
+- fix github actions, update build script ([8ed9417](https://github.com/dblevin1/docassemble/commit/8ed9417711866b6f0210fae309cbbb466bf1a96c) by Daniel Blevins).
+
 ## [1.8.18.1](https://github.com/dblevin1/docassemble/releases/tag/1.8.18.1) - 2026-01-22
 
 <small>[Compare with 1.6.5.1](https://github.com/dblevin1/docassemble/compare/1.6.5.1...1.8.18.1)</small>
