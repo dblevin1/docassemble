@@ -25,7 +25,7 @@ install() {
 }
 upload() {
     echo "------Building $(pwd)--------"
-    python -m build --sdist --wheel --outdir dist/ 1>/dev/null
+    python -m build --sdist --wheel --outdir dist/
     ret=$?
     if [ $ret -ne 0 ]; then
         echo -e "${RED}Exiting python setup failed${NC}"
@@ -75,9 +75,9 @@ echo
 echo
 echo "----------Starting upload------------"
 read -p "Press enter to continue"
-cd docassemble
-upload
-cd ../docassemble_base
+#cd docassemble
+#upload
+cd docassemble_base
 upload
 cd ../docassemble_demo
 upload
