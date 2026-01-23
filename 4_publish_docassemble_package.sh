@@ -25,7 +25,7 @@ install() {
 }
 upload() {
     echo "------Building $(pwd)--------"
-    python setup.py sdist 1>/dev/null
+    python -m build --sdist --wheel --outdir dist/ 1>/dev/null
     ret=$?
     if [ $ret -ne 0 ]; then
         echo -e "${RED}Exiting python setup failed${NC}"
