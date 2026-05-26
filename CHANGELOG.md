@@ -1,6 +1,114 @@
 # Change Log
 
 <!-- insertion marker -->
+## [1.9.12.1](https://github.com/dblevin1/docassemble/releases/tag/1.9.12.1) - 2026-05-26
+
+<small>[Compare with 1.8.18.2](https://github.com/dblevin1/docassemble/compare/1.8.18.2...1.9.12.1)</small>
+
+### Added
+
+- Add info about where mako templates errors are from ([3ab99db](https://github.com/dblevin1/docassemble/commit/3ab99db49e7eaeb842d3af85d91befa55714b9f5) by Bryce Willey).
+- added to_json method to DAEmpty class for JSON serialization ([436ad4f](https://github.com/dblevin1/docassemble/commit/436ad4fcc44a0c17135d837580078fbc76171ff9) by Jack Adamson).
+- Add Gotenberg params that work on Gotenberg 7.10 and newer ([c30d80a](https://github.com/dblevin1/docassemble/commit/c30d80a1df5579e60d913b7880579ecf8295b845) by Bryce Willey).
+
+### Fixed
+
+- fix merge script ([ff0143c](https://github.com/dblevin1/docassemble/commit/ff0143cb1c6fd5d9f3c628ea61ad29eadcbd1856) by Daniel Blevins).
+- fixed issue with undefine() and value() affecting Python 3.13 and above due to eval and exec needing a globals parameter ([d3a04bd](https://github.com/dblevin1/docassemble/commit/d3a04bdeb51b9e6fe598853d8566224fb8e882d9) by Jonathan Pyle).
+- fix pickle error ([fb7877e](https://github.com/dblevin1/docassemble/commit/fb7877eebbe74d25e1f2c1e673ecbd35b00d1d3e) by Jonathan Pyle).
+- fix issues with tagged PDFs; expand upon the docstrings for functions and methods ([b62f632](https://github.com/dblevin1/docassemble/commit/b62f632cbc7c654aa49fb3c1f9057e382bd9ba8d) by Jonathan Pyle).
+- fix: enhance prevent going back logic to handle None and empty string cases ([0bb5c8f](https://github.com/dblevin1/docassemble/commit/0bb5c8f2567fdb3cb43fe394cf6489835c365242) by Jack Adamson).
+- fix: update can_go_back assignment to use default value from extras ([dff8c9d](https://github.com/dblevin1/docassemble/commit/dff8c9d7eacde8cd2a64b9ef47c8bff12475d158) by Jack Adamson).
+- Fix bug where include_docx_template() spits error when given boolean keyword parameters ([d7eb393](https://github.com/dblevin1/docassemble/commit/d7eb393c241930e39f2f56fec263907e92cb996c) by jkelton).
+- Fix the bundle process for docassemble ([9066e77](https://github.com/dblevin1/docassemble/commit/9066e77ec0a82e1dae3f58d012d1105cb37f4827) by Bryce Willey).
+- fix NLTK daemon issue related to home directory ([8b29df9](https://github.com/dblevin1/docassemble/commit/8b29df9f0ba70396564abce4f7b138158f8ab235) by Jonathan Pyle).
+- fixed conflicts ([5086b24](https://github.com/dblevin1/docassemble/commit/5086b2496067df44b9860ea2661379801f652568) by Jonathan Pyle).
+- fix: handle non-string types in plain, bold, and italic functions ([2739e51](https://github.com/dblevin1/docassemble/commit/2739e518cc8a586cae1e7cd51a7c53fd58397167) by Jack Adamson).
+- Fix default errors for `bates_number()` ([5b46c87](https://github.com/dblevin1/docassemble/commit/5b46c87b5446ca22d104dfafb57de8a9d4c3bcab) by Bryce Willey).
+- fix: simplified deletion of  new_item_name in DADict's cancel_add_or_edit ([e466b73](https://github.com/dblevin1/docassemble/commit/e466b73ded397cae7662d239e69a90446dbe806d) by Jack Adamson).
+- fix: update condition in DAList to check if complete elements are less than gathered elements before popping ([f72d7fd](https://github.com/dblevin1/docassemble/commit/f72d7fdf877d11066d02f5dac2de5bffd47854af) by Jack Adamson).
+- fix: updated complete_elements in DADict and DASet to return the complete elements in a new instance of its class rather than a generic dict or set, matching the behavior of DAList ([d777700](https://github.com/dblevin1/docassemble/commit/d777700ef211556e6c63414acaa4597201a57380) by Jack Adamson).
+- fix: update url_action call in DADict to use kwarg "dict" for instanceName ([067646f](https://github.com/dblevin1/docassemble/commit/067646fe18ef9f86664555b595bb6bfa6375303b) by Jack Adamson).
+- Fix button titles for reorder functionality ([d8929d8](https://github.com/dblevin1/docassemble/commit/d8929d8e2f8fcd4a8bc5b913dbca7a534560bf91) by Jack Adamson).
+- fix issue with command('new_session') adding a step to the interview ([e866a95](https://github.com/dblevin1/docassemble/commit/e866a95eb58b198715de6949d91c44d9363da9f5) by Jonathan Pyle).
+- Fix custom objects loosing data on validation failure ([e0c6675](https://github.com/dblevin1/docassemble/commit/e0c667521f2f72a2d1ddfb92b9385f14681964f8) by Bryce Willey).
+
+### Changed
+
+- changelog ([f86e9d7](https://github.com/dblevin1/docassemble/commit/f86e9d75e9967f93f04843331526aeea41399010) by Jonathan Pyle).
+- changed way that this_thread is accessed to avoid any issues with it being redefined after being imported; added allow external auth to bypass local auth; downgraded contourpy so that it would not make 3.11 the minimum Python version; upgraded packages as suggested by Dependabot; upgraded numpy because version was yanked ([25240c6](https://github.com/dblevin1/docassemble/commit/25240c65b3ff917481f08f122532fca31646b8b8) by Jonathan Pyle).
+- changelog; better error for improper callback access ([87c5805](https://github.com/dblevin1/docassemble/commit/87c5805a5fad99bd1a660f3c9f5b78c67b759723) by Jonathan Pyle).
+
+### Removed
+
+- removed dependency on telnyx ([94d3b94](https://github.com/dblevin1/docassemble/commit/94d3b946e81884109377c620cc3f67ab9817d062) by Jonathan Pyle).
+
+### Merged
+
+- Merge branch 'upstream-latest' ([3da79df](https://github.com/dblevin1/docassemble/commit/3da79dff32223e447c863eb466e5ee5a71215067) by Daniel Blevins).
+- Merge branch 'SuffolkLITLab-patch_sockets' ([9c506f9](https://github.com/dblevin1/docassemble/commit/9c506f92c7abfc48a6194dde64d529a64f9872fd) by Jonathan Pyle).
+- Merge branch 'jpagh-master' ([db968c9](https://github.com/dblevin1/docassemble/commit/db968c9849c4efa43f55422cf7c53421c1b68b5b) by Jonathan Pyle).
+- Merge branch 'master' of github.com:jpagh/docassemble into jpagh-master ([2bfc27e](https://github.com/dblevin1/docassemble/commit/2bfc27e5851913977c728e845b20618b0405d2c0) by Jonathan Pyle).
+- Merge branch 'nonprofittechy-fix/dedupe-playground-select' ([fa47072](https://github.com/dblevin1/docassemble/commit/fa4707265d078b844e4e9a01384497d72e778d20) by Jonathan Pyle).
+- Merge branch 'fix/dedupe-playground-select' of github.com:nonprofittechy/docassemble into nonprofittechy-fix/dedupe-playground-select ([2336530](https://github.com/dblevin1/docassemble/commit/2336530d80400e863f49ffa1db13261df62f4c8f) by Jonathan Pyle).
+- Merge branch 'nonprofittechy-fix/translation-xlsx-usecols' ([cdf0f94](https://github.com/dblevin1/docassemble/commit/cdf0f949dec55acb596866abb9536b47a97c63d8) by Jonathan Pyle).
+- Merge branch 'fix/translation-xlsx-usecols' of github.com:nonprofittechy/docassemble into nonprofittechy-fix/translation-xlsx-usecols ([712edba](https://github.com/dblevin1/docassemble/commit/712edba98af1e0df623e1768571ee3a65cfe9b65) by Jonathan Pyle).
+- Merge branch 'jpagh-prevent_going_back' ([231458d](https://github.com/dblevin1/docassemble/commit/231458d4e10aac1c36befc8d17512bf4767b74dd) by Jonathan Pyle).
+- Merge branch 'prevent_going_back' of github.com:jpagh/docassemble into jpagh-prevent_going_back ([e32dc7c](https://github.com/dblevin1/docassemble/commit/e32dc7cdfba497bf11238b6235dfe9766506f0d7) by Jonathan Pyle).
+- Merge branch 'jkelton-patch-1' ([e75d1e6](https://github.com/dblevin1/docassemble/commit/e75d1e66bfc4d55aeb22855d17b43722b7cd0e30) by Jonathan Pyle).
+- Merge branch 'SuffolkLITLab-nginx_logrotate_error' ([170464c](https://github.com/dblevin1/docassemble/commit/170464ca5eb8b3537c5c4565030b70ea6c0ada58) by Jonathan Pyle).
+- Merge branch 'nginx_logrotate_error' of github.com:SuffolkLITLab/docassemble into SuffolkLITLab-nginx_logrotate_error ([279fb0e](https://github.com/dblevin1/docassemble/commit/279fb0e952476be864cb5b29a2c240ed61abb425) by Jonathan Pyle).
+- Merge branch 'SuffolkLITLab-fix_js_trace' ([c4225f8](https://github.com/dblevin1/docassemble/commit/c4225f8841a0a0a8aa98e191504ec57ebda077be) by Jonathan Pyle).
+- Merge branch 'fix_js_trace' of github.com:SuffolkLITLab/docassemble into SuffolkLITLab-fix_js_trace ([cd0e07d](https://github.com/dblevin1/docassemble/commit/cd0e07db3b7a924e6e8e00d25c39a24d0f36e2dd) by Jonathan Pyle).
+- Merge branch 'pr-922' ([cff8f0d](https://github.com/dblevin1/docassemble/commit/cff8f0d2b3396057821bb07bd22a5ed5931ac12e) by Jonathan Pyle).
+- Merge branch 'pr-920' ([42c4d84](https://github.com/dblevin1/docassemble/commit/42c4d845469342f79f2b3eff66fed158eae4422b) by Jonathan Pyle).
+- Merge branch 'pr-919' ([e6be7f9](https://github.com/dblevin1/docassemble/commit/e6be7f9744d3f98444c0d8a1ff18fd82d9b22c60) by Jonathan Pyle).
+- Merge branch 'pr-918' ([1bf424b](https://github.com/dblevin1/docassemble/commit/1bf424b32304d15ac5ada1af478dbaf4deab922f) by Jonathan Pyle).
+- Merge branch 'dependabot/pip/docassemble_webapp/pyjwt-2.12.0' ([75a5cfb](https://github.com/dblevin1/docassemble/commit/75a5cfb2a7943ca8f3a7f1ff05c36f5d596244dd) by Jonathan Pyle).
+- Merge branch 'SuffolkLITLab-bates_defaults' ([72aebcb](https://github.com/dblevin1/docassemble/commit/72aebcb65b4d375e9efd19273e937402dc0295dd) by Jonathan Pyle).
+- Merge branch 'bates_defaults' of github.com:SuffolkLITLab/docassemble into SuffolkLITLab-bates_defaults ([7dd16e2](https://github.com/dblevin1/docassemble/commit/7dd16e2d3dc9b0a03c29210467eff86d01b67f68) by Jonathan Pyle).
+- Merge branch 'albanobattistella-patch-1' ([77ff83b](https://github.com/dblevin1/docassemble/commit/77ff83bc96f95768fbc0521f9d29b4edbbebd2cd) by Jonathan Pyle).
+- Merge branch 'dependabot/pip/docassemble_base/cryptography-46.0.5' ([2a34b44](https://github.com/dblevin1/docassemble/commit/2a34b44b13c9c07d55f6b2f3b783e825af26cc4c) by Jonathan Pyle).
+- Merge branch 'dependabot/pip/docassemble_webapp/protobuf-6.33.5' ([e6ad61e](https://github.com/dblevin1/docassemble/commit/e6ad61e15ebc1b53ca580912590e7c1341428deb) by Jonathan Pyle).
+- Merge branch 'dependabot/pip/docassemble_base/protobuf-6.33.5' ([3f905b1](https://github.com/dblevin1/docassemble/commit/3f905b1033e61d707658ef2e0d396ab17bcdb224) by Jonathan Pyle).
+- Merge branch 'SuffolkLITLab-correct_aria_labeledby' ([d0bb499](https://github.com/dblevin1/docassemble/commit/d0bb499de0b35511e6f159e81aefc295bf1758e5) by Jonathan Pyle).
+- Merge branch 'correct_aria_labeledby' of https://github.com/SuffolkLITLab/docassemble into SuffolkLITLab-correct_aria_labeledby ([a50a38c](https://github.com/dblevin1/docassemble/commit/a50a38c98f01e7275dc580b60764cc539753417a) by Jonathan Pyle).
+- Merge branch 'SuffolkLITLab-bates_number_customize' ([6aaeece](https://github.com/dblevin1/docassemble/commit/6aaeece96b2d0e7cea7148d6ffd6b948ce4e6dc8) by Jonathan Pyle).
+- Merge branch 'bates_number_customize' of https://github.com/SuffolkLITLab/docassemble into SuffolkLITLab-bates_number_customize ([65536dd](https://github.com/dblevin1/docassemble/commit/65536ddc34c236554b25071f9064359c4c1c8765) by Jonathan Pyle).
+- Merge branch 'master' of github.com:jhpyle/docassemble ([0debad7](https://github.com/dblevin1/docassemble/commit/0debad7602e2f420e4963b73d7f4c44dcb77db6b) by Jonathan Pyle).
+- Merge pull request #896 from jhpyle/dependabot/pip/docassemble_webapp/urllib3-2.6.3 ([ec8afbd](https://github.com/dblevin1/docassemble/commit/ec8afbd2a5c1e392ba8a4bf47475181bd098420f) by Jonathan Pyle).
+- Merge pull request #895 from jhpyle/dependabot/pip/docassemble_webapp/werkzeug-3.1.5 ([264e61b](https://github.com/dblevin1/docassemble/commit/264e61b72b7a06b3f3fe72a93320b162cd8073ab) by Jonathan Pyle).
+- Merge pull request #894 from jhpyle/dependabot/pip/docassemble_base/werkzeug-3.1.5 ([fd8d02c](https://github.com/dblevin1/docassemble/commit/fd8d02c4578591625faf3636f5ff6bb3c3e87c59) by Jonathan Pyle).
+- Merge pull request #893 from jhpyle/dependabot/pip/docassemble_base/urllib3-2.6.3 ([e41b532](https://github.com/dblevin1/docassemble/commit/e41b532647ac168089d7cb88a788335e08eb353d) by Jonathan Pyle).
+- Merge pull request #892 from jhpyle/dependabot/pip/docassemble_webapp/pynacl-1.6.2 ([cbde3e4](https://github.com/dblevin1/docassemble/commit/cbde3e477141a61bace33c692e8198a35e406952) by Jonathan Pyle).
+- Merge pull request #891 from jhpyle/dependabot/pip/docassemble_webapp/aiohttp-3.13.3 ([1bb0e6d](https://github.com/dblevin1/docassemble/commit/1bb0e6df50dc2082bc641c18b7d5e36add2b8ada) by Jonathan Pyle).
+- Merge pull request #890 from jhpyle/dependabot/pip/docassemble_base/aiohttp-3.13.3 ([4b06a36](https://github.com/dblevin1/docassemble/commit/4b06a36dda573e5f0fc4829c94e495524f813008) by Jonathan Pyle).
+- Merge pull request #887 from jhpyle/dependabot/pip/docassemble_webapp/werkzeug-3.1.4 ([83fd720](https://github.com/dblevin1/docassemble/commit/83fd720a5191edf27e75a65ad963666c662a8aa4) by Jonathan Pyle).
+- Merge pull request #886 from jhpyle/dependabot/pip/docassemble_webapp/fonttools-4.60.2 ([0f720e0](https://github.com/dblevin1/docassemble/commit/0f720e09eaf7d0241edea2769e5092e071a533a7) by Jonathan Pyle).
+- Merge pull request #884 from jhpyle/dependabot/pip/docassemble_webapp/urllib3-2.6.0 ([7e94551](https://github.com/dblevin1/docassemble/commit/7e9455147ab9ca052f0dbd5fd120158b6290eac7) by Jonathan Pyle).
+- Merge pull request #883 from jhpyle/dependabot/pip/docassemble_base/urllib3-2.6.0 ([aa02101](https://github.com/dblevin1/docassemble/commit/aa02101dde201d41d60360572e9515e3b44a0c38) by Jonathan Pyle).
+- Merge pull request #882 from jhpyle/dependabot/pip/docassemble_base/werkzeug-3.1.4 ([40e3cd1](https://github.com/dblevin1/docassemble/commit/40e3cd176ceb4b95bffeaac659f90246f4432cb9) by Jonathan Pyle).
+- Merge branch 'jpagh-improve-plain-bold-italic' ([7ad3bf9](https://github.com/dblevin1/docassemble/commit/7ad3bf918daf694e703d2c6b1abed0ea91b3dfa2) by Jonathan Pyle).
+- Merge branch 'improve-plain-bold-italic' of https://github.com/jpagh/docassemble into jpagh-improve-plain-bold-italic ([32cfeea](https://github.com/dblevin1/docassemble/commit/32cfeea90f4d4d1a63c9df7e773d21dd550aff3f) by Jonathan Pyle).
+- Merge branch 'jpagh-daglobal-classmethod-delete' ([11dd5be](https://github.com/dblevin1/docassemble/commit/11dd5be833b64ea5d01476c639400a7bf8778877) by Jonathan Pyle).
+- Merge branch 'daglobal-classmethod-delete' of https://github.com/jpagh/docassemble into jpagh-daglobal-classmethod-delete ([24d08ba](https://github.com/dblevin1/docassemble/commit/24d08baf1ef3e913afd052e6179108c71a922760) by Jonathan Pyle).
+- Merge branch 'BryceStevenWilley-mako_template_uri' ([055fe44](https://github.com/dblevin1/docassemble/commit/055fe443ba4489e4f0f75fcdf9c3233224dc7020) by Jonathan Pyle).
+- Merge branch 'mako_template_uri' of https://github.com/BryceStevenWilley/docassemble into BryceStevenWilley-mako_template_uri ([f7d6061](https://github.com/dblevin1/docassemble/commit/f7d6061b4e03b70cd255411ea7939302b3269670) by Jonathan Pyle).
+- Merge branch 'jpagh-add-method-cancel-add-or-edit' ([1f9b8e9](https://github.com/dblevin1/docassemble/commit/1f9b8e9d778c1b05b0beeb0aa51239e251f2f241) by Jonathan Pyle).
+- Merge branch 'add-method-cancel-add-or-edit' of https://github.com/jpagh/docassemble into jpagh-add-method-cancel-add-or-edit ([5fd32ea](https://github.com/dblevin1/docassemble/commit/5fd32eabc7d5de8947f9274000a0c4f1263e5377) by Jonathan Pyle).
+- Merge branch 'jpagh-fix-dadict-add-action-url-only' ([2993295](https://github.com/dblevin1/docassemble/commit/29932955feb42c08ca77f7182ea0e9dab175d700) by Jonathan Pyle).
+- Merge branch 'fix-dadict-add-action-url-only' of https://github.com/jpagh/docassemble into jpagh-fix-dadict-add-action-url-only ([1411255](https://github.com/dblevin1/docassemble/commit/14112558bf71e7d4711316b3d4b044cbec96fee1) by Jonathan Pyle).
+- Merge branch 'jpagh-daempty-to-json' ([cb9488c](https://github.com/dblevin1/docassemble/commit/cb9488c6c423d7eb7fef4893ec6a12d7b2fa7cd4) by Jonathan Pyle).
+- Merge branch 'daempty-to-json' of https://github.com/jpagh/docassemble into jpagh-daempty-to-json ([fc52577](https://github.com/dblevin1/docassemble/commit/fc52577d5a31731e2d820f0711322f5dd8ab57f4) by Jonathan Pyle).
+- Merge branch 'jpagh-dadict-self-setitem' ([af184d1](https://github.com/dblevin1/docassemble/commit/af184d135647322547c84eabfef0035aa1449036) by Jonathan Pyle).
+- Merge branch 'dadict-self-setitem' of https://github.com/jpagh/docassemble into jpagh-dadict-self-setitem ([047f428](https://github.com/dblevin1/docassemble/commit/047f4283ef7c4270f14abb47bf8b4c4a311d86c1) by Jonathan Pyle).
+- Merge pull request #875 from jpagh/patch-5 ([6c81e4a](https://github.com/dblevin1/docassemble/commit/6c81e4a1e475504842a96462450eee3747ba3dd0) by Jonathan Pyle).
+- Merge pull request #869 from jpagh/improve_safe_json_with_method_to_json ([552e127](https://github.com/dblevin1/docassemble/commit/552e12704254bfb3e223ead0282c84318eb806ca) by Jonathan Pyle).
+- Merge pull request #867 from BryceStevenWilley/gotenberg_pdfa ([648f10e](https://github.com/dblevin1/docassemble/commit/648f10ebee9e6eed0ffc0e0d4c8a1613a0466a05) by Jonathan Pyle).
+- Merge pull request #864 from BryceStevenWilley/fix_default_validation_objects ([8b2b091](https://github.com/dblevin1/docassemble/commit/8b2b0915bdba81c2d0be396096bd0f985ff0fdbd) by Jonathan Pyle).
+- Merge pull request #865 from jhpyle/dependabot/pip/docassemble_webapp/python-ldap-3.4.5 ([64ca693](https://github.com/dblevin1/docassemble/commit/64ca69326551c561193c3db446ef6a34b7009c6b) by Jonathan Pyle).
+- Merge pull request #862 from jhpyle/dependabot/pip/docassemble_webapp/python-socketio-5.14.0 ([8bb921a](https://github.com/dblevin1/docassemble/commit/8bb921ac3fd996c4f0a2311d7e8a5f64c488fb58) by Jonathan Pyle).
+
 ## [1.8.18.2](https://github.com/dblevin1/docassemble/releases/tag/1.8.18.2) - 2026-01-22
 
 <small>[Compare with 1.8.18.1](https://github.com/dblevin1/docassemble/compare/1.8.18.1...1.8.18.2)</small>
