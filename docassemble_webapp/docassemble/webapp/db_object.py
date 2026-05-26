@@ -1,5 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy as _BaseSQLAlchemy
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship, backref
 import docassemble.webapp.database
 import docassemble_flask_user

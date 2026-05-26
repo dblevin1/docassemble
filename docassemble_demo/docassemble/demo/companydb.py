@@ -2,31 +2,34 @@
 # Import any DAObject classes or functions that you will need
 from docassemble.base.util import Individual, Person, DAObject, DAFileList, DAFile, Thing, as_datetime
 # Import the SQLObject and some associated utility functions
-from docassemble.base.sql import alchemy_url, upgrade_db, SQLObject, SQLObjectRelationship, StandardRelationshipList, connect_args
+from docassemble.base.sql import register_db, create_objects, SQLObject, SQLObjectRelationship, StandardRelationshipList
 # Import SQLAlchemy names
-from sqlalchemy import Column, ForeignKey, Integer, String, DateTime, create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import Column, ForeignKey, Integer, String, DateTime
 
 # Only allow these names (DAObject classes) to be imported with a modules block
 __all__ = ['Company', 'Shareholder', 'CompanyShareholder', 'Lawsuit', 'CompanyLawsuit', 'Document', 'LawsuitDocument', 'StandardRelationshipList']
 
-# Create the base class for SQLAlchemy table definitions
-Base = declarative_base()
+# Set the name of the key in the Configuration with the information about the database
+DB_NAME = 'demo db'
+
+# Register the database with flask_sqlalchemy
+db = register_db(DB_NAME)
 
 
 # SQLAlchemy table definition for a Company
 
-class CompanyModel(Base):
+class CompanyModel(db.Model):
     __tablename__ = 'company'
+    __bind_key__ = DB_NAME
     id = Column(Integer, primary_key=True)
     name = Column(String(250))
 
 
 # SQLAlchemy table definition for a Shareholder
 
-class ShareholderModel(Base):
+class ShareholderModel(db.Model):
     __tablename__ = 'shareholder'
+    __bind_key__ = DB_NAME
     id = Column(Integer, primary_key=True)
     ssn = Column(String(250), unique=True)
     first_name = Column(String(250))
@@ -43,8 +46,9 @@ class ShareholderModel(Base):
 
 # SQLAlchemy table definition for keeping track of which Companies have which Shareholders
 
-class CompanyShareholderModel(Base):
+class CompanyShareholderModel(db.Model):
     __tablename__ = 'company_shareholder'
+    __bind_key__ = DB_NAME
     id = Column(Integer, primary_key=True)
     company_id = Column(Integer, ForeignKey('company.id', ondelete='CASCADE'), nullable=False)
     shareholder_id = Column(Integer, ForeignKey('shareholder.id', ondelete='CASCADE'), nullable=False)
@@ -52,8 +56,9 @@ class CompanyShareholderModel(Base):
 
 # SQLAlchemy table definition for a Lawsuit
 
-class LawsuitModel(Base):
+class LawsuitModel(db.Model):
     __tablename__ = 'lawsuit'
+    __bind_key__ = DB_NAME
     id = Column(Integer, primary_key=True)
     court = Column(String(250))
     docket_number = Column(String(250))
@@ -64,8 +69,9 @@ class LawsuitModel(Base):
 
 # SQLAlchemy table definition for keeping track of which Companies have which Lawsuits
 
-class CompanyLawsuitModel(Base):
+class CompanyLawsuitModel(db.Model):
     __tablename__ = 'company_lawsuit'
+    __bind_key__ = DB_NAME
     id = Column(Integer, primary_key=True)
     company_id = Column(Integer, ForeignKey('company.id', ondelete='CASCADE'), nullable=False)
     lawsuit_id = Column(Integer, ForeignKey('lawsuit.id', ondelete='CASCADE'), nullable=False)
@@ -73,8 +79,9 @@ class CompanyLawsuitModel(Base):
 
 # SQLAlchemy table definition for a Document
 
-class DocumentModel(Base):
+class DocumentModel(db.Model):
     __tablename__ = 'document'
+    __bind_key__ = DB_NAME
     id = Column(Integer, primary_key=True)
     name = Column(String(250))
     upload_id = Column(Integer, unique=True)
@@ -86,41 +93,22 @@ class DocumentModel(Base):
 
 # SQLAlchemy table definition for keeping track of which Lawsuits have which Documents
 
-class LawsuitDocumentModel(Base):
+class LawsuitDocumentModel(db.Model):
     __tablename__ = 'lawsuit_document'
+    __bind_key__ = DB_NAME
     id = Column(Integer, primary_key=True)
     lawsuit_id = Column(Integer, ForeignKey('lawsuit.id', ondelete='CASCADE'), nullable=False)
     document_id = Column(Integer, ForeignKey('document.id', ondelete='CASCADE'), nullable=False)
 
-# Form the URL for connecting to the database based on the "demo db" directive in the Configuration
-url = alchemy_url('demo db')
-
-# Build the "engine" for connecting to the SQL server, using the URL for the database.
-conn_args = connect_args('demo db')
-if url.startswith('postgres'):
-    engine = create_engine(url, connect_args=connect_args('demo db'), pool_pre_ping=False)
-else:
-    engine = create_engine(url, pool_pre_ping=False)
-
-# Create the tables
-Base.metadata.create_all(engine)
-
-# Get SQLAlchemy ready
-Base.metadata.bind = engine
-
-# Perform any necessary database schema updates using alembic, if there is an alembic
-# directory and alembic.ini file in the package.
-upgrade_db(url, __file__, engine, version_table='auto', conn_args=conn_args)
-
-# Create a connection to the SQL database, which will be used by the following classes.
-DBSession = sessionmaker(bind=engine)()
+# Create database objects if any of the above table definitions do not exist, and run alembic if applicable
+create_objects(__file__, DB_NAME)
 
 
 # Python class for a Company
 
 class Company(Person, SQLObject):
     _model = CompanyModel
-    _session = DBSession
+    _session = db.session
     _required = ['name']
     _uid = 'name'
 
@@ -131,26 +119,26 @@ class Company(Person, SQLObject):
     def db_get(self, column):
         if column == 'name':
             return self.name.text
-        raise Exception("Invalid column " + column)
+        raise RuntimeError("Invalid column " + column)
 
     def db_set(self, column, value):
         if column == 'name':
             self.name.text = value
         else:
-            raise Exception("Invalid column " + column)
+            raise RuntimeError("Invalid column " + column)
 
     def db_null(self, column):
         if column == 'name':
             del self.name.text
         else:
-            raise Exception("Invalid column " + column)
+            raise RuntimeError("Invalid column " + column)
 
 
 # Python class for a Shareholder
 
 class Shareholder(Individual, SQLObject):
     _model = ShareholderModel
-    _session = DBSession
+    _session = db.session
     _required = ['first_name', 'ssn']
     _uid = 'ssn'
 
@@ -184,7 +172,7 @@ class Shareholder(Individual, SQLObject):
             return self.start_date
         if column == 'end_date':
             return self.end_date
-        raise Exception("Invalid column " + column)
+        raise RuntimeError("Invalid column " + column)
 
     def db_set(self, column, value):
         if column == 'ssn':
@@ -213,7 +201,7 @@ class Shareholder(Individual, SQLObject):
             self.end_date = as_datetime(value)
             self.active = False
         else:
-            raise Exception("Invalid column " + column)
+            raise RuntimeError("Invalid column " + column)
 
     def db_null(self, column):
         if column == 'ssn':
@@ -239,14 +227,14 @@ class Shareholder(Individual, SQLObject):
         elif column == 'end_date':
             del self.end_date
         else:
-            raise Exception("Invalid column " + column)
+            raise RuntimeError("Invalid column " + column)
 
 
 # Python class for a relationship between a Company and a Shareholder
 
 class CompanyShareholder(DAObject, SQLObjectRelationship):
     _model = CompanyShareholderModel
-    _session = DBSession
+    _session = db.session
     _parent = [Company, 'company', 'company_id']
     _child = [Shareholder, 'shareholder', 'shareholder_id']
 
@@ -259,7 +247,7 @@ class CompanyShareholder(DAObject, SQLObjectRelationship):
 
 class Lawsuit(Individual, SQLObject):
     _model = LawsuitModel
-    _session = DBSession
+    _session = db.session
     _required = ['docket_number', 'court']
 
     def init(self, *pargs, **kwargs):
@@ -280,7 +268,7 @@ class Lawsuit(Individual, SQLObject):
             return self.plaintiff.name.last
         if column == 'filing_date':
             return self.filing_date
-        raise Exception("Invalid column " + column)
+        raise RuntimeError("Invalid column " + column)
 
     def db_set(self, column, value):
         if column == 'court':
@@ -294,7 +282,7 @@ class Lawsuit(Individual, SQLObject):
         elif column == 'filing_date':
             self.filing_date = as_datetime(value)
         else:
-            raise Exception("Invalid column " + column)
+            raise RuntimeError("Invalid column " + column)
 
     def db_null(self, column):
         if column == 'court':
@@ -308,7 +296,7 @@ class Lawsuit(Individual, SQLObject):
         elif column == 'filing_date':
             del self.filing_date
         else:
-            raise Exception("Invalid column " + column)
+            raise RuntimeError("Invalid column " + column)
     # Since the unique identifier for a lawsuit isn't really the docket number, but the combination of the
     # court and the docket number, we use a db_find_existing method.
 
@@ -323,7 +311,7 @@ class Lawsuit(Individual, SQLObject):
 
 class CompanyLawsuit(DAObject, SQLObjectRelationship):
     _model = CompanyLawsuitModel
-    _session = DBSession
+    _session = db.session
     _parent = [Company, 'company', 'company_id']
     _child = [Lawsuit, 'lawsuit', 'lawsuit_id']
 
@@ -336,7 +324,7 @@ class CompanyLawsuit(DAObject, SQLObjectRelationship):
 
 class Document(Thing, SQLObject):
     _model = DocumentModel
-    _session = DBSession
+    _session = db.session
     _required = ['name', 'upload_id', 'filename', 'extension', 'mimetype', 'upload_id']
     _uid = 'upload_id'
 
@@ -357,7 +345,7 @@ class Document(Thing, SQLObject):
             return self.upload[0].extension
         if column == 'mimetype':
             return self.upload[0].mimetype
-        raise Exception("Invalid column " + column)
+        raise RuntimeError("Invalid column " + column)
 
     def ensure_upload_exists(self):
         # Since file uploads are a special type of object in Docassemble,
@@ -393,7 +381,7 @@ class Document(Thing, SQLObject):
             self.ensure_upload_exists()
             self.upload[0].mimetype = value
         else:
-            raise Exception("Invalid column " + column)
+            raise RuntimeError("Invalid column " + column)
 
     def db_null(self, column):
         if column == 'name':
@@ -413,14 +401,14 @@ class Document(Thing, SQLObject):
         elif column == 'mimetype':
             del self.upload[0].mimetype
         else:
-            raise Exception("Invalid column " + column)
+            raise RuntimeError("Invalid column " + column)
 
 
 # Python class for a relationship between a Lawsuit and a Document
 
 class LawsuitDocument(DAObject, SQLObjectRelationship):
     _model = LawsuitDocumentModel
-    _session = DBSession
+    _session = db.session
     _parent = [Lawsuit, 'lawsuit', 'lawsuit_id']
     _child = [Document, 'document', 'document_id']
 

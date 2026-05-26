@@ -562,7 +562,7 @@ def field_item(field, grid_info, pre=None, row=True, floating=False, classes=Non
         if use_fieldset == 1:
             aria_req += 'role="radiogroup" '
         id_for_label = f'da-label-{field.number}'
-        aria_lb = f' aria-labeledby="{id_for_label}" '
+        aria_lb = f' aria-labelledby="{id_for_label}" '
         label_id = f' id="{id_for_label}"'
     else:
         enclosing_type = 'div'
@@ -822,7 +822,7 @@ def as_html(status, debug, root, validation_rules, field_error, the_progress_bar
         datatypes[safeid(status.question.fields_saveas)] = "boolean"
     continue_button_color = status.extras.get('continuecolor', None) or BUTTON_COLOR
     back_button_val = status.extras.get('back_button', None)
-    if (back_button_val or (back_button_val is None and status.question.interview.question_back_button)) and status.question.can_go_back and steps > 1:
+    if (back_button_val or (back_button_val is None and status.question.interview.question_back_button)) and status.extras.get('can_go_back', True) and steps > 1:
         back_button = '\n                  <button type="button" class="btn ' + BUTTON_STYLE + (status.extras.get('back button color', None) or BUTTON_COLOR_BACK) + ' ' + BUTTON_CLASS + ' daquestionbackbutton danonsubmit" title=' + json.dumps(word("Go back to the previous question")) + '><i class="fa-solid fa-chevron-left me-1"></i>'
         back_button += status.back
         back_button += '</button>'
@@ -2427,7 +2427,7 @@ def as_html(status, debug, root, validation_rules, field_error, the_progress_bar
                   <div class="card-body">
                     <form aria-labelledby="daheadingOne" action=\"""" + root + """\" id="daemailform" class="form-horizontal" method="POST">
                       <input type="hidden" name="_question_name" value=""" + json.dumps(status.question.name, ensure_ascii=False) + """/>
-                      <div class="da-form-group row"><label for="da_attachment_email_address" class="col-""" + daconfig['grid classes']['label width'] + """ col-form-label da-form-label datext-right">""" + word('E-mail address') + """</label><div class="col-""" + daconfig['grid classes']['field width'] + """"><input alt=""" + fix_double_quote(word("Input box")) + """ class="form-control" type="email" name="_attachment_email_address" id="da_attachment_email_address" value=""" + fix_double_quote(str(default_email)) + """/></div></div>"""
+                      <div class="da-form-group row"><label for="da_attachment_email_address" class="col-""" + daconfig['grid classes']['label width'] + ' col-form-label da-form-label datext-right">' + word('E-mail address') + '</label><div class="col-' + daconfig['grid classes']['field width'] + '"><input alt=' + fix_double_quote(word("Input box")) + ' class="form-control" type="email" name="_attachment_email_address" id="da_attachment_email_address" value=' + fix_double_quote(str(default_email)) + '/></div></div>'
                 if editable_included:
                     if automatically_include_editable:
                         output += """
@@ -3480,7 +3480,10 @@ def input_for(status, field, embedded=False, floating_label=None):
             if field.datatype in ['integer', 'float', 'currency', 'number']:
                 if field.datatype != 'currency':
                     extra_class += ' danumeric'
-                input_type = r'text" inputmode="numeric" pattern="[\-\d.]*'
+                if field.datatype == 'integer':
+                    input_type = r'text" inputmode="numeric" pattern="[\-\d.]*'
+                else:
+                    input_type = r'text" inputmode="decimal" pattern="[\-\d.]*'
                 if hasattr(field, 'extras') and 'step' in field.extras and 'step' in status.extras and field.number in status.extras['step']:
                     step_string = ' step="' + str(status.extras['step'][field.number]) + '"'
                 else:

@@ -25,6 +25,14 @@ def create_app():
         the_app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'connect_args': docassemble.webapp.database.connect_args()}
     the_app.secret_key = daconfig.get('secretkey', '38ihfiFehfoU34mcq_4clirglw3g4o87')
     the_app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    if daconfig.get('variables snapshot db') is not None:
+        import docassemble.webapp.user_database
+        snapshot_url = docassemble.webapp.user_database.alchemy_url('variables snapshot db')
+        snapshot_bind = {'url': snapshot_url, 'pool_pre_ping': daconfig.get('sql ping', False)}
+        snapshot_connect_args = docassemble.webapp.user_database.connect_args('variables snapshot db')
+        if snapshot_connect_args:
+            snapshot_bind['connect_args'] = snapshot_connect_args
+        the_app.config['SQLALCHEMY_BINDS'] = {'variables_snapshot': snapshot_bind}
     the_db = docassemble.webapp.db_object.init_flask()
     the_db.init_app(the_app)
     the_csrf = CSRFProtect()

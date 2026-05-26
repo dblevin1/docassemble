@@ -1,5 +1,5 @@
 # do not pre-load
-from docassemble.base.util import store_variables_snapshot, DAObject, user_info, start_time, variables_snapshot_connection
+from docassemble.base.util import store_variables_snapshot, DAObject, current_context, start_time, variables_snapshot_connection
 
 __all__ = ['MyIndex']
 
@@ -15,14 +15,14 @@ class MyIndex(DAObject):
 
     def save(self):
         data = dict(self.data)
-        data['session'] = user_info().session
-        data['filename'] = user_info().filename
+        data['session'] = current_context().session
+        data['filename'] = current_context().filename
         data['start_time'] = start_time().astimezone()
         store_variables_snapshot(data, key=self.key)
 
     def set(self, data):
         if not isinstance(data, dict):
-            raise Exception("MyIndex.set: data parameter must be a dictionary")
+            raise RuntimeError("MyIndex.set: data parameter must be a dictionary")
         self.data = data
         self.save()
 

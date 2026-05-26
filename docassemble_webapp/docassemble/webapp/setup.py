@@ -4,7 +4,7 @@ import importlib
 from docassemble.webapp.app_object import app
 from docassemble.base.config import daconfig
 import docassemble.webapp.database
-da_version = '1.8.18.2'
+da_version = '1.9.12'
 app.config['DA_VERSION'] = da_version
 app.config['APP_NAME'] = daconfig.get('appname', 'docassemble')
 app.config['BRAND_NAME'] = daconfig.get('brandname', daconfig.get('appname', 'docassemble'))
@@ -96,7 +96,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = alchemy_connect_string
 app.secret_key = daconfig.get('secretkey', '38ihfiFehfoU34mcq_4clirglw3g4o87')
 app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
 app.config['ENABLE_MANAGE_ACCOUNT'] = daconfig.get('user can delete account', True)
-app.config['ENABLE_REQUEST_DEVELOPER_ACCOUNT'] = daconfig.get('user can request developer account', True)
+app.config['ENABLE_REQUEST_DEVELOPER_ACCOUNT'] = daconfig.get('user can request developer account', False)
 app.config['ENABLE_DELETE_SHARED'] = daconfig.get('delete account deletes shared', False)
 app.config['ENABLE_DELETE_ACCOUNT'] = daconfig.get('admin can delete account', True)
 app.config['SESSION_COOKIE_SECURE'] = daconfig.get('use https', False) or daconfig.get('behind https load balancer', False)

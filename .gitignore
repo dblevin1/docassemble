@@ -1,6 +1,7 @@
 *~
 .mypy_cache/*
 .vscode
+.venv
 .#*
 *.pyc
 en
@@ -70,3 +71,7 @@ stylelint.config.js
 volumes/*
 docker-compose.yml
 compose.yml
+CLAUDE.md
+.claude/
+.claudeignore
+__pycache__

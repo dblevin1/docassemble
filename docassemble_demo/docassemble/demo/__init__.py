@@ -1,1 +1,2 @@
-__version__ = "1.8.18.2"
+# do not pre-load
+__version__ = "1.9.12"

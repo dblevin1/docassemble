@@ -6,14 +6,14 @@ file_changed=false
 for css_file in app/app.css app/pygments.css; do
     orig_file="${css_file/.css/.scss}"
     if [[ docassemble_webapp/docassemble/webapp/static/${orig_file} -nt docassemble_webapp/docassemble/webapp/static/${css_file} ]]; then
-	sass docassemble_webapp/docassemble/webapp/static/${orig_file} docassemble_webapp/docassemble/webapp/static/${css_file}
+	/usr/bin/sass docassemble_webapp/docassemble/webapp/static/${orig_file} docassemble_webapp/docassemble/webapp/static/${css_file}
 	file_changed=true
     fi
 done
 for min_file in app/app.min.css app/pygments.min.css bootstrap-slider/dist/css/bootstrap-slider.min.css bootstrap-combobox/css/bootstrap-combobox.min.css; do
     orig_file="${min_file/.min/}"
     if [[ docassemble_webapp/docassemble/webapp/static/${orig_file} -nt docassemble_webapp/docassemble/webapp/static/${min_file} ]]; then
-	sass --style compressed docassemble_webapp/docassemble/webapp/static/${orig_file} docassemble_webapp/docassemble/webapp/static/${min_file}
+	/usr/bin/sass --style compressed docassemble_webapp/docassemble/webapp/static/${orig_file} docassemble_webapp/docassemble/webapp/static/${min_file}
 	file_changed=true
     fi
 done

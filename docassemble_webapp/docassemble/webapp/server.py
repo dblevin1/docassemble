@@ -93,7 +93,6 @@ if not in_celery:
     import celery.exceptions
 
 import packaging
-import apiclient
 from bs4 import BeautifulSoup
 from Crypto.Hash import MD5
 from Crypto.PublicKey import RSA
@@ -108,19 +107,17 @@ from docassemble_flask_user import UserManager, SQLAlchemyAdapter
 from docassemble_flask_user import login_required, roles_required, user_logged_in, user_changed_password, user_registered
 from docassemblekvsession import KVSessionExtension
 from docassemble_textstat.textstat import textstat
-from flask import make_response, abort, render_template, render_template_string, request, session, send_file, redirect, current_app, get_flashed_messages, flash, jsonify, Response, g
+from flask import make_response, abort, render_template, render_template_string, request, session, send_file, redirect, current_app, get_flashed_messages, flash, jsonify, Response, g, has_request_context
 from markupsafe import Markup
 from flask_cors import cross_origin
 from flask_login import LoginManager
 from flask_login import login_user, logout_user, current_user
 from flask_wtf.csrf import CSRFError
-import googleapiclient.discovery
 import httplib2
 import humanize
 from jinja2.exceptions import TemplateError
 import links_from_header
 import oauth2client.client
-import pandas
 from PIL import Image
 import pyotp
 from pygments import highlight
@@ -140,7 +137,7 @@ from google.auth.transport import requests as google_requests
 import requests
 import ruamel.yaml
 from simplekv.memory.redisstore import RedisStore
-from sqlalchemy import or_, and_, not_, select, delete as sqldelete, update
+from sqlalchemy import or_, and_, not_, select, delete as sqldelete, update, create_engine
 import tailer
 import twilio.twiml
 import twilio.twiml.messaging_response
@@ -153,6 +150,7 @@ import wtforms
 import xlsxwriter
 from user_agents import parse as ua_parse
 import yaml as standardyaml
+import docassemble.webapp.user_database  # pylint: disable=ungrouped-imports
 
 if DEBUG_BOOT:
     boot_log("server: done importing modules")
@@ -563,7 +561,7 @@ update_editable()
 
 default_yaml_filename = daconfig.get('default interview', None)
 final_default_yaml_filename = daconfig.get('default interview', 'docassemble.base:data/questions/default-interview.yml')
-keymap = daconfig.get('keymap', None)
+keymap = daconfig.get('keymap', None) or 'default'
 google_config = daconfig['google']
 if 'google maps api key' in google_config:
     google_api_key = google_config.get('google maps api key')
@@ -1361,13 +1359,14 @@ sys_logger = None
 
 def syslog_message(message):
     message = re.sub(r'\n', ' ', message)
-    if current_user and current_user.is_authenticated:
-        the_user = current_user.email
-    else:
-        the_user = "anonymous"
-    if request_active:
+    if has_request_context():
         try:
-            sys_logger.debug('%s', LOGFORMAT % {'message': message, 'clientip': get_requester_ip(request), 'yamlfile': docassemble.base.functions.this_thread.current_info.get('yaml_filename', 'na'), 'user': the_user, 'session': docassemble.base.functions.this_thread.current_info.get('session', 'na')})
+            if current_user and current_user.is_authenticated:
+                the_user = current_user.email
+            else:
+                the_user = "anonymous"
+            the_current_info = getattr(docassemble.base.functions.this_thread, 'current_info', {})
+            sys_logger.debug('%s', LOGFORMAT % {'message': message, 'clientip': get_requester_ip(request), 'yamlfile': the_current_info.get('yaml_filename', 'na'), 'user': the_user, 'session': the_current_info.get('session', 'na')})
         except BaseException as err:
             sys.stderr.write("Error writing log message " + str(message) + "\n")
             try:
@@ -1391,13 +1390,20 @@ def syslog_message_with_timestamp(message):
 LOGFORMAT = daconfig.get('log format', 'docassemble: ip=%(clientip)s i=%(yamlfile)s uid=%(session)s user=%(user)s %(message)s')
 
 
+class UnsilenceableLogger(logging.Logger):
+    def isEnabledFor(self, level):
+        return level >= self.level
+
+
 def add_log_handler():
     tries = 0
     while tries < 5:
         try:
             docassemble_log_handler = logging.FileHandler(filename=os.path.join(LOG_DIRECTORY, 'docassemble.log'))
         except PermissionError:
+            sys.stderr.write("Unable to open docassemble.log; trying again\n")
             time.sleep(1)
+            tries += 1
             continue
         sys_logger.addHandler(docassemble_log_handler)
         if os.environ.get('SUPERVISORLOGLEVEL', 'info') == 'debug':
@@ -1406,8 +1412,11 @@ def add_log_handler():
         break
 
 if not (in_celery or in_cron or daconfig.get('log to std', False)):
+    logging.setLoggerClass(UnsilenceableLogger)
     sys_logger = logging.getLogger('docassemble')
+    logging.setLoggerClass(logging.Logger)
     sys_logger.setLevel(logging.DEBUG)
+    sys_logger.propagate = False
     add_log_handler()
     if LOGSERVER is None:
         docassemble.base.logger.set_logmessage(syslog_message_with_timestamp)
@@ -2084,8 +2093,10 @@ def get_pg_code_cache():
         with open(documentation['fullpath'], 'r', encoding='utf-8') as fp:
             content = fp.read()
             content = fix_tabs.sub('  ', content)
+            if not content:
+                return {}
             return safeyaml.load(content)
-    return None
+    return {}
 
 
 def get_documentation_dict():
@@ -2563,7 +2574,7 @@ def do_refresh(is_ajax, yaml_filename):
 
 
 def standard_scripts(interview_language=DEFAULT_LANGUAGE, external=False):
-    if interview_language in ('ar', 'cs', 'et', 'he', 'ka', 'nl', 'ro', 'th', 'zh', 'az', 'da', 'fa', 'hu', 'kr', 'no', 'ru', 'tr', 'bg', 'de', 'fi', 'id', 'kz', 'pl', 'sk', 'uk', 'ca', 'el', 'fr', 'it', 'sl', 'uz', 'cr', 'es', 'gl', 'ja', 'lt', 'pt', 'sv', 'vi'):
+    if interview_language in ('ar', 'az', 'bg', 'ca', 'cr', 'cs', 'da', 'de', 'el', 'es', 'et', 'eu', 'fa', 'fi', 'fr', 'gl', 'he', 'hu', 'id', 'it', 'ja', 'ka', 'kr', 'kz', 'lt', 'lv', 'ms', 'nl', 'no', 'pl', 'pt', 'ro', 'ru', 'sk', 'sl', 'sv', 'th', 'tr', 'uk', 'ur', 'uz', 'vi', 'zh'):
         fileinput_locale = f'\n  <script{DEFER} src="{url_for("static", filename="bootstrap-fileinput/js/locales/" + interview_language + ".js", v=da_version, _external=external)}"></script>'
     else:
         fileinput_locale = ''
@@ -2916,7 +2927,7 @@ def save_user_dict_key(session_id, filename, priors=False, user=None):
 def save_user_dict(user_code, user_dict, filename, secret=None, changed=False, encrypt=True, manual_user_id=None, steps=None, max_indexno=None):
     # logmessage("save_user_dict: called with encrypt " + str(encrypt))
     if REQUIRE_IDEMPOTENT:
-        for var_name in ('x', 'i', 'j', 'k', 'l', 'm', 'n'):
+        for var_name in ('x', 'i', 'j', 'k', 'l', 'm', 'n', '__DANEWOBJECT'):
             if var_name in user_dict:
                 del user_dict[var_name]
         user_dict['_internal']['objselections'] = {}
@@ -3298,7 +3309,7 @@ def make_navbar(status, steps, show_login, chat_info, debug_mode, index_params, 
       <div class="navbar""" + fixed_top + """ navbar-expand-md """ + inverse + '"' + """ role="banner">
         <div class="container danavcontainer justify-content-start">
 """
-    if status.question.can_go_back and steps > 1:
+    if status.extras['can_go_back'] and steps > 1:
         if status.question.interview.navigation_back_button:
             navbar += """\
           <form style="display: inline-block" id="dabackbutton" method="POST" action=""" + json.dumps(url_for('index', **index_params)) + """><input type="hidden" name="csrf_token" value=""" + '"' + generate_csrf() + '"' + """/><input type="hidden" name="_back_one" value="1"/><button class="navbar-brand navbar-nav dabackicon dabackbuttoncolor me-3" type="submit" title=""" + json.dumps(word("Go back to the previous question")) + """><span class="nav-link"><i class="fa-solid fa-chevron-left"></i><span class="daback">""" + status.cornerback + """</span></span></button></form>
@@ -5076,10 +5087,11 @@ class Auth0SignIn(OAuthSignIn):
     def authorize(self):
         if 'oauth' in daconfig and 'auth0' in daconfig['oauth'] and daconfig['oauth']['auth0'].get('enable', True) and self.consumer_domain is None:
             raise DAException("To use Auth0, you need to set your domain in the configuration.")
+        audience_domain = daconfig['oauth']['auth0'].get('audience domain') or self.consumer_domain
         return redirect(self.service.get_authorize_url(
             response_type='code',
             scope='openid profile email',
-            audience='https://' + str(self.consumer_domain) + '/userinfo',
+            audience=f'https://{audience_domain}/userinfo',
             redirect_uri=self.get_callback_url())
         )
 
@@ -5341,9 +5353,12 @@ def oauth_callback(provider):
         return ('The method is not allowed for the requested URL.', 405)
     # for argument in request.args:
     #     logmessage("argument " + str(argument) + " is " + str(request.args[argument]))
-    oauth = OAuthSignIn.get_provider(provider)
+    try:
+        oauth = OAuthSignIn.get_provider(provider)
+    except KeyError:
+        abort(404)
     if not oauth.enabled():
-        abort(403)
+        abort(404)
     social_id, username, email, name_data = oauth.callback()
     if not verify_email(email):
         flash(word('E-mail addresses with this domain are not authorized to register for accounts on this system.'), 'error')
@@ -5357,7 +5372,7 @@ def oauth_callback(provider):
         if user and not user.social_id.startswith('local') and not daconfig.get('allow external auth with multiple methods', False) and social_id.split('$')[0] != user.social_id.split('$')[0]:
             flash(word('There is already an account on the system with the e-mail address') + " " + str(email) + ".  " + word("Please log in to that account."), 'error')
             return redirect(url_for('user.login'))
-    if user and user.social_id is not None and user.social_id.startswith('local'):
+    if user and user.social_id is not None and user.social_id.startswith('local') and not daconfig.get('allow external auth to bypass local auth', False):
         flash(word('There is already a username and password on this system with the e-mail address') + " " + str(email) + ".  " + word("Please log in."), 'error')
         return redirect(url_for('user.login'))
     if not user:
@@ -6259,6 +6274,26 @@ def checkout():
     return jsonify(success=True)
 
 
+@app.route('/check_restart_status', methods=['GET'])
+@login_required
+@roles_required(['admin', 'developer'])
+def check_restart_status():
+    if not app.config['ALLOW_RESTARTING']:
+        return ('File not found', 404)
+    code = request.args.get('task_id', None)
+    if code is None:
+        return jsonify_with_status("Missing task_id", 400)
+    the_key = 'da:restart_status:' + str(code)
+    task_data = r.get(the_key)
+    if task_data is None:
+        return jsonify(status='unknown')
+    task_info = json.loads(task_data.decode())
+    if START_TIME <= task_info['server_start_time'] or reset_process_running():
+        return jsonify(status='working')
+    r.expire(the_key, 30)
+    return jsonify(status='completed')
+
+
 @app.route("/restart_ajax", methods=['POST'])
 @login_required
 @roles_required(['admin', 'developer'])
@@ -6272,8 +6307,9 @@ def restart_ajax():
     #     logmessage("restart_ajax: user has no permission")
     if request.form.get('action', None) == 'restart' and current_user.has_role('admin', 'developer'):
         logmessage("restart_ajax: restarting")
+        return_val = jsonify_restart_task()
         restart_all()
-        return jsonify(success=True)
+        return return_val
     return jsonify(success=False)
 
 
@@ -7292,7 +7328,7 @@ def index(action_argument=None, refer=None):
         ok_to_go_back = True
         if STRICT_MODE:
             interview.assemble(user_dict, interview_status=interview_status)
-            if not interview_status.question.can_go_back:
+            if not interview_status.extras['can_go_back']:
                 ok_to_go_back = False
         if ok_to_go_back:
             action = None
@@ -7571,6 +7607,8 @@ def index(action_argument=None, refer=None):
                         file_formats.append('docx')
                     if 'rtf to docx' in the_attachment['valid_formats']:
                         file_formats.append('rtf to docx')
+                if 'raw' in the_attachment['valid_formats']:
+                    file_formats.append('raw')
                 for file_format in the_attachment.get('manual_formats', []):
                     if file_format not in file_formats:
                         file_formats.append(file_format)
@@ -7950,6 +7988,7 @@ def index(action_argument=None, refer=None):
                     try:
                         if not info['class'].call_validate(raw_data, key_with_sub, field_data):
                             raise DAValidationError(word("You need to enter a valid value."))
+                        new_values[key] = repr(raw_data)
                     except DAValidationError as err:
                         validated = False
                         if key in key_to_orig_key:
@@ -8094,6 +8133,7 @@ def index(action_argument=None, refer=None):
                     try:
                         if not info['class'].call_validate(raw_data, key_tr):
                             raise DAValidationError(word("You need to enter a valid value."))
+                        new_values[key] = repr(raw_data)
                     except DAValidationError as err:
                         validated = False
                         if key in key_to_orig_key:
@@ -8220,9 +8260,6 @@ def index(action_argument=None, refer=None):
                 logmessage("Tried to run " + the_string + " and got error " + errMess.__class__.__name__ + ": " + str(errMess))
             except:
                 pass
-        if is_object:
-            if '__DANEWOBJECT' in user_dict:
-                del user_dict['__DANEWOBJECT']
         if key not in key_to_orig_key:
             key_to_orig_key[key] = orig_key
     if validated and special_question is None and not disregard_input:
@@ -8756,6 +8793,7 @@ def index(action_argument=None, refer=None):
             update_session(yaml_filename, uid=user_code, key_logged=True)
         steps = 1
         changed = False
+        action = None
         interview.assemble(user_dict, interview_status)
     title_info = interview.get_title(user_dict, status=interview_status, converter=lambda content, part: title_converter(content, part, interview_status))
     save_status = docassemble.base.functions.this_thread.misc.get('save_status', SS_NEW)
@@ -8961,7 +8999,7 @@ def index(action_argument=None, refer=None):
         reload_after = 1000 * int(interview_status.extras['reload_after'])
     else:
         reload_after = 0
-    allow_going_back = bool(interview_status.question.can_go_back and (steps - user_dict['_internal']['steps_offset']) > 1)
+    allow_going_back = bool(interview_status.extras['can_go_back'] and (steps - user_dict['_internal']['steps_offset']) > 1)
     if hasattr(interview_status.question, 'id'):
         question_id = interview_status.question.id
     else:
@@ -10517,6 +10555,8 @@ def update_package_ajax():
             if the_result.ok:
                 # logmessage("update_package_ajax: success")
                 if (hasattr(the_result, 'restart') and not the_result.restart) or (START_TIME > session['serverstarttime'] and not reset_process_running()):
+                    if len(the_result.logmessages) > 210000:
+                        the_result.logmessages = the_result.logmessages[0:100000] + "\n\nTRUNCATED\n\n" + the_result.logmessages[-100000:]
                     return jsonify(success=True, status='finished', ok=the_result.ok, summary=summarize_results(the_result.results, the_result.logmessages))
                 return jsonify(success=True, status='waiting')
             if hasattr(the_result, 'error_message'):
@@ -11328,7 +11368,7 @@ SOFTWARE.
 """
         gitignore = daconfig.get('default gitignore', DEFAULT_GITIGNORE)
         readme = '# docassemble.' + str(pkgname) + "\n\nA docassemble extension.\n\n## Author\n\n" + name_of_user(current_user, include_email=True) + "\n"
-        pyprojecttoml = tomli_w.dumps({'build-system': {'requires': ['setuptools==80.9.0'], 'build-backend': 'setuptools.build_meta'}, 'project': {'name': f'docassemble.{pkgname}', 'version': '0.0.1', 'description': 'A docassemble extension.', 'readme': 'README.md', 'authors': [{'name': str(name_of_user(current_user)), 'email': str(current_user.email)}], 'license': 'MIT', 'license-files': ['LICENSE'], 'urls': {'Homepage': 'https://docassemble.org'}}, 'tool': {'setuptools': {'packages': {'find': {'where': ['.']}}}}})
+        pyprojecttoml = tomli_w.dumps({'build-system': {'requires': ['setuptools>=80.9.0'], 'build-backend': 'setuptools.build_meta'}, 'project': {'name': f'docassemble.{pkgname}', 'version': '0.0.1', 'description': 'A docassemble extension.', 'readme': 'README.md', 'authors': [{'name': str(name_of_user(current_user)), 'email': str(current_user.email)}], 'license': 'MIT', 'license-files': ['LICENSE'], 'urls': {'Homepage': 'https://docassemble.org'}}, 'tool': {'setuptools': {'packages': {'find': {'where': ['.']}}}}})
         manifestin = f"""\
 include README.md
 graft docassemble/{pkgname}/data
@@ -11569,10 +11609,37 @@ def restart_page():
     setup_translation()
     if not app.config['ALLOW_RESTARTING']:
         return ('File not found', 404)
+    next_url = app.user_manager.make_safe_url_function(request.args.get('next', url_for('interview_list', post_restart=1)))
     script = f"""
     <script{DEFER}>
+      var nextUrl = {json.dumps(next_url)};
+      var pollInterval = null;
+      var taskId = null;
       function daRestartCallback(data){{
-        //console.log("Restart result: " + data.success);
+        taskId = data.task_id;
+        pollInterval = setInterval(daPoll, 4000);
+      }}
+      function daPoll(){{
+        $.ajax({{
+          type: 'GET',
+          url: {json.dumps(url_for('check_restart_status'))} + '?' + $.param({{"task_id": taskId}}),
+          success: daCheckStatus,
+          error: daIgnoreStatus,
+          dataType: 'json',
+          timeout: 3500
+        }});
+      }}
+      function daCheckStatus(data){{
+        if (data.status == "completed"){{
+          clearInterval(pollInterval);
+          window.location.replace(nextUrl);
+        }}
+        else{{
+          console.log("Status of restart was: " + data.status + ".");
+        }}
+      }}
+      function daIgnoreStatus(data){{
+        console.log("Unable to check status of restart. Perhaps the server will respond again.")
       }}
       function daRestart(){{
         $.ajax({{
@@ -11591,9 +11658,7 @@ def restart_page():
         }});
       }});
     </script>"""
-    next_url = app.user_manager.make_safe_url_function(request.args.get('next', url_for('interview_list', post_restart=1)))
-    extra_meta = """\n    <meta http-equiv="refresh" content="8;URL='""" + next_url + """'">"""
-    response = make_response(render_template('pages/restart.html', version_warning=None, bodyclass='daadminbody', extra_meta=Markup(extra_meta), extra_js=Markup(script), tab_title=word('Restarting'), page_title=word('Restarting')), 200)
+    response = make_response(render_template('pages/restart.html', version_warning=None, bodyclass='daadminbody', extra_js=Markup(script), tab_title=word('Restarting'), page_title=word('Restarting')), 200)
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
     return response
 
@@ -11786,6 +11851,7 @@ def rename_gd_project(old_project, new_project):
         logmessage('rename_gd_project: credentials missing or expired')
         return False
     http = credentials.authorize(httplib2.Http())
+    import apiclient  # pylint: disable=import-outside-toplevel
     service = apiclient.discovery.build('drive', 'v3', http=http)
     response = service.files().get(fileId=the_folder, fields="mimeType, id, name, trashed").execute()
     trashed = response.get('trashed', False)
@@ -11840,6 +11906,7 @@ def trash_gd_project(old_project):
         logmessage('trash_gd_project: credentials missing or expired')
         return False
     http = credentials.authorize(httplib2.Http())
+    import apiclient  # pylint: disable=import-outside-toplevel
     service = apiclient.discovery.build('drive', 'v3', http=http)
     response = service.files().get(fileId=the_folder, fields="mimeType, id, name, trashed").execute()
     trashed = response.get('trashed', False)
@@ -11894,6 +11961,7 @@ def trash_gd_file(section, filename, current_project):
         logmessage('trash_gd_file: credentials missing or expired')
         return False
     http = credentials.authorize(httplib2.Http())
+    import apiclient  # pylint: disable=import-outside-toplevel
     service = apiclient.discovery.build('drive', 'v3', http=http)
     response = service.files().get(fileId=the_folder, fields="mimeType, id, name, trashed").execute()
     trashed = response.get('trashed', False)
@@ -11976,8 +12044,34 @@ def gd_sync_wait():
       var daCheckinInterval = null;
       var autoNext = {json.dumps(auto_next_url)};
       var resultsAreIn = false;
+      var pollInterval = null;
+      var taskId = null;
       function daRestartCallback(data){{
-        //console.log("Restart result: " + data.success);
+        taskId = data.task_id;
+        pollInterval = setInterval(daPoll, 4000);
+      }}
+      function daPoll(){{
+        $.ajax({{
+          type: 'GET',
+          url: {json.dumps(url_for('check_restart_status'))} + '?' + $.param({{"task_id": taskId}}),
+          success: daCheckStatus,
+          error: daIgnoreStatus,
+          dataType: 'json',
+          timeout: 3500
+        }});
+      }}
+      function daCheckStatus(data){{
+        if (data.status == "completed"){{
+          clearInterval(pollInterval);
+          $("#returnButton").show();
+          $("#restartButton").hide();
+        }}
+        else{{
+          console.log("Status of restart was: " + data.status + ".");
+        }}
+      }}
+      function daIgnoreStatus(data){{
+        console.log("Unable to check status of restart. Perhaps the server will respond again.")
       }}
       function daRestart(){{
         $.ajax({{
@@ -12014,6 +12108,8 @@ def gd_sync_wait():
               clearInterval(daCheckinInterval);
             }}
             if (data.restart){{
+              $("#returnButton").hide();
+              $("#restartButton").show();
               daRestart();
             }}
           }}
@@ -12389,13 +12485,34 @@ def od_sync_wait():
       var daCheckinInterval = null;
       var autoNext = {json.dumps(auto_next_url)};
       var resultsAreIn = false;
+      var pollInterval = null;
+      var taskId = null;
       function daRestartCallback(data){{
-        if (autoNext != null){{
-          setTimeout(function(){{
-            window.location.replace(autoNext);
-          }}, 1000);
+        taskId = data.task_id;
+        pollInterval = setInterval(daPoll, 4000);
+      }}
+      function daPoll(){{
+        $.ajax({{
+          type: 'GET',
+          url: {json.dumps(url_for('check_restart_status'))} + '?' + $.param({{"task_id": taskId}}),
+          success: daCheckStatus,
+          error: daIgnoreStatus,
+          dataType: 'json',
+          timeout: 3500
+        }});
+      }}
+      function daCheckStatus(data){{
+        if (data.status == "completed"){{
+          clearInterval(pollInterval);
+          $("#returnButton").show();
+          $("#restartButton").hide();
         }}
-        //console.log("Restart result: " + data.success);
+        else{{
+          console.log("Status of restart was: " + data.status + ".");
+        }}
+      }}
+      function daIgnoreStatus(data){{
+        console.log("Unable to check status of restart. Perhaps the server will respond again.")
       }}
       function daRestart(){{
         $.ajax({{
@@ -12429,6 +12546,8 @@ def od_sync_wait():
               clearInterval(daCheckinInterval);
             }}
             if (data.restart){{
+              $("#returnButton").hide();
+              $("#restartButton").show();
               daRestart();
             }}
             else{{
@@ -12583,6 +12702,7 @@ def google_drive_page():
         # logmessage("google_drive_page: uri is " + str(uri))
         return redirect(uri)
     http = credentials.authorize(httplib2.Http())
+    import apiclient  # pylint: disable=import-outside-toplevel
     try:
         service = apiclient.discovery.build('drive', 'v3', http=http)
     except:
@@ -12871,6 +12991,10 @@ def config_page():
                     fp.write(form.config_content.data)
                     flash(word('The configuration file was saved.'), 'success')
                 # session['restart'] = 1
+                pipe = r.pipeline()
+                pipe.set('da:skip_create_tables', 1)
+                pipe.expire('da:skip_create_tables', 10)
+                pipe.execute()
                 return redirect(url_for('restart_page'))
         elif form.cancel.data:
             flash(word('Configuration not updated.'), 'info')
@@ -15258,7 +15382,7 @@ def delete_variable_file(current_project):
 
 def get_list_of_playgrounds():
     user_list = []
-    for user in db.session.execute(select(UserModel.id, UserModel.social_id, UserModel.email, UserModel.first_name, UserModel.last_name).join(UserRoles, UserModel.id == UserRoles.user_id).join(Role, UserRoles.role_id == Role.id).where(and_(UserModel.active == True, or_(Role.name == 'admin', Role.name == 'developer'))).order_by(UserModel.id)):  # noqa: E712 # pylint: disable=singleton-comparison
+    for user in db.session.execute(select(UserModel.id, UserModel.social_id, UserModel.email, UserModel.first_name, UserModel.last_name).join(UserRoles, UserModel.id == UserRoles.user_id).join(Role, UserRoles.role_id == Role.id).where(and_(UserModel.active == True, or_(Role.name == 'admin', Role.name == 'developer'))).distinct().order_by(UserModel.id)):  # noqa: E712 # pylint: disable=singleton-comparison
         if user.social_id.startswith('disabled$'):
             continue
         user_info = {}
@@ -15784,7 +15908,7 @@ def server_error(the_error):
 def css_bundle():
     base_path = Path(importlib.resources.files('docassemble.webapp'), 'static')
     output = ''
-    for parts in [['bootstrap-fileinput', 'css', 'fileinput.css'], ['labelauty', 'source', 'jquery-labelauty.css'], ['bootstrap-combobox', 'css', 'bootstrap-combobox.css'], ['bootstrap-slider', 'dist', 'css', 'bootstrap-slider.css'], ['app', 'app.css']]:
+    for parts in [['bootstrap', 'css', 'bootstrap-icons.css'], ['bootstrap-fileinput', 'css', 'fileinput.css'], ['labelauty', 'source', 'jquery-labelauty.css'], ['bootstrap-combobox', 'css', 'bootstrap-combobox.css'], ['bootstrap-slider', 'dist', 'css', 'bootstrap-slider.css'], ['app', 'app.css']]:
         with open(os.path.join(base_path, *parts), encoding='utf-8') as fp:
             output += fp.read()
         output += "\n"
@@ -15795,7 +15919,7 @@ def css_bundle():
 def playground_css_bundle():
     base_path = Path(importlib.resources.files('docassemble.webapp'), 'static')
     output = ''
-    for parts in [['app', 'pygments.css'], ['bootstrap-fileinput', 'css', 'fileinput.css']]:
+    for parts in [['app', 'pygments.css'], ['bootstrap', 'css', 'bootstrap-icons.css'], ['bootstrap-fileinput', 'css', 'fileinput.css']]:
         with open(os.path.join(base_path, *parts), encoding='utf-8') as fp:
             output += fp.read()
         output += "\n"
@@ -15806,7 +15930,7 @@ def playground_css_bundle():
 def js_bundle():
     base_path = Path(importlib.resources.files('docassemble.webapp'), 'static')
     output = ''
-    for parts in [['app', 'jquery.js'], ['app', 'jquery.validate.js'], ['app', 'additional-methods.js'], ['app', 'jquery.visible.js'], ['bootstrap', 'js', 'bootstrap.bundle.js'], ['bootstrap-slider', 'dist', 'bootstrap-slider.js'], ['labelauty', 'source', 'jquery-labelauty.js'], ['bootstrap-fileinput', 'js', 'plugins', 'piexif.js'], ['bootstrap-fileinput', 'js', 'fileinput.js'], ['bootstrap-fileinput', 'themes', 'fas', 'theme.js'], ['app', 'app.js'], ['bootstrap-combobox', 'js', 'bootstrap-combobox.js'], ['app', 'socket.io.js'], ['app', 'signature_pad.umd.min.js']]:
+    for parts in [['app', 'jquery.js'], ['app', 'jquery.validate.js'], ['app', 'additional-methods.js'], ['app', 'jquery.visible.js'], ['bootstrap', 'js', 'bootstrap.bundle.js'], ['bootstrap-slider', 'dist', 'bootstrap-slider.js'], ['labelauty', 'source', 'jquery-labelauty.js'], ['bootstrap-fileinput', 'js', 'plugins', 'buffer.js'], ['bootstrap-fileinput', 'js', 'plugins', 'filetype.js'], ['bootstrap-fileinput', 'js', 'plugins', 'piexif.js'], ['bootstrap-fileinput', 'js', 'plugins', 'sortable.js'], ['bootstrap-fileinput', 'js', 'fileinput.js'], ['app', 'app.js'], ['bootstrap-combobox', 'js', 'bootstrap-combobox.js'], ['app', 'socket.io.js'], ['app', 'signature_pad.umd.min.js']]:
         with open(os.path.join(base_path, *parts), encoding='utf-8') as fp:
             output += fp.read()
         output += "\n"
@@ -15828,7 +15952,7 @@ def monitor_bundle():
 def playground_js_bundle():
     base_path = Path(importlib.resources.files('docassemble.webapp'), 'static')
     output = ''
-    for parts in [['areyousure', 'jquery.are-you-sure.js'], ['bootstrap-fileinput', 'js', 'plugins', 'piexif.js'], ['bootstrap-fileinput', 'js', 'fileinput.js'], ['bootstrap-fileinput', 'themes', 'fas', 'theme.js'], ['app', 'cm6.js'], ['app', 'playground.js']]:
+    for parts in [['areyousure', 'jquery.are-you-sure.js'], ['bootstrap-fileinput', 'js', 'plugins', 'buffer.js'], ['bootstrap-fileinput', 'js', 'plugins', 'filetype.js'], ['bootstrap-fileinput', 'js', 'plugins', 'piexif.js'], ['bootstrap-fileinput', 'js', 'plugins', 'sortable.js'], ['bootstrap-fileinput', 'js', 'fileinput.js'], ['app', 'cm6.js'], ['app', 'playground.js']]:
         with open(os.path.join(base_path, *parts), encoding='utf-8') as fp:
             output += fp.read()
         output += "\n"
@@ -15850,7 +15974,7 @@ def js_admin_bundle():
 def js_bundle_wrap():
     base_path = Path(importlib.resources.files('docassemble.webapp'), 'static')
     output = '(function($) {'
-    for parts in [['app', 'jquery.validate.js'], ['app', 'additional-methods.js'], ['app', 'jquery.visible.js'], ['bootstrap', 'js', 'bootstrap.bundle.js'], ['bootstrap-slider', 'dist', 'bootstrap-slider.js'], ['bootstrap-fileinput', 'js', 'plugins', 'piexif.js'], ['bootstrap-fileinput', 'js', 'fileinput.js'], ['bootstrap-fileinput', 'themes', 'fas', 'theme.js'], ['app', 'app.js'], ['labelauty', 'source', 'jquery-labelauty.js'], ['bootstrap-combobox', 'js', 'bootstrap-combobox.js'], ['app', 'socket.io.js']]:
+    for parts in [['app', 'jquery.validate.js'], ['app', 'additional-methods.js'], ['app', 'jquery.visible.js'], ['bootstrap', 'js', 'bootstrap.bundle.js'], ['bootstrap-slider', 'dist', 'bootstrap-slider.js'], ['bootstrap-fileinput', 'js', 'plugins', 'buffer.js'], ['bootstrap-fileinput', 'js', 'plugins', 'filetype.js'], ['bootstrap-fileinput', 'js', 'plugins', 'piexif.js'], ['bootstrap-fileinput', 'js', 'plugins', 'sortable.js'], ['bootstrap-fileinput', 'js', 'fileinput.js'], ['app', 'app.js'], ['labelauty', 'source', 'jquery-labelauty.js'], ['bootstrap-combobox', 'js', 'bootstrap-combobox.js'], ['app', 'socket.io.js']]:
         with open(os.path.join(base_path, *parts), encoding='utf-8') as fp:
             output += fp.read()
         output += "\n"
@@ -15862,7 +15986,7 @@ def js_bundle_wrap():
 def js_bundle_no_query():
     base_path = Path(importlib.resources.files('docassemble.webapp'), 'static')
     output = ''
-    for parts in [['app', 'jquery.validate.js'], ['app', 'additional-methods.js'], ['app', 'jquery.visible.js'], ['bootstrap', 'js', 'bootstrap.bundle.js'], ['bootstrap-slider', 'dist', 'bootstrap-slider.js'], ['bootstrap-fileinput', 'js', 'plugins', 'piexif.js'], ['bootstrap-fileinput', 'js', 'fileinput.js'], ['bootstrap-fileinput', 'themes', 'fas', 'theme.js'], ['app', 'app.js'], ['labelauty', 'source', 'jquery-labelauty.js'], ['bootstrap-combobox', 'js', 'bootstrap-combobox.js'], ['app', 'socket.io.js']]:
+    for parts in [['app', 'jquery.validate.js'], ['app', 'additional-methods.js'], ['app', 'jquery.visible.js'], ['bootstrap', 'js', 'bootstrap.bundle.js'], ['bootstrap-slider', 'dist', 'bootstrap-slider.js'], ['bootstrap-fileinput', 'js', 'plugins', 'buffer.js'], ['bootstrap-fileinput', 'js', 'plugins', 'filetype.js'], ['bootstrap-fileinput', 'js', 'plugins', 'piexif.js'], ['bootstrap-fileinput', 'js', 'plugins', 'sortable.js'], ['bootstrap-fileinput', 'js', 'fileinput.js'], ['app', 'app.js'], ['labelauty', 'source', 'jquery-labelauty.js'], ['bootstrap-combobox', 'js', 'bootstrap-combobox.js'], ['app', 'socket.io.js']]:
         with open(os.path.join(base_path, *parts), encoding='utf-8') as fp:
             output += fp.read()
         output += "\n"
@@ -16169,6 +16293,7 @@ def utilities():
             result[language] = {}
             existing = docassemble.base.functions.word_collection.get(language, {})
             if 'api key' in daconfig['google'] and daconfig['google']['api key']:
+                import googleapiclient.discovery  # pylint: disable=import-outside-toplevel
                 try:
                     service = googleapiclient.discovery.build('translate', 'v2',
                                                               developerKey=daconfig['google']['api key'])
@@ -18677,7 +18802,8 @@ def translation_file():
                 the_xlsx_file = docassemble.base.functions.package_data_filename(item)
                 if not os.path.isfile(the_xlsx_file):
                     continue
-                df = pandas.read_excel(the_xlsx_file, na_values=['NaN', '-NaN', '#NA', '#N/A'], keep_default_na=False)
+                import pandas  # pylint: disable=import-outside-toplevel
+                df = pandas.read_excel(the_xlsx_file, na_values=['NaN', '-NaN', '#NA', '#N/A'], keep_default_na=False, usecols='A:H')
                 invalid = False
                 for column_name in ('interview', 'question_id', 'index_num', 'hash', 'orig_lang', 'tr_lang', 'orig_text', 'tr_text'):
                     if column_name not in df.columns:
@@ -20821,7 +20947,7 @@ def get_question_data(yaml_filename, session_id, secret, use_lock=True, user_dic
     interview_status.cornerback = title_info.get('corner back button label', the_main_page_parts['main page corner back button label'] or interview_status.question.cornerback())
     if steps is None:
         steps = user_dict['_internal']['steps']
-    allow_going_back = bool(interview_status.question.can_go_back and (steps is None or (steps - user_dict['_internal']['steps_offset']) > 1))
+    allow_going_back = bool(interview_status.extras['can_go_back'] and (steps is None or (steps - user_dict['_internal']['steps_offset']) > 1))
     data = {'browser_title': interview_status.tabtitle, 'exit_link': interview_status.exit_link, 'exit_url': interview_status.exit_url, 'exit_label': interview_status.exit_label, 'title': interview_status.title, 'display_title': interview_status.display_title, 'short_title': interview_status.short_title, 'lang': interview_language, 'steps': steps, 'allow_going_back': allow_going_back, 'message_log': docassemble.base.functions.get_message_log(), 'section': the_section, 'display_section': the_section_display, 'sections': the_sections}
     if allow_going_back:
         data['cornerBackButton'] = interview_status.cornerback
@@ -20991,7 +21117,7 @@ def run_action_in_session(**kwargs):
     try:
         steps, user_dict, is_encrypted = fetch_user_dict(session_id, yaml_filename, secret=secret)
     except:
-        if docassemble.base.functions.this_thread.misc['save_status'] != SS_IGNORE:
+        if docassemble.base.functions.this_thread.misc.get('save_status', SS_NEW) != SS_IGNORE:
             release_lock(session_id, yaml_filename)
         restore_session(sbackup)
         docassemble.base.functions.restore_thread_variables(tbackup)
@@ -21025,7 +21151,7 @@ def run_action_in_session(**kwargs):
         docassemble.base.functions.restore_thread_variables(tbackup)
         return {"status": "success"}
     except BaseException as e:
-        if docassemble.base.functions.this_thread.misc['save_status'] != SS_IGNORE:
+        if docassemble.base.functions.this_thread.misc.get('save_status', SS_NEW) != SS_IGNORE:
             release_lock(session_id, yaml_filename)
         restore_session(sbackup)
         docassemble.base.functions.restore_thread_variables(tbackup)
@@ -21320,7 +21446,7 @@ def jsonify_restart_task():
     pipe.set(the_key, json.dumps({'server_start_time': START_TIME}))
     pipe.expire(the_key, 3600)
     pipe.execute()
-    return jsonify({'task_id': code})
+    return jsonify({'task_id': code, 'success': True})
 
 
 def should_run_create(package_name):
@@ -23932,6 +24058,31 @@ def make_necessary_dirs():
     if app.config['ALLOW_RESTARTING'] and not os.access(WEBAPP_PATH, os.W_OK):
         sys.exit("Unable to modify the timestamp of the WSGI file: " + WEBAPP_PATH)
 
+
+def register_db(db_name):
+    if db_name in db.engines:
+        return db
+    url = docassemble.webapp.user_database.alchemy_url(db_name)
+    bind = {'url': url, 'pool_pre_ping': daconfig.get('sql ping', False)}
+    connect_args = docassemble.webapp.user_database.connect_args(db_name)
+    if connect_args:
+        bind['connect_args'] = connect_args
+    if url.startswith('postgres'):
+        engine = create_engine(url, connect_args=connect_args, pool_pre_ping=daconfig.get('sql ping', False))
+    else:
+        engine = create_engine(url, pool_pre_ping=daconfig.get('sql ping', False))
+    db._make_metadata(db_name)
+    db._app_engines[app][db_name] = engine
+    return db
+
+
+def create_objects_in_db(db_name):
+    db.create_all(bind_key=db_name)
+    url = docassemble.webapp.user_database.alchemy_url(db_name)
+    conn_args = docassemble.webapp.user_database.connect_args(db_name)
+    return (url, conn_args, db.engines[db_name])
+
+
 if DEBUG_BOOT:
     boot_log("server: making directories that do not already exist")
 
@@ -24007,7 +24158,9 @@ docassemble.base.functions.update_server(url_finder=get_url_from_file_reference,
                                          run_action_in_session=run_action_in_session,
                                          invite_user=invite_user,
                                          get_url=get_request_url,
-                                         release_lock=release_lock)
+                                         release_lock=release_lock,
+                                         register_db=register_db,
+                                         create_objects_in_db=create_objects_in_db)
 
 # docassemble.base.util.set_user_id_function(user_id_dict)
 # docassemble.base.functions.set_generate_csrf(generate_csrf)
@@ -24038,6 +24191,7 @@ def get_base_url():
 
 def null_func(*pargs, **kwargs):  # pylint: disable=unused-argument
     logmessage("Null function called")
+
 
 if in_celery:
 

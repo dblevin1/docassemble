@@ -35,7 +35,6 @@ from jinja2.lexer import Token
 from jinja2.utils import internalcode, missing, object_type_repr
 from jinja2.ext import Extension
 from docxtpl import DocxTemplate
-import pandas
 import dateutil.parser
 try:
     import zoneinfo
@@ -745,7 +744,7 @@ class InterviewStatus:
                             if the_field.number in self.extras['show_if_js']:
                                 self.extras['show_if_js'][the_field.number]['expression'] = re.sub(iterator_re, '[' + str(list_indexno) + ']', self.extras['show_if_js'][the_field.number]['expression'])
                             if the_field.extras['show_if_js']['expression'].uses_mako:
-                                the_field.extras['show_if_js']['expression'].template = MakoTemplate(the_field.extras['show_if_js']['expression'].original_text, strict_undefined=True, input_encoding='utf-8')
+                                the_field.extras['show_if_js']['expression'].template = MakoTemplate(the_field.extras['show_if_js']['expression'].original_text, strict_undefined=True, input_encoding='utf-8', uri='')
                             for ii in range(len(the_field.extras['show_if_js']['vars'])):
                                 the_field.extras['show_if_js']['vars'][ii] = re.sub(iterator_re, '[' + str(list_indexno) + ']', the_field.extras['show_if_js']['vars'][ii])
                             if the_field.number in self.extras['show_if_js']:
@@ -1600,7 +1599,7 @@ class TextObject:
                 names_used = set()
             else:
                 names_used = question.names_used
-            self.template = MakoTemplate(x, strict_undefined=True, input_encoding='utf-8')
+            self.template = MakoTemplate(x, strict_undefined=True, input_encoding='utf-8', uri=question.id_debug({}) if question else None)
             for y in self.template.names_used - self.template.names_set:
                 names_used.add(y)
             self.uses_mako = True
@@ -1618,9 +1617,9 @@ class TextObject:
                             xx = question.interview.translation_dict[self.original_text][orig_lang][target_lang]
                             if not self.uses_mako and isinstance(xx, str) and match_mako.search(xx):
                                 self.uses_mako = True
-                                self.template = MakoTemplate(x, strict_undefined=True, input_encoding='utf-8')
+                                self.template = MakoTemplate(x, strict_undefined=True, input_encoding='utf-8', uri=question.id_debug({}))
                             if self.uses_mako:
-                                the_template = MakoTemplate(xx, strict_undefined=True, input_encoding='utf-8')
+                                the_template = MakoTemplate(xx, strict_undefined=True, input_encoding='utf-8', uri=question.id_debug({}))
                                 if question is not None:
                                     for y in the_template.names_used - the_template.names_set:
                                         question.names_used.add(y)
@@ -2355,7 +2354,8 @@ class Question:
                     the_xlsx_file = docassemble.base.functions.package_data_filename(item)
                     if not os.path.isfile(the_xlsx_file):
                         raise DAError("The translations file " + the_xlsx_file + " could not be found")
-                    df = pandas.read_excel(the_xlsx_file)
+                    import pandas  # pylint: disable=import-outside-toplevel
+                    df = pandas.read_excel(the_xlsx_file, usecols='A:H')
                     for column_name in ('interview', 'question_id', 'index_num', 'hash', 'orig_lang', 'tr_lang', 'orig_text', 'tr_text'):
                         if column_name not in df.columns:
                             raise DAError("Invalid translations file " + os.path.basename(the_xlsx_file) + ": column " + column_name + " is missing")
@@ -2484,13 +2484,20 @@ class Question:
             self.language = data['language']
         else:
             self.language = self.from_source.get_language()
-        if 'prevent going back' in data and data['prevent going back']:
-            self.can_go_back = False
+        if 'prevent going back' in data:
+            if isinstance(data['prevent going back'], str):
+                data['prevent going back'] = data['prevent going back'].strip()
+                if data['prevent going back'] != '':
+                    self.can_go_back = compile(data['prevent going back'], '<prevent going back>', 'eval')
+                    self.find_fields_in(data['prevent going back'])
+            elif data['prevent going back']:
+                self.can_go_back = False
         if 'back button' in data:
             if isinstance(data['back button'], (bool, NoneType)):
                 self.back_button = data['back button']
             else:
                 self.back_button = compile(data['back button'], '<back button>', 'eval')
+                self.find_fields_in(data['back button'])
         else:
             self.back_button = None
         if 'allowed to set' in data:
@@ -3212,22 +3219,22 @@ class Question:
                         raise DASourceError("The css classifier specifier in an action buttons item must refer to plain text." + self.idebug(data))
                     if not isinstance(forget_prior, bool):
                         raise DASourceError("The forget prior specifier in an action buttons item must refer to true or false." + self.idebug(data))
-                    button = {'action': TextObject(definitions + action, question=self), 'label': TextObject(definitions + label, question=self), 'color': TextObject(definitions + color, question=self)}
+                    button = {'action': TextObject(definitions + action, question=self), 'label': TextObject(definitions + label, question=self), 'color': TextObject(definitions + color, question=self, translate=False)}
                     button['show if'] = showif
                     if target is not None:
-                        button['target'] = TextObject(definitions + target, question=self)
+                        button['target'] = TextObject(definitions + target, question=self, translate=False)
                     else:
                         button['target'] = None
                     if icon is not None:
-                        button['icon'] = TextObject(definitions + icon, question=self)
+                        button['icon'] = TextObject(definitions + icon, question=self, translate=False)
                     else:
                         button['icon'] = None
                     if placement is not None:
-                        button['placement'] = TextObject(definitions + placement, question=self)
+                        button['placement'] = TextObject(definitions + placement, question=self, translate=False)
                     else:
                         button['placement'] = None
                     if css_class is not None:
-                        button['css_class'] = TextObject(definitions + css_class, question=self)
+                        button['css_class'] = TextObject(definitions + css_class, question=self, translate=False)
                     else:
                         button['css_class'] = None
                     if forget_prior:
@@ -5970,6 +5977,13 @@ class Question:
         helptexts = {}
         labels = {}
         extras['required'] = {}
+        if hasattr(self, 'can_go_back'):
+            if isinstance(self.can_go_back, bool):
+                extras['can_go_back'] = self.can_go_back
+            else:
+                extras['can_go_back'] = not bool(eval(self.can_go_back, user_dict))
+        else:
+            extras['can_go_back'] = True
         if hasattr(self, 'back_button'):
             if isinstance(self.back_button, (bool, NoneType)):
                 extras['back_button'] = self.back_button
@@ -7767,16 +7781,16 @@ class Question:
                         result['markdown'][doc_format] = the_markdown
                         docassemble.base.functions.reset_context()
                     else:
-                        the_markdown = ""
-                        if len(result['metadata']) > 0:
-                            modified_metadata = {}
-                            for key, data in result['metadata'].items():
-                                if re.search(r'Footer|Header', key) and 'Lines' not in key:
-                                    # modified_metadata[key] = docassemble.base.filter.metadata_filter(data, doc_format) + str('[END]')
-                                    modified_metadata[key] = data + str('[END]')
-                                else:
-                                    modified_metadata[key] = data
-                            the_markdown += '---\n' + altyaml.dump_to_string(modified_metadata) + "\n...\n"
+                        modified_metadata = {"syslang": get_language()}
+                        if result['convert_to_tagged_pdf']:
+                            modified_metadata['taggedpdf'] = "true"
+                        for key, data in result['metadata'].items():
+                            if re.search(r'Footer|Header', key) and 'Lines' not in key:
+                                # modified_metadata[key] = docassemble.base.filter.metadata_filter(data, doc_format) + str('[END]')
+                                modified_metadata[key] = data + str('[END]')
+                            else:
+                                modified_metadata[key] = data
+                        the_markdown = '---\n' + altyaml.dump_to_string(modified_metadata) + "\n...\n"
                         docassemble.base.functions.set_context('pandoc ' + doc_format)
                         the_markdown += the_content.text(the_user_dict)
                         # logmessage("Markdown is:\n" + repr(the_markdown) + "END")
@@ -8803,13 +8817,14 @@ class Interview:
             user_dict['_internal']['device_local'] = {}
             user_dict['_internal']['user_local'] = {}
         if session_uid not in user_dict['_internal']['session_local'] or device_id not in user_dict['_internal']['device_local'] or user_id not in user_dict['_internal']['user_local']:
-            exec('from docassemble.base.util import DASessionLocal, DADeviceLocal, DAUserLocal')
+            glob_ns = globals()
+            exec('from docassemble.base.util import DASessionLocal, DADeviceLocal, DAUserLocal', glob_ns)
             if session_uid not in user_dict['_internal']['session_local']:
-                user_dict['_internal']['session_local'][session_uid] = eval("DASessionLocal()")
+                user_dict['_internal']['session_local'][session_uid] = eval("DASessionLocal()", glob_ns)
             if device_id not in user_dict['_internal']['device_local']:
-                user_dict['_internal']['device_local'][device_id] = eval("DADeviceLocal()")
+                user_dict['_internal']['device_local'][device_id] = eval("DADeviceLocal()", glob_ns)
             if user_id not in user_dict['_internal']['user_local']:
-                user_dict['_internal']['user_local'][user_id] = eval("DAUserLocal()")
+                user_dict['_internal']['user_local'][user_id] = eval("DAUserLocal()", glob_ns)
         user_dict['session_local'] = user_dict['_internal']['session_local'][session_uid]
         user_dict['device_local'] = user_dict['_internal']['device_local'][device_id]
         user_dict['user_local'] = user_dict['_internal']['user_local'][user_id]
@@ -10545,7 +10560,7 @@ class DAEnvironment(Environment):
 def ampersand_filter(value):
     if value.__class__.__name__ in ('DAFile', 'DALink', 'DAStaticFile', 'DAFileCollection', 'DAFileList'):
         return value
-    if value.__class__.__name__ in ('InlineImage', 'RichText', 'Listing', 'Document', 'Subdoc', 'DALazyTemplate', 'Markup'):
+    if value.__class__.__name__ in ('CustomInlineImage', 'InlineImage', 'RichText', 'Listing', 'Document', 'Subdoc', 'DALazyTemplate', 'Markup'):
         return str(value)
     if isinstance(value, (int, bool, float, NoneType)):
         return value

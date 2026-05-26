@@ -72,7 +72,7 @@ subquestion: |
   `g.delete()` or the user deletes their account.
   % elif g.base == 'interview':
   `g.fruits` will be the same in this interview,
-  `${ user_info().filename }`, regardless of the user and regardless
+  `${ current_context().filename }`, regardless of the user and regardless
   of the session, any time `g.key` is set to `${ repr(g.key) }`.
   The data will not be deleted unless someone runs `g.delete()`.
   % else:

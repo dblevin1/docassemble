@@ -1,6 +1,7 @@
 from docassemble.webapp.db_object import db, UserMixin
 from docassemble.base.config import dbtableprefix, allowed
 from flask_login import AnonymousUserMixin
+from sqlalchemy import Index
 
 
 class AnonymousUserModel(AnonymousUserMixin):
@@ -125,6 +126,9 @@ class UserRoles(db.Model):
 
 class UserDict(db.Model):
     __tablename__ = dbtableprefix + "userdict"
+    __table_args__ = (
+        Index(dbtableprefix + 'ix_userdict_key_filename', 'key', 'filename'),
+    )
     indexno = db.Column(db.Integer(), primary_key=True)
     filename = db.Column(db.String(255), index=True)
     key = db.Column(db.String(250), index=True)
@@ -133,18 +137,17 @@ class UserDict(db.Model):
     encrypted = db.Column(db.Boolean(), nullable=False, server_default='1')
     modtime = db.Column(db.DateTime())
 
-db.Index(dbtableprefix + 'ix_userdict_key_filename', UserDict.key, UserDict.filename)
-
 
 class UserDictKeys(db.Model):
     __tablename__ = dbtableprefix + "userdictkeys"
+    __table_args__ = (
+        Index(dbtableprefix + 'ix_userdictkeys_key_filename', 'key', 'filename'),
+    )
     indexno = db.Column(db.Integer(), primary_key=True)
     filename = db.Column(db.String(255), index=True)
     key = db.Column(db.String(250), index=True)
     user_id = db.Column(db.Integer(), db.ForeignKey(dbtableprefix + 'user.id', ondelete='CASCADE'), index=True)
     temp_user_id = db.Column(db.Integer(), db.ForeignKey(dbtableprefix + 'tempuser.id', ondelete='CASCADE'), index=True)
-
-db.Index(dbtableprefix + 'ix_userdictkeys_key_filename', UserDictKeys.key, UserDictKeys.filename)
 
 
 class TempUser(db.Model):

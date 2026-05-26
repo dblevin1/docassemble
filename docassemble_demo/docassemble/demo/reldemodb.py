@@ -2,22 +2,23 @@
 # Import any DAObject classes that you will need
 from docassemble.base.util import Individual, Person, DAObject
 # Import the SQLObject and some associated utility functions
-from docassemble.base.sql import alchemy_url, upgrade_db, SQLObject, connect_args
+from docassemble.base.sql import register_db, create_objects, SQLObject
 # Import SQLAlchemy names
-from sqlalchemy import Column, ForeignKey, Integer, String, create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import Column, ForeignKey, Integer, String
 
 # Only allow these names (DAObject classes) to be imported with a modules block
 __all__ = ['Bank', 'Customer', 'BankCustomer']
 
-# Create the base class for SQLAlchemy table definitions
-Base = declarative_base()
+# Set the name of the key in the Configuration with the information about the database
+DB_NAME = 'demo db'
+
+# Register the database with flask_sqlalchemy
+db = register_db(DB_NAME)
 
 
 # SQLAlchemy table definition for a Bank
 
-class BankModel(Base):
+class BankModel(db.Model):
     __tablename__ = 'bank'
     id = Column(Integer, primary_key=True)
     routing = Column(String(250), unique=True)
@@ -26,7 +27,7 @@ class BankModel(Base):
 
 # SQLAlchemy table definition for a Customer
 
-class CustomerModel(Base):
+class CustomerModel(db.Model):
     __tablename__ = 'customer'
     id = Column(Integer, primary_key=True)
     ssn = Column(String(250), unique=True)
@@ -41,32 +42,14 @@ class CustomerModel(Base):
 
 # SQLAlchemy table definition for keeping track of which Banks have which Customers
 
-class BankCustomerModel(Base):
+class BankCustomerModel(db.Model):
     __tablename__ = 'bank_customer'
     id = Column(Integer, primary_key=True)
     bank_id = Column(Integer, ForeignKey('bank.id', ondelete='CASCADE'), nullable=False)
     customer_id = Column(Integer, ForeignKey('customer.id', ondelete='CASCADE'), nullable=False)
 
-# Form the URL for connecting to the database based on the "demo db" directive in the Configuration
-url = alchemy_url('demo db')
-
-# Build the "engine" for connecting to the SQL server, using the URL for the database.
-conn_args = connect_args('demo db')
-if url.startswith('postgres'):
-    engine = create_engine(url, connect_args=connect_args('demo db'), pool_pre_ping=False)
-else:
-    engine = create_engine(url, pool_pre_ping=False)
-
-# Create the tables
-Base.metadata.create_all(engine)
-
-# Get SQLAlchemy ready
-Base.metadata.bind = engine
-DBSession = sessionmaker(bind=engine)
-
-# Perform any necessary database schema updates using alembic, if there is an alembic
-# directory and alembic.ini file in the package.
-upgrade_db(url, __file__, engine, version_table='auto', conn_args=conn_args)
+# Create database objects if any of the above table definitions do not exist, and run alembic if applicable
+create_objects(__file__, DB_NAME)
 
 
 # Define Bank as both a DAObject and SQLObject
@@ -75,7 +58,7 @@ class Bank(Person, SQLObject):
     # This tells the SQLObject code what the SQLAlchemy model is
     _model = BankModel
     # This tells the SQLObject code how to access the database
-    _session = DBSession
+    _session = db.session
     # This indicates that an object is not ready to be saved to SQL unless the "name" column is defined
     _required = ['name']
     # This indicates that the human-readable unique identifier for the table is the column "routing"
@@ -92,7 +75,7 @@ class Bank(Person, SQLObject):
             return self.name.text
         if column == 'routing':
             return self.routing
-        raise Exception("Invalid column " + column)
+        raise RuntimeError("Invalid column " + column)
     # The db_set function specifies how to set attributes of the DAObject on the basis of non-null SQL column values
 
     def db_set(self, column, value):
@@ -101,7 +84,7 @@ class Bank(Person, SQLObject):
         elif column == 'routing':
             self.routing = value
         else:
-            raise Exception("Invalid column " + column)
+            raise RuntimeError("Invalid column " + column)
     # The db_del function specifies how to delete attributes of the DAObject when the SQL column value becomes null
 
     def db_del(self, column):
@@ -110,12 +93,12 @@ class Bank(Person, SQLObject):
         elif column == 'routing':
             del self.routing
         else:
-            raise Exception("Invalid column " + column)
+            raise RuntimeError("Invalid column " + column)
     # This is an example of a method that uses SQLAlchemy to return True or False
 
     def has_customer(self, customer):
         if not (self.ready() and customer.ready()):
-            raise Exception("has_customer: cannot retrieve data")
+            raise RuntimeError("has_customer: cannot retrieve data")
         # this opens a connection to the SQL database
         session = self.get_session()
         db_entry = session.query(BankCustomerModel).filter(BankCustomerModel.bank_id == self.id, BankCustomerModel.customer_id == customer.id).first()
@@ -137,7 +120,7 @@ class Bank(Person, SQLObject):
 
     def get_customers(self):
         if not self.ready():
-            raise Exception("get_customers: cannot retrieve data")
+            raise RuntimeError("get_customers: cannot retrieve data")
         results = []
         session = self.get_session()
         for db_entry in session.query(BankCustomerModel).filter(BankCustomerModel.bank_id == self.id).all():
@@ -147,7 +130,7 @@ class Bank(Person, SQLObject):
 
     def del_customer(self, customer):
         if not (self.ready() and customer.ready()):
-            raise Exception("del_customer: cannot retrieve data")
+            raise RuntimeError("del_customer: cannot retrieve data")
         session = self.get_session()
         session.query(BankCustomerModel).filter(BankCustomerModel.bank_id == self.id, BankCustomerModel.customer_id == customer.id).delete()
         session.commit()
@@ -155,7 +138,7 @@ class Bank(Person, SQLObject):
 
 class Customer(Individual, SQLObject):
     _model = CustomerModel
-    _session = DBSession
+    _session = db.session
     _required = ['first_name']
     _uid = 'ssn'
 
@@ -180,7 +163,7 @@ class Customer(Individual, SQLObject):
             return self.address.state
         if column == 'zip':
             return self.address.zip
-        raise Exception("Invalid column " + column)
+        raise RuntimeError("Invalid column " + column)
 
     def db_set(self, column, value):
         if column == 'ssn':
@@ -200,7 +183,7 @@ class Customer(Individual, SQLObject):
         elif column == 'zip':
             self.address.zip = value
         else:
-            raise Exception("Invalid column " + column)
+            raise RuntimeError("Invalid column " + column)
 
     def db_del(self, column):
         if column == 'ssn':
@@ -220,12 +203,12 @@ class Customer(Individual, SQLObject):
         elif column == 'zip':
             del self.address.zip
         else:
-            raise Exception("Invalid column " + column)
+            raise RuntimeError("Invalid column " + column)
 
 
 class BankCustomer(DAObject, SQLObject):
     _model = BankCustomerModel
-    _session = DBSession
+    _session = db.session
     _required = ['bank_id', 'customer_id']
 
     def init(self, *pargs, **kwargs):
@@ -237,7 +220,7 @@ class BankCustomer(DAObject, SQLObject):
             return self.bank.id
         if column == 'customer_id':
             return self.customer.id
-        raise Exception("Invalid column " + column)
+        raise RuntimeError("Invalid column " + column)
 
     def db_set(self, column, value):
         if column == 'bank_id':
@@ -245,7 +228,7 @@ class BankCustomer(DAObject, SQLObject):
         elif column == 'customer_id':
             self.customer.id = value
         else:
-            raise Exception("Invalid column " + column)
+            raise RuntimeError("Invalid column " + column)
     # A db_find_existing method is defined here because the default db_find_existing() method for
     # the SQLObject class tries to find existing records based on a unique identifier column indicated
     # by the _uid attribute.  Since the unique identifier for a bank-customer relationship record is
