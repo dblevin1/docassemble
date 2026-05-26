@@ -1,6 +1,14 @@
 # Change Log
 
 <!-- insertion marker -->
+## [1.9.12.2](https://github.com/dblevin1/docassemble/releases/tag/1.9.12.2) - 2026-05-26
+
+<small>[Compare with 1.9.12.1](https://github.com/dblevin1/docassemble/compare/1.9.12.1...1.9.12.2)</small>
+
+### Added
+
+- add tenant id to azure login ([d0d325f](https://github.com/dblevin1/docassemble/commit/d0d325f54e9a193026a1e13e0816e130304e04ea) by Daniel Blevins).
+
 ## [1.9.12.1](https://github.com/dblevin1/docassemble/releases/tag/1.9.12.1) - 2026-05-26
 
 <small>[Compare with 1.8.18.2](https://github.com/dblevin1/docassemble/compare/1.8.18.2...1.9.12.1)</small>
