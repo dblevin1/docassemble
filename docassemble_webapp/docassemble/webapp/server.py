@@ -4977,12 +4977,13 @@ class AzureSignIn(OAuthSignIn):
 
     def __init__(self):
         super().__init__('azure')
+        tenant_id = self.consumer_domain or "common"
         self.service = OAuth2Service(
             name='azure',
             client_id=self.consumer_id,
             client_secret=self.consumer_secret,
-            authorize_url='https://login.microsoftonline.com/common/oauth2/authorize',
-            access_token_url='https://login.microsoftonline.com/common/oauth2/token',
+            authorize_url=f'https://login.microsoftonline.com/{ tenant_id }/oauth2/authorize',
+            access_token_url=f'https://login.microsoftonline.com/{ tenant_id }/oauth2/token',
             base_url='https://graph.microsoft.com/v1.0/'
         )
 

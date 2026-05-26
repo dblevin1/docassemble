@@ -12,6 +12,7 @@
 * change userlist page to only show custom privileges (you can still tell who has what default privilege from the icons)
 * added config option `pip urls` (list) to override default package repo when installing/upgrading from pip
   * `pip urls:  - https://username:password@example.com`
+* Use optional Azure tenant id for Oauth logins
 
 #### Low impact changes
 * allow docassemble packages to be updated via giturl (shouldn't be used for prod, you have to perform a restart manually)
