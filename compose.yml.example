@@ -1,21 +1,11 @@
 services:
-  da-dev-cleaner:
-    image: ubuntu:22.04
-    entrypoint: [ "bash", "-c", "rm -r /usr/share/docassemble/backup/files/000/" ]
-    volumes:
-      - ./docassemble:/usr/share/docassemble/backup
   docassemble:
     hostname: docassemble.docker
-    image: ghcr.io/dblevin1/docassemble:1.8.18.1
+    image: ghcr.io/dblevin1/docassemble:1.8.18.2
     volumes:
       - /etc/localtime:/etc/localtime
       - ./volumes/docassemble:/usr/share/docassemble/backup
-      - /mnt:/mnt/ro:ro
-      - ./volumes/pip_conf:/var/www/.pip
-      - /mnt/fakeMnt:/mnt/fakeMnt
-      - ./volumes/live-config/config.yml:/usr/share/docassemble/config/config.yml
-      - ./volumes/noop:/etc/cron.daily/docassemble:ro
-    stop_grace_period: 1m
+    stop_grace_period: 10m
     privileged: true
     cap_add:
       - SYS_ADMIN
@@ -61,7 +51,7 @@ services:
     ports:
       - 6379:6379
     restart: always
-    command: redis-server --save 20 1 --loglevel warning
+    command: redis-server --save 20 1 --loglevel warning --protected-mode no
     healthcheck:
       test: [ "CMD-SHELL", "redis-cli ping | grep PONG" ]
       interval: 1s

@@ -68,3 +68,5 @@ stylelint.config.js
 .stylelintrc.json
 .sass-cache/
 volumes/*
+docker-compose.yml
+compose.yml
